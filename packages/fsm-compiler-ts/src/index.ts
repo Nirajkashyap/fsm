@@ -40,5 +40,5 @@ export type {
 } from "./util.ts";
 export type { WorkflowType } from "./util.ts";
 export {
-  validateAsyncOperationFromFoldersV2,
-} from "./validate-async-operation-logic-v2.ts";
+  validateAsyncOperationFromFolders,
+} from "./validate-async-operation-logic.ts";

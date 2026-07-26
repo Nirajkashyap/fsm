@@ -18,7 +18,7 @@ import {
   type WorkflowType,
 } from "./util.ts";
 
-export async function validateAsyncOperationFromFoldersV2(
+export async function validateAsyncOperationFromFolders(
   folderPath: string,
   _workflowType: WorkflowType,
   skipDirs: string[] = [],
