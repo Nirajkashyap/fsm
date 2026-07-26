@@ -3,6 +3,7 @@
     "apps/fsm-core-example",
     "packages/fsm-logging-ts",
     "packages/fsm-core-db-ts",
+    "packages/fsm-core-async-op-worker",
     "apps/fsm-core-worker-ts",
     "apps/fsm-core-ts-hono-deno",
     "packages/fsm-compiler-ts",

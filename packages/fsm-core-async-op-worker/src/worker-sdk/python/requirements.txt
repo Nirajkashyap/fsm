@@ -1,0 +1,2 @@
+# No external dependencies required — stdlib only (socket, struct, json,
+# threading, importlib, ast, asyncio, argparse).

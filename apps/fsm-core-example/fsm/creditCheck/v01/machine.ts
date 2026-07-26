@@ -91,7 +91,7 @@ export const machine = createMachine({
                       bureauName: "EquiGavin",
                       ssn: SSN,
                     }),
-                    src: "checkBureau",
+                    src: "checkBureauRust",
                     id: "equiGavinFetchActor",
                     onDone: [
                       {
@@ -120,7 +120,7 @@ export const machine = createMachine({
                       bureauName: "GavUnion",
                       ssn: SSN,
                     }),
-                    src: "checkReportsTable",
+                    src: "CheckReportsTable",
                     id: "gavUnionDBActor",
                     onDone: [
                       {

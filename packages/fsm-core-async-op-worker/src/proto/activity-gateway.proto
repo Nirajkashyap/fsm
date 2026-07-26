@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package pgfsm.activitygateway;
+
+// Client-facing contract for the Activity Gateway. The orchestrator
+// (asyncOperationWorkerlet.ts) is the only intended client — it calls
+// Invoke() once per claimed PGMQ message for a compiled-language actor,
+// after doing its own poll/claim/archive against Postgres. The gateway
+// itself never touches the database.
+//
+// Adapted from the polygot-lang-ipc-worker prototype's proto/ipc.proto:
+// the generic {function_name, payload_json} shape is replaced with the
+// activity contract from KB-001 §3.2, identifying the actor by its full
+// ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
+// fsm_type, fsm_name, fsm_version) rather than a bare name/version pair —
+// see sidecar/protocol.ts's actorKey().
+service ActivityGateway {
+  rpc Invoke(InvokeRequest) returns (InvokeResponse);
+  rpc ListRegisteredActors(Empty) returns (ListRegisteredActorsResponse);
+}
+
+message Empty {}
+
+message InvokeRequest {
+  string parent_fsm_name = 1;
+  string parent_fsm_version = 2;
+  string fsm_type = 3;
+  string fsm_name = 4;
+  string fsm_version = 5;
+  string input_json = 6;
+  string instance_id = 7;
+  string correlation_id = 8;
+  uint32 timeout_ms = 9;
+}
+
+message InvokeResponse {
+  bool ok = 1;
+  string output_json = 2;
+  string error_code = 3;
+  string error_message = 4;
+  bool retriable = 5;
+}
+
+message ListRegisteredActorsResponse {
+  // "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion" keys, one
+  // per actor currently registered by a live worker process.
+  repeated string actor_keys = 1;
+}

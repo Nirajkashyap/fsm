@@ -1,0 +1,22 @@
+{
+  "name": "@pgfsm/async-op-worker-gateway",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "imports": {
+    "@grpc/grpc-js": "npm:@grpc/grpc-js@^1.13.4",
+    "@grpc/proto-loader": "npm:@grpc/proto-loader@^0.8.0",
+    "@logtape/logtape": "jsr:@logtape/logtape@^2.2",
+    "@std/cli": "jsr:@std/cli@1",
+    "@std/path": "jsr:@std/path@1"
+  },
+  "tasks": {
+    "gateway": "deno run --allow-all src/cli/async-operation-worker-gateway.ts",
+    "gateway-ctl": "deno run --allow-all src/cli/async-operation-worker-gateway-ctl.ts",
+    "worker-ts-scan": "deno run --allow-all src/worker-sdk/typescript/cli.ts scan",
+    "worker-ts-start": "deno run --allow-all src/worker-sdk/typescript/cli.ts start",
+    "check": "deno check src/index.ts"
+  }
+}
