@@ -26,7 +26,7 @@ import { replaceUnderscoresWithSpaces } from "@pgfsm/compiler";
 const fsm_name = "creditCheck";
 const fsm_version = "v01";
 
-// validateSyncOperationFromFolders / validateAsyncOperationFromFoldersV2 expect
+// validateSyncOperationFromFolders / validateAsyncOperationFromFolders expect
 // the *parent* of per-FSM folders (e.g. ".../fsm", containing "creditCheck/v01").
 const FSM_FOLDER_PATH = import.meta.dirname!.split("/").slice(0, -2).join("/");
 const SKIP_DIRS = ["carVitals", "taskMachineConfig"];

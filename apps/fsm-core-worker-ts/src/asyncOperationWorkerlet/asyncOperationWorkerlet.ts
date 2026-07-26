@@ -15,7 +15,7 @@ import {
   type ActorPluginValidationResult,
   type ActorReference,
   type OperationLang,
-  validateAsyncOperationFromFoldersV2,
+  validateAsyncOperationFromFolders,
   type WorkflowType,
 } from "@pgfsm/compiler";
 import { startFSMPromiseWorker } from "./fsmpromiseworker.ts";
@@ -148,7 +148,7 @@ async function startPromiseWorkerForLang(
  * Async-operation workerlet — node agent (analogous to fsmlet).
  *
  * On startup:
- *   1. validateAsyncOperationFromFoldersV2 to discover and verify actors.
+ *   1. validateAsyncOperationFromFolders to discover and verify actors.
  *   2. Load each verified async operation into async_operation_meta via loadAsyncOperation.
  *   3. Registers itself in async_operation_workerlet with the full supported-op list.
  *   4. Opens a dedicated LISTEN connection on async_op_workerlet_work_<id>.
@@ -177,7 +177,7 @@ export async function startAsyncOperationWorkerlet(
   );
 
   // Step 1: validate async operations from folders.
-  const validationResults = await validateAsyncOperationFromFoldersV2(
+  const validationResults = await validateAsyncOperationFromFolders(
     folderPath,
     workflowType,
     skipDirs,

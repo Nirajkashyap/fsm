@@ -11,7 +11,7 @@ import {
   isOperationLang,
   loadFsmJSONFromFolders,
   SUPPORTED_OPERATION_LANGS,
-  validateAsyncOperationFromFoldersV2,
+  validateAsyncOperationFromFolders,
   validateSyncOperationFromFolders,
 } from "../index.ts";
 import type { ActorReference, OperationLang, WorkflowType } from "../index.ts";
@@ -287,7 +287,7 @@ try {
     }
     case "validate-async-operation": {
       const availableActors = await loadAvailableActors();
-      await validateAsyncOperationFromFoldersV2(
+      await validateAsyncOperationFromFolders(
         folder!,
         workflowType!,
         skipDirs,
