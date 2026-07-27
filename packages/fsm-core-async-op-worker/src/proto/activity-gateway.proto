@@ -12,8 +12,10 @@ package pgfsm.activitygateway;
 // the generic {function_name, payload_json} shape is replaced with the
 // activity contract from KB-001 §3.2, identifying the actor by its full
 // ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
-// fsm_type, fsm_name, fsm_version) rather than a bare name/version pair —
-// see sidecar/protocol.ts's actorKey().
+// fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
+// name/version pair — see sidecar/protocol.ts's actorKey(). fsm_language is
+// part of the identity (not just metadata) because the other five fields
+// alone aren't guaranteed unique across languages.
 service ActivityGateway {
   rpc Invoke(InvokeRequest) returns (InvokeResponse);
   rpc ListRegisteredActors(Empty) returns (ListRegisteredActorsResponse);
@@ -27,10 +29,11 @@ message InvokeRequest {
   string fsm_type = 3;
   string fsm_name = 4;
   string fsm_version = 5;
-  string input_json = 6;
-  string instance_id = 7;
-  string correlation_id = 8;
-  uint32 timeout_ms = 9;
+  string fsm_language = 6;
+  string input_json = 7;
+  string instance_id = 8;
+  string correlation_id = 9;
+  uint32 timeout_ms = 10;
 }
 
 message InvokeResponse {
@@ -42,7 +45,7 @@ message InvokeResponse {
 }
 
 message ListRegisteredActorsResponse {
-  // "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion" keys, one
-  // per actor currently registered by a live worker process.
+  // "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
+  // keys, one per actor currently registered by a live worker process.
   repeated string actor_keys = 1;
 }

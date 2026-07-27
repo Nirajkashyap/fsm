@@ -36,7 +36,7 @@ import (
 )
 
 func printResult(result ActorPluginValidationResult, handler ActorHandler) {
-	key := fmt.Sprintf("%s@%s@%s@%s@%s", result.ParentFsmName, result.ParentFsmVersion, result.FsmType, result.FsmName, result.FsmVersion)
+	key := fmt.Sprintf("%s@%s@%s@%s@%s@%s", result.ParentFsmName, result.ParentFsmVersion, result.FsmType, result.FsmName, result.FsmVersion, result.FsmLanguage)
 	switch {
 	case !result.IsVerified:
 		fmt.Printf("  - %s (%s): %s\n", key, result.FsmModulePath, result.ErrorMessage)
@@ -93,6 +93,7 @@ func main() {
 					FsmType:          result.FsmType,
 					FsmName:          result.FsmName,
 					FsmVersion:       result.FsmVersion,
+					FsmLanguage:      result.FsmLanguage,
 				},
 				Handler: handler,
 			})

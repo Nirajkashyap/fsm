@@ -170,12 +170,13 @@ fn parse_args() -> Args {
 
 fn print_result(result: &ActorPluginValidationResult, handler: &Option<ActorHandler>) {
     let key = format!(
-        "{}@{}@{}@{}@{}",
+        "{}@{}@{}@{}@{}@{}",
         result.parent_fsm_name,
         result.parent_fsm_version,
         result.fsm_type,
         result.fsm_name,
-        result.fsm_version
+        result.fsm_version,
+        result.fsm_language
     );
     if !result.is_verified {
         println!(
@@ -218,6 +219,7 @@ fn registrations_from_folder(folder_path: &str, skip_dirs: &[String]) -> Vec<Act
                     fsm_type: result.fsm_type.clone(),
                     fsm_name: result.fsm_name.clone(),
                     fsm_version: result.fsm_version.clone(),
+                    fsm_language: result.fsm_language.clone(),
                 },
                 handler,
             });

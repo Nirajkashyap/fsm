@@ -86,6 +86,7 @@ class ActorWorker:
                 actor.fsm_type,
                 actor.fsm_name,
                 actor.fsm_version,
+                actor.fsm_language,
             )
             self._handlers[key] = handler
             registered_actors.append(
@@ -95,6 +96,7 @@ class ActorWorker:
                     "fsmType": actor.fsm_type,
                     "fsmName": actor.fsm_name,
                     "fsmVersion": actor.fsm_version,
+                    "fsmLanguage": actor.fsm_language,
                 }
             )
 
@@ -193,6 +195,7 @@ class ActorWorker:
             body.get("fsm_type", ""),
             body.get("fsm_name", ""),
             body.get("fsm_version", ""),
+            body.get("fsm_language", ""),
         )
         handler = self._handlers.get(key)
 

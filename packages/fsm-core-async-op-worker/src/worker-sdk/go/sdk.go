@@ -60,7 +60,7 @@ func NewActorWorker(options ActorWorkerOptions, registrations []ActorRegistratio
 	handlers := make(map[string]ActorHandler, len(registrations))
 	registered := make([]RegisteredActor, 0, len(registrations))
 	for _, reg := range registrations {
-		key := ActorKey(reg.Meta.ParentFsmName, reg.Meta.ParentFsmVersion, reg.Meta.FsmType, reg.Meta.FsmName, reg.Meta.FsmVersion)
+		key := ActorKey(reg.Meta.ParentFsmName, reg.Meta.ParentFsmVersion, reg.Meta.FsmType, reg.Meta.FsmName, reg.Meta.FsmVersion, reg.Meta.FsmLanguage)
 		handlers[key] = reg.Handler
 		registered = append(registered, reg.Meta)
 	}
@@ -182,6 +182,7 @@ func (w *ActorWorker) handleInvoke(conn net.Conn, body json.RawMessage) {
 		FsmType          string `json:"fsm_type"`
 		FsmName          string `json:"fsm_name"`
 		FsmVersion       string `json:"fsm_version"`
+		FsmLanguage      string `json:"fsm_language"`
 		Input            any    `json:"input"`
 	}
 	if err := json.Unmarshal(body, &req); err != nil {
@@ -189,7 +190,7 @@ func (w *ActorWorker) handleInvoke(conn net.Conn, body json.RawMessage) {
 		return
 	}
 
-	key := ActorKey(req.ParentFsmName, req.ParentFsmVersion, req.FsmType, req.FsmName, req.FsmVersion)
+	key := ActorKey(req.ParentFsmName, req.ParentFsmVersion, req.FsmType, req.FsmName, req.FsmVersion, req.FsmLanguage)
 	handler, ok := w.handlers[key]
 	if !ok {
 		w.sendError(conn, req.InvokeID, "NOT_FOUND", fmt.Sprintf("actor not found: %s", key))

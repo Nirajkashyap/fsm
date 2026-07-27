@@ -3,10 +3,10 @@
 // the right worker's connection. Ported from the polygot-lang-ipc-worker
 // prototype's server/src/sidecar/gateway.ts — the connection/registration/
 // pending-invoke bookkeeping is unchanged; routing keys are
-// `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion` (see
-// protocol.ts's `actorKey()`) instead of the prototype's free-form function
-// name, and the invoke/result/error bodies carry the KB-001 activity
-// contract.
+// `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage`
+// (see protocol.ts's `actorKey()`) instead of the prototype's free-form
+// function name, and the invoke/result/error bodies carry the KB-001
+// activity contract.
 //
 // This class never opens a database connection — it only relays framed JSON
 // between the gRPC-facing AsyncOperationWorkerGateway and worker processes,
@@ -38,6 +38,7 @@ export interface ActivityInvokeInput {
   fsmType: string;
   fsmName: string;
   fsmVersion: string;
+  fsmLanguage: string;
   input: unknown;
   instanceId: string;
   correlationId: string;
@@ -133,6 +134,7 @@ export class SidecarGateway {
       request.fsmType,
       request.fsmName,
       request.fsmVersion,
+      request.fsmLanguage,
     );
     const route = this.actorRoutes.get(key);
     if (!route) {
@@ -179,6 +181,7 @@ export class SidecarGateway {
         fsm_type: request.fsmType,
         fsm_name: request.fsmName,
         fsm_version: request.fsmVersion,
+        fsm_language: request.fsmLanguage,
         input: request.input,
         instance_id: request.instanceId,
         correlation_id: request.correlationId,
@@ -243,6 +246,7 @@ export class SidecarGateway {
                     a.fsmType,
                     a.fsmName,
                     a.fsmVersion,
+                    a.fsmLanguage,
                   )
                 ),
                 rejected_actors: [],
@@ -331,6 +335,7 @@ export class SidecarGateway {
         meta.fsmType,
         meta.fsmName,
         meta.fsmVersion,
+        meta.fsmLanguage,
       );
       this.actorRoutes.set(key, { workerId: body.worker_id, meta });
       worker.actors.add(key);

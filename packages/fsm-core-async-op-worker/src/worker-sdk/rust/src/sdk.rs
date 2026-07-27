@@ -65,6 +65,7 @@ impl ActorWorker {
                 &reg.meta.fsm_type,
                 &reg.meta.fsm_name,
                 &reg.meta.fsm_version,
+                &reg.meta.fsm_language,
             );
             handlers.insert(key, reg.handler);
             registered.push(reg.meta);
@@ -201,6 +202,9 @@ impl ActorWorker {
             body.get("fsm_type").and_then(Value::as_str).unwrap_or(""),
             body.get("fsm_name").and_then(Value::as_str).unwrap_or(""),
             body.get("fsm_version")
+                .and_then(Value::as_str)
+                .unwrap_or(""),
+            body.get("fsm_language")
                 .and_then(Value::as_str)
                 .unwrap_or(""),
         );

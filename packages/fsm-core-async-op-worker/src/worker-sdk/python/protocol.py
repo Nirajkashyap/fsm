@@ -49,8 +49,12 @@ def actor_key(
     fsm_type: str,
     fsm_name: str,
     fsm_version: str,
+    fsm_language: str,
 ) -> str:
-    return f"{parent_fsm_name}@{parent_fsm_version}@{fsm_type}@{fsm_name}@{fsm_version}"
+    return (
+        f"{parent_fsm_name}@{parent_fsm_version}@{fsm_type}@{fsm_name}"
+        f"@{fsm_version}@{fsm_language}"
+    )
 
 
 def write_frame(sock: socket.socket, envelope: Dict[str, Any]) -> None:

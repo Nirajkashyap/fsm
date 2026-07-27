@@ -40,10 +40,11 @@ type RegisteredActor struct {
 	FsmType          string `json:"fsmType"`
 	FsmName          string `json:"fsmName"`
 	FsmVersion       string `json:"fsmVersion"`
+	FsmLanguage      string `json:"fsmLanguage"`
 }
 
-func ActorKey(parentFsmName, parentFsmVersion, fsmType, fsmName, fsmVersion string) string {
-	return fmt.Sprintf("%s@%s@%s@%s@%s", parentFsmName, parentFsmVersion, fsmType, fsmName, fsmVersion)
+func ActorKey(parentFsmName, parentFsmVersion, fsmType, fsmName, fsmVersion, fsmLanguage string) string {
+	return fmt.Sprintf("%s@%s@%s@%s@%s@%s", parentFsmName, parentFsmVersion, fsmType, fsmName, fsmVersion, fsmLanguage)
 }
 
 // A monotonic counter is enough uniqueness for envelope ids — the gateway

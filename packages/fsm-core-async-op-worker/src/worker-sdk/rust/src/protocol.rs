@@ -45,6 +45,8 @@ pub struct RegisteredActor {
     pub fsm_name: String,
     #[serde(rename = "fsmVersion")]
     pub fsm_version: String,
+    #[serde(rename = "fsmLanguage")]
+    pub fsm_language: String,
 }
 
 pub fn actor_key(
@@ -53,10 +55,11 @@ pub fn actor_key(
     fsm_type: &str,
     fsm_name: &str,
     fsm_version: &str,
+    fsm_language: &str,
 ) -> String {
     format!(
-        "{}@{}@{}@{}@{}",
-        parent_fsm_name, parent_fsm_version, fsm_type, fsm_name, fsm_version
+        "{}@{}@{}@{}@{}@{}",
+        parent_fsm_name, parent_fsm_version, fsm_type, fsm_name, fsm_version, fsm_language
     )
 }
 

@@ -48,6 +48,7 @@ pub fn static_registrations() -> Vec<ActorRegistration> {
                         fsm_type: fsm_type.to_string(),
                         fsm_name: fsm_name.to_string(),
                         fsm_version: fsm_version.to_string(),
+                        fsm_language: "rust".to_string(),
                     },
                     handler,
                 })

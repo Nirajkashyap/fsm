@@ -93,6 +93,7 @@ export async function startActivityGatewayServer(
             fsm_type: string;
             fsm_name: string;
             fsm_version: string;
+            fsm_language: string;
             input_json: string;
             instance_id: string;
             correlation_id: string;
@@ -126,6 +127,7 @@ export async function startActivityGatewayServer(
               fsmType: req.fsm_type,
               fsmName: req.fsm_name,
               fsmVersion: req.fsm_version,
+              fsmLanguage: req.fsm_language,
               input: parseInput(req.input_json ?? ""),
               instanceId: req.instance_id,
               correlationId: req.correlation_id,

@@ -89,7 +89,7 @@ def main(argv: list[str]) -> int:
     for r in results:
         key = (
             f"{r.parent_fsm_name}@{r.parent_fsm_version}@{r.fsm_type}"
-            f"@{r.fsm_name}@{r.fsm_version}"
+            f"@{r.fsm_name}@{r.fsm_version}@{r.fsm_language}"
         )
         if r.is_verified:
             print(f"  + {key} ({r.fsm_module_path})")

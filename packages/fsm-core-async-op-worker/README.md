@@ -15,10 +15,13 @@ changed in the port:
   `correlation_id`) instead of the prototype's generic
   `function_name`/`payload_json`.
 - Sidecar routing key is
-  `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion`
+  `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage`
   (`sidecar/protocol.ts`'s `actorKey()`) instead of a free-form function name —
   a bare name/version pair isn't unique across FSM types/versions, so the key
-  mirrors `ActorPluginValidationResult`'s full identity.
+  mirrors `ActorPluginValidationResult`'s full identity, including `fsmLanguage`
+  (needed because the other five fields alone aren't guaranteed unique across
+  languages — two workers of different languages could otherwise register the
+  same tuple and silently overwrite each other's route).
 - Errors carry a `code`/`retriable` pair (`ActivityInvokeError`) so the
   orchestrator can distinguish retriable failures (worker unavailable, timeout)
   from actor-level errors.

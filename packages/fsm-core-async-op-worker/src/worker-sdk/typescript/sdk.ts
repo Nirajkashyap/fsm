@@ -8,9 +8,9 @@
 //   duplicate it because the gateway and each worker-sdk were separate
 //   deployable units; here they're the same monorepo package).
 // - Routes by `actorKey()`'s
-//   `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion` instead of a
-//   free-form function name, matching the activity contract this gateway
-//   speaks.
+//   `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage`
+//   instead of a free-form function name, matching the activity contract
+//   this gateway speaks.
 // - Actor discovery is validate-async-operation.ts's
 //   `validateAsyncOperationFromFoldersTypescript` (this repo's real FSM
 //   actor convention — see check_fn.ts), not a standalone directory scan.
@@ -90,6 +90,7 @@ export class ActorWorker {
           actor.fsmType,
           actor.fsmName,
           actor.fsmVersion,
+          actor.fsmLanguage,
         ),
         handler as ActorHandler,
       );
@@ -99,6 +100,7 @@ export class ActorWorker {
         fsmType: actor.fsmType,
         fsmName: actor.fsmName,
         fsmVersion: actor.fsmVersion,
+        fsmLanguage: actor.fsmLanguage,
       });
     }
 
@@ -210,6 +212,7 @@ export class ActorWorker {
       body.fsm_type,
       body.fsm_name,
       body.fsm_version,
+      body.fsm_language,
     );
     const handler = this.handlers.get(key);
     const started = performance.now();

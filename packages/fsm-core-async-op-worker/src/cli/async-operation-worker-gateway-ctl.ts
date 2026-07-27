@@ -32,6 +32,7 @@ INVOKE OPTIONS
   --fsm-type <type>              required, e.g. promise
   --fsm-name <name>              required
   --fsm-version <ver>            required
+  --fsm-language <lang>          required, e.g. typescript, python, rust, go
   --input <json>                 JSON-encoded input payload (default: null)
   --instance-id <id>             default: random UUID
   --correlation-id <id>          default: random UUID
@@ -45,7 +46,8 @@ DESCRIPTION
   A thin debug/test client for the Activity Gateway's gRPC contract
   (proto/activity-gateway.proto) — connects, calls one RPC, prints the
   result, and exits. Actor identity matches ActorPluginValidationResult /
-  sidecar/protocol.ts's actorKey(): parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion.
+  sidecar/protocol.ts's actorKey():
+  parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage.
 
 EXAMPLE
   deno run --allow-all cli/async-operation-worker-gateway-ctl.ts list
@@ -53,7 +55,7 @@ EXAMPLE
   deno run --allow-all cli/async-operation-worker-gateway-ctl.ts invoke \\
     --parent-fsm-name creditCheck --parent-fsm-version v01 \\
     --fsm-type promise --fsm-name checkBureau --fsm-version v01 \\
-    --input '{{"ssn":"123"}}'
+    --fsm-language rust --input '{{"ssn":"123"}}'
 `);
 }
 
@@ -65,6 +67,7 @@ const args = parseArgs(Deno.args, {
     "fsm-type",
     "fsm-name",
     "fsm-version",
+    "fsm-language",
     "input",
     "instance-id",
     "correlation-id",
@@ -109,6 +112,7 @@ try {
       "fsm-type",
       "fsm-name",
       "fsm-version",
+      "fsm-language",
     ] as const;
     const missing = requiredFlags.filter((key) => !args[key]);
     if (missing.length > 0) {
@@ -137,6 +141,7 @@ try {
       fsmType: args["fsm-type"]!,
       fsmName: args["fsm-name"]!,
       fsmVersion: args["fsm-version"]!,
+      fsmLanguage: args["fsm-language"]!,
       input,
       instanceId: args["instance-id"] ?? crypto.randomUUID(),
       correlationId: args["correlation-id"] ?? crypto.randomUUID(),

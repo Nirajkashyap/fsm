@@ -24,6 +24,7 @@ export interface InvokeActorRequest {
   fsmType: string;
   fsmName: string;
   fsmVersion: string;
+  fsmLanguage: string;
   input: unknown;
   instanceId: string;
   correlationId: string;
@@ -100,6 +101,7 @@ export class ActivityGatewayClient {
           fsm_type: request.fsmType,
           fsm_name: request.fsmName,
           fsm_version: request.fsmVersion,
+          fsm_language: request.fsmLanguage,
           input_json: JSON.stringify(request.input ?? null),
           instance_id: request.instanceId,
           correlation_id: request.correlationId,
