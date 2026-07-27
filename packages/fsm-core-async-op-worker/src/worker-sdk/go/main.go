@@ -8,10 +8,10 @@
 // filters to verified results, and hands them to ActorWorker — but unlike
 // the TS/Python versions, a verified result here isn't itself callable
 // (see sdk.go's package doc: Go has no dynamic-loading mechanism). So this
-// binary also matches each verified result against knownHandlers, a small
-// compile-time table of actor functions that are actually linked into this
-// binary; anything verified-but-unlinked is reported and skipped rather
-// than silently dropped.
+// binary also matches each verified result against knownHandlers
+// (registry.go), a small compile-time table of actor functions that are
+// actually linked into this binary; anything verified-but-unlinked is
+// reported and skipped rather than silently dropped.
 //
 // USAGE
 //
@@ -33,28 +33,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-
-	checkreportstable "fsm-core-example/creditcheck/v01/go/actors/checkreportstable"
 )
-
-// Compile-time registry of actor functions actually linked into this
-// binary, keyed by FsmName. This is the piece Python/TypeScript get for
-// free from dynamic imports and Go cannot: adding a new working actor here
-// means writing (or importing) a real Go function and adding an entry
-// below.
-//
-// CheckReportsTable (this repo's one real go actor, see
-// apps/fsm-core-example/fsm/creditCheck/v01/go/actors/CheckReportsTable/CheckReportsTable.go)
-// is imported via a local go.mod + replace directive (go.mod in this
-// directory) since it isn't part of this module — Go enforces exports at
-// compile time for cross-module access, so its function had to be renamed
-// from the original unexported "checkReportsTable" stub to "CheckReportsTable"
-// (the invoke id gavUnionDBActor's src in machine.ts/fsm.json/xstate-fsm.json
-// was updated to match; the other two invokes sharing the old
-// "checkReportsTable" name are typescript-language and untouched).
-var knownHandlers = map[string]ActorHandler{
-	"CheckReportsTable": checkreportstable.CheckReportsTable,
-}
 
 func printResult(result ActorPluginValidationResult, handler ActorHandler) {
 	key := fmt.Sprintf("%s@%s@%s@%s@%s", result.ParentFsmName, result.ParentFsmVersion, result.FsmType, result.FsmName, result.FsmVersion)
@@ -64,7 +43,7 @@ func printResult(result ActorPluginValidationResult, handler ActorHandler) {
 	case handler != nil:
 		fmt.Printf("  + %s (%s)\n", key, result.FsmModulePath)
 	default:
-		fmt.Printf("  ~ %s (%s): verified but no compiled-in handler registered (see knownHandlers in main.go)\n", key, result.FsmModulePath)
+		fmt.Printf("  ~ %s (%s): verified but no compiled-in handler registered (see knownHandlers in registry.go)\n", key, result.FsmModulePath)
 	}
 }
 

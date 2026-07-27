@@ -9,9 +9,10 @@
 //! the TS/Python versions, a verified result here isn't itself callable
 //! (see sdk.rs's module doc: Rust has no dynamic-loading mechanism). So
 //! this binary also matches each verified result against
-//! `known_handler()`, a small compile-time table of actor functions that
-//! are actually linked into this binary; anything verified-but-unlinked is
-//! reported and skipped rather than silently dropped.
+//! `registry::known_handler()`, a small compile-time table of actor
+//! functions that are actually linked into this binary; anything
+//! verified-but-unlinked is reported and skipped rather than silently
+//! dropped.
 //!
 //! USAGE
 //!   cargo run --release -- --folder-path <path> [options]
@@ -25,10 +26,12 @@
 //!   -h, --help                Show this help message
 
 mod protocol;
+mod registry;
 mod sdk;
 mod validate_async_operation;
 
 use protocol::RegisteredActor;
+use registry::known_handler;
 use sdk::{ActorHandler, ActorRegistration, ActorWorker, ActorWorkerOptions};
 use std::env;
 use std::process;
@@ -36,27 +39,6 @@ use std::sync::Arc;
 use validate_async_operation::{
     validate_async_operation_from_folders_rust, ActorPluginValidationResult,
 };
-
-// The real actor from apps/fsm-core-example/fsm/creditCheck/v01/rust/actors/checkBureauRust/checkBureauRust.rs,
-// included directly (no copy) via #[path] since it isn't its own crate.
-// #[allow(non_snake_case)] because the function name must match the FSM
-// actor name exactly (checkBureauRust, not check_bureau_rust) for
-// validation/lookup.
-#[allow(non_snake_case)]
-#[path = "../../../../../../apps/fsm-core-example/fsm/creditCheck/v01/rust/actors/checkBureauRust/checkBureauRust.rs"]
-mod check_bureau_rust;
-
-/// Compile-time registry of actor functions actually linked into this
-/// binary, keyed by fsm_name. This is the piece Python/TypeScript get for
-/// free from dynamic imports and Rust cannot: adding a new working actor
-/// here means writing a `#[path]` mod for it (or a normal `mod`, once it's
-/// a real crate) and adding a match arm below.
-fn known_handler(fsm_name: &str) -> Option<ActorHandler> {
-    match fsm_name {
-        "checkBureauRust" => Some(Box::new(check_bureau_rust::checkBureauRust)),
-        _ => None,
-    }
-}
 
 struct Args {
     folder_path: String,
@@ -177,7 +159,7 @@ fn print_result(result: &ActorPluginValidationResult, handler: &Option<ActorHand
         println!("  + {} ({})", key, result.fsm_module_path);
     } else {
         println!(
-            "  ~ {} ({}): verified but no compiled-in handler registered (see known_handler() in main.rs)",
+            "  ~ {} ({}): verified but no compiled-in handler registered (see known_handler() in registry.rs)",
             key, result.fsm_module_path
         );
     }

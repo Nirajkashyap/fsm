@@ -29,17 +29,21 @@ discovered from a folder at startup.
   match for `pub fn <name>(` / `pub async fn <name>(`) in-process. This part
   _is_ full parity with the TS/Python versions — folder discovery needs no
   dynamic loading, only text matching.
-- `src/main.rs` — the reference binary. `--folder-path` is required (no default
-  — pass `apps/fsm-core-example/fsm` explicitly to scan this repo's fixtures),
-  calls the validator, and matches each verified result against
-  `known_handler()` — a small compile-time table mapping `fsm_name` to an actual
-  linked-in function. Currently wires up the real `checkBureauRust` actor
+- `src/registry.rs` — `known_handler()`: the compile-time table mapping
+  `fsm_name` to an actual linked-in function. Currently wires up the real
+  `checkBureauRust` actor
   (`apps/fsm-core-example/fsm/creditCheck/v01/rust/actors/checkBureauRust/checkBureauRust.rs`),
   included directly via `#[path]` (no copy) since it isn't its own crate — its
   signature was changed from the shared `(context, event)` two-argument scaffold
   stub to a single `serde_json::Value` argument, since (unlike TS/Python, where
   the mismatch merely raises at call time) Rust would fail to _compile_ a
-  one-argument call site against a two-required-argument function.
+  one-argument call site against a two-required-argument function. Kept out of
+  `main.rs` so adding an actor (a new `#[path]` mod + match arm) doesn't churn
+  the CLI/orchestration code.
+- `src/main.rs` — the reference binary. `--folder-path` is required (no default
+  — pass `apps/fsm-core-example/fsm` explicitly to scan this repo's fixtures),
+  calls the validator, and matches each verified result against
+  `registry::known_handler()`.
 
 ## Running
 
@@ -59,7 +63,7 @@ default `--gateway-socket` matches the gateway's default sidecar socket.
 1. Write a real `fn(serde_json::Value) -> serde_json::Value` implementation
    somewhere reachable from this crate (a `#[path]` mod like `checkBureauRust`,
    or — once there's more than one — a proper local crate dependency).
-2. Add a match arm to `known_handler()` in `main.rs` keyed by the actor's
+2. Add a match arm to `known_handler()` in `registry.rs` keyed by the actor's
    `fsm_name`.
 
 There's no way to skip step 2 for a compiled language — that's the actual
