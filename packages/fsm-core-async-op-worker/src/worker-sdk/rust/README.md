@@ -40,19 +40,35 @@ discovered from a folder at startup.
   one-argument call site against a two-required-argument function. Kept out of
   `main.rs` so adding an actor (a new `#[path]` mod + match arm) doesn't churn
   the CLI/orchestration code.
-- `src/main.rs` — the reference binary. `--folder-path` is required (no default
-  — pass `apps/fsm-core-example/fsm` explicitly to scan this repo's fixtures),
-  calls the validator, and matches each verified result against
-  `registry::known_handler()`.
+- `src/static_registrations.rs` — `static_registrations()`: the alternative to
+  the folder-scan-then-match flow above — a hardcoded
+  `Vec<(parent_fsm_name, parent_fsm_version, fsm_type, fsm_name, fsm_version)>`
+  resolved directly against `registry::known_handler()`, no filesystem access at
+  all. Selected via `--registry-source static` (see below). Simpler and honest
+  that the registry is the real source of truth for a compiled language, at the
+  cost of hand-keeping the FSM identity metadata in sync instead of deriving it
+  from the real actor folder, and no visibility into actors that exist on disk
+  but aren't wired into `known_handler()` yet.
+- `src/main.rs` — the reference binary. `--registry-source folder` (the default)
+  requires `--folder-path` (pass `apps/fsm-core-example/fsm` explicitly to scan
+  this repo's fixtures) and uses `validate_async_operation.rs` + `registry.rs`
+  as described above; `--registry-source static` uses `static_registrations.rs`
+  instead and ignores `--folder-path`/`--skip-dirs` entirely.
 
 ## Running
 
-`--folder-path` is required:
+`--registry-source folder` (the default) requires `--folder-path`:
 
 ```bash
 cargo run --release -- --folder-path /abs/path/to/fsm-core-example/fsm --worker-id rust-1
 # or, with a subset:
 cargo run --release -- --folder-path /abs/path/to/fsm --skip-dirs taskMachineConfig
+```
+
+`--registry-source static` skips the folder scan — no `--folder-path` needed:
+
+```bash
+cargo run --release -- --registry-source static --worker-id rust-1
 ```
 
 Requires a running gateway (`deno task gateway` from the package root) — the
@@ -65,6 +81,8 @@ default `--gateway-socket` matches the gateway's default sidecar socket.
    or — once there's more than one — a proper local crate dependency).
 2. Add a match arm to `known_handler()` in `registry.rs` keyed by the actor's
    `fsm_name`.
+3. If you also want it available under `--registry-source static`, add its
+   identity tuple to `STATIC_ACTOR_IDENTITIES` in `static_registrations.rs`.
 
 There's no way to skip step 2 for a compiled language — that's the actual
 tradeoff of this architecture, not a gap in this SDK.
