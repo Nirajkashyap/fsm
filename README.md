@@ -347,8 +347,7 @@ full flag reference.
   [`cli-usage.md`](./packages/fsm-compiler-ts/docs/guides/cli-usage.md)
 - Worker CLI —
   [`CLI-USAGE.md`](./apps/fsm-core-worker-ts/docs/guides/CLI-USAGE.md)
-- Execution model — [`execution-model.md`](./docs/execution-model.md)
 - Worker control plane —
   [`adr-002-worker-execution-model.md`](./docs/adr/adr-002-worker-execution-model.md)
 - Polyglot direction —
-  [`kb-001-distributed-multilang-fsm.md`](./docs/kb/kb-001-distributed-multilang-fsm.md)
+  [`adr-003-polyglot-actor-execution-model.md`](./docs/adr/adr-003-polyglot-actor-execution-model.md)

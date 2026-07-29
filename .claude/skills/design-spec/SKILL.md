@@ -23,11 +23,11 @@ an area:
    designing at all.
 2. **Constraints** — Before asking, read `docs/kb/` and `docs/adr/` (including
    the per-package ADRs indexed in `docs/adr/README.md`). Present the standing
-   constraints that apply (e.g. KB-001: bounded worker fleet, connection
-   minimization, polyglot via queue) and ask what else is fixed: compatibility,
-   performance envelopes, runtimes, team capacity. If the idea conflicts with an
-   accepted ADR, surface that now — the spec must explicitly propose superseding
-   it.
+   constraints that apply (e.g. ADR-002: bounded worker fleet and dispatch
+   strategy; ADR-003: connection minimization, polyglot via queue) and ask what
+   else is fixed: compatibility, performance envelopes, runtimes, team capacity.
+   If the idea conflicts with an accepted ADR, surface that now — the spec must
+   explicitly propose superseding it.
 3. **Options** — Get to at least two real options. Propose alternatives the user
    didn't mention, including the "do nothing / smaller hammer" option. For each:
    what it is, pros, cons under the constraints.
