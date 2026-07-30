@@ -1,13 +1,13 @@
 # ADR-003: Polyglot Actor Execution Model — Activity-Tier Architecture & Compiled-Language IPC
 
-| Field      | Value                                                                                                                   |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Status     | Architecture: Current. Compiled-language IPC decision: **Decided, not yet implemented** (issue #55)                     |
-| Date       | 2026-06-13 (architecture), 2026-07-22 (compiled-language IPC decision)                                                  |
-| Deciders   | Niraj (architecture); Niraj, Claude (IPC decision)                                                                      |
-| Affects    | `apps/fsm-core-worker-ts`, `packages/fsm-compiler-ts`, `apps/fsm-core-example`                                          |
-| Supersedes | `docs/kb/kb-001-distributed-multilang-fsm.md`, `docs/specs/spec-001-compiled-lang-actor-workers.md`                     |
-| Related    | [ADR-002](adr-002-worker-execution-model.md) — orchestrator tier (this ADR is its activity-tier counterpart); Issue #55 |
+| Field      | Value                                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Status     | Architecture: Current. Compiled-language IPC decision: **Decided, not yet implemented** (issue #55)                                        |
+| Date       | 2026-06-13 (architecture), 2026-07-22 (compiled-language IPC decision)                                                                     |
+| Deciders   | Niraj (architecture); Niraj, Claude (IPC decision)                                                                                         |
+| Affects    | `apps/fsm-core-worker-ts`, `packages/fsm-compiler-ts`, `apps/fsm-core-example`                                                             |
+| Supersedes | `docs/kb/kb-001-distributed-multilang-fsm.md`, `docs/specs/spec-001-compiled-lang-actor-workers.md`                                        |
+| Related    | [ADR-002](adr-002-fsm-sync-operation-worker-execution-model.md) — orchestrator tier (this ADR is its activity-tier counterpart); Issue #55 |
 
 ---
 
