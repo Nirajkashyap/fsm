@@ -311,6 +311,14 @@ queue). No changes needed there.
 
 ## Stage 3 — Kubernetes-Style Scheduler Model (Current)
 
+> This section covers the **orchestrator tier** (FSM instances: `fsmscheduler` +
+> `fsmlet`). The same scheduler/kubelet pattern is applied a second time to the
+> **activity tier** (actors: `asyncOperationScheduler` +
+> `asyncOperationWorkerlet`) — see
+> [ADR-003](adr-003-polyglot-actor-execution-model.md) for that tier's
+> architecture, connection accounting, and the compiled-language (Rust/Go)
+> actor-execution decision.
+
 ### Motivation
 
 Stages 1 and 2 mapped to the following Kubernetes analogy:

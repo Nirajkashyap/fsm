@@ -18,9 +18,10 @@
 
 <!--
 What is fixed and non-negotiable. Check the standing constraints in docs/kb/
-(e.g. KB-001: bounded worker fleet, connection minimization, polyglot via
-queue) and accepted ADRs in docs/adr/. If this spec conflicts with an accepted
-ADR, say so here and mark the ADR as superseded-by-this-spec in the Decision.
+and accepted ADRs in docs/adr/ (e.g. ADR-002: bounded worker fleet, dispatch
+strategy; ADR-003: connection minimization, polyglot via queue). If this spec
+conflicts with an accepted ADR, say so here and mark the ADR as
+superseded-by-this-spec in the Decision.
 -->
 
 ## Options considered
