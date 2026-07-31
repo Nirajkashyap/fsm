@@ -315,9 +315,9 @@ queue). No changes needed there.
 > `fsmlet`). The same scheduler/kubelet pattern is applied a second time to the
 > **activity tier** (actors: `asyncOperationScheduler` +
 > `asyncOperationWorkerlet`) — see
-> [ADR-003](adr-003-polyglot-actor-execution-model.md) for that tier's
-> architecture, connection accounting, and the compiled-language (Rust/Go)
-> actor-execution decision.
+> [ADR-003](adr-003-fsm-async-operation-polyglot-actor-execution-model.md) for
+> that tier's architecture, connection accounting, and the compiled-language
+> (Rust/Go) actor-execution decision.
 
 ### Motivation
 
