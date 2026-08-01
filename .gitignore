@@ -55,3 +55,4 @@ Thumbs.db
 .claude/.current-session-id
 CLAUDE.local.md
 .claude/worktrees/
+.claude/worktree-cleanup.log
