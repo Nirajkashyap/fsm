@@ -45,6 +45,29 @@ managers with desktop apps. Fix it by committing from a **terminal**, or launch
 your editor from an activated shell (e.g. `code .`). Windows users installing
 via proto/rustup get the shims on the user `PATH` automatically.
 
+### Optional: automatic worktree cleanup
+
+`AGENTS.md` has agents (and you, if you pair with one) create a git worktree per
+issue under `.claude/worktrees/`. These accumulate over time as PRs merge, and
+cleaning them up by hand is easy to forget. If you'd rather it happen
+automatically:
+
+```bash
+.claude/scripts/install-fsm-worktree-cleanup.sh
+```
+
+This registers a job that runs every ~2 days (`launchd` on macOS, `crontab` on
+Linux) and, for each worktree, checks its branch's PR: if merged, it removes the
+worktree and deletes the local branch — **it never deletes the remote branch**,
+matching the cleanup policy in `AGENTS.md`. Worktrees with uncommitted or
+unpushed changes are left alone. Logs go to `.claude/worktree-cleanup.log`
+(git-ignored).
+
+On Windows, run the installer inside WSL (with `git`/`gh` installed and
+authenticated there) — see the comment at the top of the script for the Task
+Scheduler + WSL setup. This step is entirely optional; skip it if you'd rather
+clean up worktrees manually.
+
 ### Running the project
 
 ```bash
