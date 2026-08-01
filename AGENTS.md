@@ -157,11 +157,14 @@ coordination as always-on.
 - **One worktree per session, reused across issues.** If a session pivots to a
   second issue, reuse the same worktree — `git checkout -b` the new issue's
   branch inside it — rather than adding another worktree directory.
-- **Clean up after merge.** Once an issue's PR merges, remove its worktree and
-  delete the local branch:
+- **Clean up after merge, but never delete the remote branch.** Once an issue's
+  PR merges, remove its worktree and delete the local branch:
   `git worktree remove .claude/worktrees/<type>-<issue-number>` then
   `git branch -d <type>/<issue-number>-short-slug`. Don't remove a worktree that
-  still has uncommitted or unpushed changes.
+  still has uncommitted or unpushed changes. Do not delete the remote branch
+  (`git push origin --delete ...`, GitHub's "Delete branch" button, or
+  `gh pr merge --delete-branch`), even though the PR is merged — that's the
+  user's call, not the agent's.
 - **Guard against worktree sprawl.** Before creating a new worktree, run
   `git worktree list`. If it already has more than 7 entries under
   `.claude/worktrees/`, scan each one's PR before adding another:
