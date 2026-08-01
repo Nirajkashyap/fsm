@@ -1,5 +1,5 @@
 {
-  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
   "deno.path": "/Users/niraj/.proto/shims/deno",
   "deno.enable": true,
   "deno.test": true,
@@ -19,8 +19,8 @@
   "deno.codeLens.references": true,
   "deno.codeLens.referencesAllFunctions": true,
 
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.reportStyleChecksAsWarnings": false, // used to throw errors instead of warnings
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "js/ts.reportStyleChecksAsWarnings": false, // used to throw errors instead of warnings
 
   "chat.promptFiles": true,
   "chat.promptFilesLocations": {
@@ -34,5 +34,10 @@
   },
   "github.copilot.chat.codeGeneration.useInstructionFiles": true,
   "pgsql.copilot.enable": true,
-  "claudeCode.useTerminal": true
+  "claudeCode.useTerminal": true,
+  "git.detectWorktrees": true,
+  "git.repositoryScanMaxDepth": 3,
+  "rust-analyzer.linkedProjects": [
+    "packages/database-src-extension/fsm_core/Cargo.toml"
+  ]
 }
