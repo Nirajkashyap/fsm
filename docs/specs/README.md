@@ -36,7 +36,13 @@ Flow:
 
 ## Index
 
-_No specs currently in Draft/Accepted status. SPEC-001 (Polyglot Actor Workers
-for Compiled Languages via Local IPC) graduated directly to
+| Spec                                                                 | Title                                                    | Status |
+| -------------------------------------------------------------------- | -------------------------------------------------------- | ------ |
+| [SPEC-002](spec-002-fsm-compiler-node-portable-generate-scaffold.md) | Node-Portable Generate/Scaffold Path for fsm-compiler-ts | Draft  |
+
+_SPEC-001 (Polyglot Actor Workers for Compiled Languages via Local IPC,
+`docs/specs/spec-001-compiled-lang-actor-workers.md`) graduated directly to
 [ADR-003](../adr/adr-003-fsm-async-operation-polyglot-actor-execution-model.md)
-— see that ADR's "Supersedes" field._
+and was deleted from this directory — see that ADR's "Supersedes" field and
+commit `e1abc8b`. That number (001) is retired, not reusable; numbering here
+starts at 002._
