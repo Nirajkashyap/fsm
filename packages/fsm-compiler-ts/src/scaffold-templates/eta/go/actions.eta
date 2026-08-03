@@ -1,0 +1,5 @@
+// <%~ it.label %>: <%~ it.name %>
+func <%~ it.fnName %>(context map[string]any, event map[string]any) {
+	// <%~ it.todo %>
+}
+

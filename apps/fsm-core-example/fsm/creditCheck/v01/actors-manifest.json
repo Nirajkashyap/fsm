@@ -1,0 +1,44 @@
+{
+  "actors": [
+    {
+      "src": "verifyCredentials",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/verifyCredentials/verifyCredentials.ts"
+    },
+    {
+      "src": "checkReportsTable",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/checkReportsTable/checkReportsTable.ts"
+    },
+    {
+      "src": "checkBureau",
+      "fsmLanguage": "rust",
+      "filePath": "rust/actors/checkBureau/checkBureau.rs"
+    },
+    {
+      "src": "checkReportsTable",
+      "fsmLanguage": "go",
+      "filePath": "go/actors/checkReportsTable/checkReportsTable.go"
+    },
+    {
+      "src": "checkBureau",
+      "fsmLanguage": "python",
+      "filePath": "python/actors/checkBureau/checkBureau.py"
+    },
+    {
+      "src": "checkBureau",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/checkBureau/checkBureau.ts"
+    },
+    {
+      "src": "determineMiddleScore",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/determineMiddleScore/determineMiddleScore.ts"
+    },
+    {
+      "src": "generateInterestRates",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/generateInterestRates/generateInterestRates.ts"
+    }
+  ]
+}
