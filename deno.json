@@ -3,10 +3,11 @@
     "apps/fsm-core-example",
     "packages/fsm-logging-ts",
     "packages/fsm-core-db-ts",
-    "apps/fsm-core-worker-ts",
     "apps/fsm-core-ts-hono-deno",
     "packages/fsm-compiler-ts",
-    "packages/database-src"
+    "packages/database-src",
+    "packages/fsm-sync-worker-ts",
+    "packages/fsm-async-worker-ts"
   ],
   "fmt": {
     "exclude": [

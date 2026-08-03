@@ -11,12 +11,7 @@ export {
   splitByEventTypes,
   splitBySendEventName,
 } from "./fsmlet/fsmworker-helper.ts";
-export { startFSMPromiseWorker } from "./asyncOperationWorkerlet/fsmpromiseworker.ts";
 export { createAndStartPromiseWorker } from "./deprecated-inprocess-approach/create-and-start-promise-worker.ts";
-export {
-  type FSMPromiseArchiveData,
-  processFSMPromiseQueueMessage,
-} from "./asyncOperationWorkerlet/fsmpromiseworker-helper.ts";
 export type {
   BootstrapResult,
   DbConfig,
@@ -35,20 +30,6 @@ export {
   scheduleNextPending,
   SCHEDULER_NOTIFY_CHANNEL,
 } from "./fsmscheduler/fsmscheduler.ts";
-export {
-  ASYNC_OPERATION_SCHEDULER_NOTIFY_CHANNEL,
-  asyncOperationScheduleNextPending,
-  runAsyncOperationScheduler,
-} from "./asyncOperationScheduler/asyncOperationScheduler.ts";
-export type { AsyncOperationSchedulerOptions } from "./asyncOperationScheduler/asyncOperationScheduler.ts";
-export {
-  runAsyncOperationWorkerlet,
-  startAsyncOperationWorkerlet,
-} from "./asyncOperationWorkerlet/asyncOperationWorkerlet.ts";
-export type {
-  AsyncOperationWorkerletHandle,
-  AsyncOperationWorkerletOptions,
-} from "./asyncOperationWorkerlet/asyncOperationWorkerlet.ts";
 export {
   deregisterFsmlet,
   fsmletHeartbeat,

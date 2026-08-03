@@ -1,6 +1,6 @@
 import { cors } from "hono/cors";
 import { getLogger } from "@logtape/logtape";
-import { startFsmlet } from "@pgfsm/worker";
+import { startFsmlet } from "@pgfsm/sync-worker";
 import { activeWorkers } from "../routes/fsm/fsm.handlers.inprocess.ts";
 
 export type { FsmFolderConfig, FsmStartupConfig } from "./types.ts";

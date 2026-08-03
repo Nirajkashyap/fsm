@@ -39,14 +39,15 @@ or in workflows.
 ```
 apps/
   fsm-core-ts-hono-deno/   # Main REST API (Hono + Deno) — see CLAUDE.md
-  fsm-core-worker-ts/      # Worker fleet: fsmlet/fsmscheduler dispatch-queue CLIs — see CLAUDE.md
   fsm-core-example/        # Example FSM definitions, polyglot actors (TS/Python/Rust/Go) — see CLAUDE.md
 packages/
-  database-src/            # PostgreSQL migrations + Supabase config — see CLAUDE.md
-  database-src-extension/  # Rust PostgreSQL extension (pgrx) using ltree + pgmq
-  fsm-compiler-ts/         # JSON → database object compiler (TypeScript) — see CLAUDE.md
-  fsm-core-db-ts/          # Raw pg client helpers (TypeScript) — see CLAUDE.md
-  fsm-logging-ts/          # Shared LogTape logging config, @pgfsm/logging — see CLAUDE.md
+  database-src/           # PostgreSQL migrations + Supabase config — see CLAUDE.md
+  database-src-extension/ # Rust PostgreSQL extension (pgrx) using ltree + pgmq
+  fsm-compiler-ts/        # JSON → database object compiler (TypeScript) — see CLAUDE.md
+  fsm-core-db-ts/         # Raw pg client helpers (TypeScript) — see CLAUDE.md
+  fsm-sync-worker-ts/     # Worker fleet: fsmlet/fsmscheduler dispatch-queue CLIs — see CLAUDE.md
+  fsm-async-worker-ts/    # Worker fleet: async-operation-workerlet/scheduler dispatch-queue CLIs — see CLAUDE.md
+  fsm-logging-ts/         # Shared LogTape logging config, @pgfsm/logging — see CLAUDE.md
 ```
 
 Each linked subdirectory has its own `CLAUDE.md` with commands, file structure,

@@ -7,7 +7,7 @@ import { machineWithProvider } from "./machine-with-provider.ts";
 import {
   createAndStartFSMWorker,
   createAndStartPromiseWorker,
-} from "@pgfsm/worker";
+} from "@pgfsm/sync-worker";
 import {
   getFsmDataResolveStateValue,
   sendEventToFsmQueueWithEventLogs,
