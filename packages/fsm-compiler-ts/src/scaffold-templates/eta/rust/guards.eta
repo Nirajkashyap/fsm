@@ -1,4 +1,5 @@
 // <%~ it.label %>: <%~ it.name %>
+#[allow(non_snake_case)]
 pub fn <%~ it.fnName %>(context: &serde_json::Value, event: &serde_json::Value) -> bool {
     // <%~ it.todo %>
     true

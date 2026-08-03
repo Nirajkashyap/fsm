@@ -218,7 +218,7 @@ function actorsBarrelEntry(
     case "python":
       return `from .${fileBaseName}.${fileBaseName} import ${src}`;
     case "rust":
-      return `#[path = "${fileBaseName}/${fileBaseName}.rs"]\nmod ${fileBaseName};\npub use ${fileBaseName}::${src};`;
+      return `#[path = "${fileBaseName}/${fileBaseName}.rs"]\n#[allow(non_snake_case)]\nmod ${fileBaseName};\npub use ${fileBaseName}::${src};`;
   }
 }
 
