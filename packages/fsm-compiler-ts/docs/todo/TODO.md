@@ -10,9 +10,9 @@ Gaps tracked against the compiler PRDs in [`../prd/`](../prd/):
 
 Scaffolding is split into two commands/modules: `generate-async-logic`
 (`src/generate-async-operation-logic.ts`) for actors, and `generate-sync-logic`
-(`src/generate-sync-operation-logic.ts`) for actions/guards/delays. Shared
-language templates + the folder walker live in
-`src/operation-logic-scaffold.ts`.
+(`src/generate-sync-operation-logic.ts`) for actions/guards/delays. The folder
+walker lives in `src/operation-logic-scaffold.ts`; per-language stub templates
+live in `src/scaffold-templates/`.
 
 ## Design FSM JSON schema (PRD-001)
 

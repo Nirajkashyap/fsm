@@ -1,0 +1,6 @@
+// <%~ it.label %>: <%~ it.name %>
+pub fn <%~ it.fnName %>(context: &serde_json::Value, event: &serde_json::Value) -> bool {
+    // <%~ it.todo %>
+    true
+}
+

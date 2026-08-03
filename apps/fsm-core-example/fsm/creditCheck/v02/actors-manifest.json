@@ -1,0 +1,39 @@
+{
+  "actors": [
+    {
+      "src": "fetchInterestRateOptions",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/fetchInterestRateOptions/fetchInterestRateOptions.ts"
+    },
+    {
+      "src": "verifyCredentials",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/verifyCredentials/verifyCredentials.ts"
+    },
+    {
+      "src": "CheckingCreditScores3parallel",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/CheckingCreditScores3parallel/CheckingCreditScores3parallel.ts"
+    },
+    {
+      "src": "checkReportsTable",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/checkReportsTable/checkReportsTable.ts"
+    },
+    {
+      "src": "checkBureau",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/checkBureau/checkBureau.ts"
+    },
+    {
+      "src": "determineMiddleScore",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/determineMiddleScore/determineMiddleScore.ts"
+    },
+    {
+      "src": "generateInterestRates",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/generateInterestRates/generateInterestRates.ts"
+    }
+  ]
+}
