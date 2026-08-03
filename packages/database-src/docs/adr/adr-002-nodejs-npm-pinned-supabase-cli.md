@@ -7,12 +7,12 @@
 ## Context
 
 Every other Deno-capable package in this monorepo runs on Deno
-(`apps/fsm-core-ts-hono-deno`, `apps/fsm-core-worker-ts`,
-`packages/fsm-core-db-ts`, `packages/fsm-compiler-ts`,
-`packages/fsm-logging-ts`). `packages/database-src` is the one exception: it's
-pinned to Node 22.16.0 via its own `.prototools` and driven entirely by npm
-(`package.json` + `package-lock.json`), as already noted in the root
-`CLAUDE.md`.
+(`apps/fsm-core-ts-hono-deno`, `packages/fsm-sync-worker-ts`,
+`packages/fsm-async-worker-ts`, `packages/fsm-core-db-ts`,
+`packages/fsm-compiler-ts`, `packages/fsm-logging-ts`). `packages/database-src`
+is the one exception: it's pinned to Node 22.16.0 via its own `.prototools` and
+driven entirely by npm (`package.json` + `package-lock.json`), as already noted
+in the root `CLAUDE.md`.
 
 The reason is the Supabase CLI. Local Supabase dev (`supabase start`/`stop`,
 `supabase db diff`, `supabase gen types`) and PGXN packaging all depend on the

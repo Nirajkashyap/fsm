@@ -7,7 +7,7 @@ import machineConfig from "./machine.ts";
 import {
   createAndStartFSMWorker,
   startFSMWorkerWithDBLock,
-} from "@pgfsm/worker";
+} from "@pgfsm/sync-worker";
 import {
   createFsmInstanceFromName,
   getFsmDataResolveStateValue,

@@ -1,11 +1,11 @@
-# ADR-001: FSM Worker Execution Model Evolution
+# ADR-002: FSM Worker Execution Model Evolution
 
-| Field    | Value                                                                            |
-| -------- | -------------------------------------------------------------------------------- |
-| Status   | Current (Stage 3 is active)                                                      |
-| Date     | 2026-06-30                                                                       |
-| Deciders | Niraj                                                                            |
-| Affects  | `apps/fsm-core-worker-ts`, `apps/fsm-core-ts-hono-deno`, `packages/database-src` |
+| Field    | Value                                                                                |
+| -------- | ------------------------------------------------------------------------------------ |
+| Status   | Current (Stage 3 is active)                                                          |
+| Date     | 2026-06-30                                                                           |
+| Deciders | Niraj                                                                                |
+| Affects  | `packages/fsm-sync-worker-ts`, `apps/fsm-core-ts-hono-deno`, `packages/database-src` |
 
 ---
 
@@ -225,8 +225,8 @@ SELECT pgmq.drop_queue('master_worker_dispatch_queue_resume');
 ```
 
 **B. Daemon constants — single queue
-(`apps/fsm-core-worker-ts/src/run-fsm-dispatch-daemon.ts` or new experimental
-file)**
+(`packages/fsm-sync-worker-ts/src/run-fsm-dispatch-daemon.ts` or new
+experimental file)**
 
 Remove the two queue constants and replace with one:
 

@@ -5,7 +5,8 @@ on:
     tags:
       - "compiler-v[0-9]*"
       - "db-v[0-9]*"
-      - "worker-v[0-9]*"
+      - "sync-worker-v[0-9]*"
+      - "async-worker-v[0-9]*"
   workflow_dispatch:
     inputs:
       package:
@@ -15,7 +16,8 @@ on:
         options:
           - compiler
           - db
-          - worker
+          - sync-worker
+          - async-worker
           - all
 
 jobs:
@@ -32,9 +34,12 @@ jobs:
           - id: db
             path: packages/fsm-core-db-ts
             tag_prefix: db-v
-          - id: worker
-            path: apps/fsm-core-worker-ts
-            tag_prefix: worker-v
+          - id: sync-worker
+            path: packages/fsm-sync-worker-ts
+            tag_prefix: sync-worker-v
+          - id: async-worker
+            path: packages/fsm-async-worker-ts
+            tag_prefix: async-worker-v
 
     steps:
       - name: Gate — decide if this package should publish

@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { Pool } from "pg";
 import { getLogger } from "@logtape/logtape";
 import { table } from "@pgfsm/logging";
-import { configureWorkerLogger } from "../logger.ts";
+import { configureAsyncWorkerLogger } from "../logger.ts";
 import {
   createAsyncOperationInstanceAndNotifyAsyncOperationSchedulerWork,
   listAsyncOperationInstances,
@@ -11,7 +11,7 @@ import {
 } from "@pgfsm/db";
 
 const logger = getLogger(["@pgfsm/worker", "async-operation-ctl"]);
-await configureWorkerLogger();
+await configureAsyncWorkerLogger();
 
 const args = parseArgs(Deno.args, {
   string: [

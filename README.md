@@ -199,7 +199,7 @@ identical; only the tables and per-language execution differ.
 | Behaviour                   | Compile-time — Go and Rust don't support dynamic import, so actor modules are resolved ahead of time rather than loaded dynamically                                                                                                                                    | Runtime — TypeScript only, and TypeScript supports dynamic import                                                                                                                                                                                        |
 | Worker Arch components      | `lang ipc workers`, `ipc worker gateway multi queue poller`                                                                                                                                                                                                            | `fsmlet` (kubelet), `fsm Scheduler` (kube Scheduler), `fsmctl` (kubectl)                                                                                                                                                                                 |
 | Worker Arch ADR             | [ADR-003](./docs/adr/adr-003-fsm-async-operation-polyglot-actor-execution-model.md)                                                                                                                                                                                    | [ADR-002](./docs/adr/adr-002-fsm-sync-operation-worker-execution-model.md)                                                                                                                                                                               |
-| Node-agent CLI              | `apps/fsm-core-worker-ts/src/cli/async-operation-workerlet.ts`                                                                                                                                                                                                         | `apps/fsm-core-worker-ts/src/cli/fsmlet.ts`                                                                                                                                                                                                              |
+| Node-agent CLI              | `packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts`                                                                                                                                                                                                    | `packages/fsm-sync-worker-ts/src/cli/fsmlet.ts`                                                                                                                                                                                                          |
 | On startup, validates       | None — compile-time model follows a different approach: each lang IPC worker starts and registers its fns with the IPC lang worker gateway, which updates PostgreSQL                                                                                                   | `validateSyncOperationFromFolders` — TypeScript only, workflow type hardcoded to `"fsm"`                                                                                                                                                                 |
 | Cross-checks the other side | Not required — doesn't follow `validateAsyncOperationFromFolders`, follows the lang IPC worker path instead                                                                                                                                                            | `validateSyncOperationFromFolders` using the parameter passed from `fsmlet` via the `asyncOperationVerificationMode` argument (`checkRegistry` / `checkRegistryAndWorking`, via `checkRegistryForAsyncActors` / `checkRegistryAndWorkingForAsyncActors`) |
 | On startup, loads           | Each verified actor into `async_operation_meta` via `load_async_operation_meta_v2` (Note: this may change)                                                                                                                                                             | `fsm.json` into PostgreSQL via `loadFsmFromJson` → `load_fsm_from_json_v2`                                                                                                                                                                               |
@@ -214,7 +214,7 @@ identical; only the tables and per-language execution differ.
 
 ```bash
 # Node agent — validates, loads actor metadata, registers, then waits for work
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/async-operation-workerlet.ts \
+deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts \
   -f /abs/path/to/apps/fsm-core-example/fsm \
   -l typescript,python     # runtime languages to validate/activate (required)
   -t promise                # workflow type: promise | sharedPromise (default promise)
@@ -227,7 +227,7 @@ deno run --allow-all apps/fsm-core-worker-ts/src/cli/async-operation-workerlet.t
 
 ```bash
 # Node agent — validates, loads fsm.json, registers, then waits for work
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/fsmlet.ts \
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmlet.ts \
   -f /abs/path/to/apps/fsm-core-example/fsm \
   -m 8                     # max FSM instances driven concurrently (default 8)
   # -i <fsmlet-id>         # stable identity (default: random UUID per startup)
@@ -236,8 +236,10 @@ deno run --allow-all apps/fsm-core-worker-ts/src/cli/fsmlet.ts \
 
 Both node agents need their companion scheduler running somewhere in the cluster
 to ever receive claimed work — see [section 5](#5-start-the-schedulers). See
-[`CLI-USAGE.md`](./apps/fsm-core-worker-ts/docs/guides/CLI-USAGE.md) for the
-full flag reference and startup sequence.
+[`CLI-USAGE.md`](./packages/fsm-async-worker-ts/docs/guides/CLI-USAGE.md)
+(async-operation-workerlet) and
+[`CLI-USAGE.md`](./packages/fsm-sync-worker-ts/docs/guides/CLI-USAGE.md)
+(fsmlet) for the full flag reference and startup sequence.
 
 ---
 
@@ -253,7 +255,7 @@ after a `LISTEN` connection drop.
 
 | Info                    | Async-Operation Scheduler                                                              | FSM Scheduler                                                                |
 | ----------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| CLI                     | `apps/fsm-core-worker-ts/src/cli/async-operation-scheduler.ts`                         | `apps/fsm-core-worker-ts/src/cli/fsmscheduler.ts`                            |
+| CLI                     | `packages/fsm-async-worker-ts/src/cli/async-operation-scheduler.ts`                    | `packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts`                        |
 | Routes work for         | `asyncOperationWorkerlet` node agents                                                  | `fsmlet` node agents                                                         |
 | Listens on              | `async_operation_scheduler_work`                                                       | `fsm_scheduler_work`                                                         |
 | Dispatch table          | `async_operation_instance_and_async_operation_workerlet`                               | `fsm_dispatch_queue`                                                         |
@@ -266,7 +268,7 @@ after a `LISTEN` connection drop.
 ### Start the async-operation scheduler
 
 ```bash
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/async-operation-scheduler.ts
+deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-scheduler.ts
   # -d <db-url>             # overrides DATABASE_URL
   # -p <poll-interval-ms>   # fallback poll interval (default 30000)
   # -s <stale-threshold-s>  # seconds before a workerlet is considered dead (default 30)
@@ -275,7 +277,7 @@ deno run --allow-all apps/fsm-core-worker-ts/src/cli/async-operation-scheduler.t
 ### Start the FSM scheduler
 
 ```bash
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/fsmscheduler.ts
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts
   # -d <db-url>             # overrides DATABASE_URL
   # -p <poll-interval-ms>   # fallback poll interval (default 30000)
   # -s <stale-threshold-s>  # seconds before a fsmlet is considered dead (default 30)
@@ -292,7 +294,7 @@ against PostgreSQL and exit; they don't validate, register, or listen for work.
 | Info                  | `fsmctl`                                                                                                           | `async-operation-ctl`                                                                                                                                       |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Controls              | FSM instances — the dispatch-queue model driven by the `fsmscheduler`/`fsmlet` pair                                | Async-operation instances — the dispatch tables driven by the async-operation scheduler/workerlet pair                                                      |
-| CLI                   | `apps/fsm-core-worker-ts/src/cli/fsmctl.ts`                                                                        | `apps/fsm-core-worker-ts/src/cli/async-operation-ctl.ts`                                                                                                    |
+| CLI                   | `packages/fsm-sync-worker-ts/src/cli/fsmctl.ts`                                                                    | `packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts`                                                                                               |
 | Commands              | `create`, `resume`, `send`, `stop`                                                                                 | `list-instances`, `list-meta`, `dispatch`                                                                                                                   |
 | `create` / `dispatch` | Creates a new FSM instance, its pgmq queue, sends `initialTransition_event`, and enqueues to `fsm_dispatch_queue`  | Creates a new async-operation instance and calls `createAsyncOperationInstanceAndNotifyAsyncOperationSchedulerWork` to notify the async-operation scheduler |
 | `resume`              | Re-enqueues an existing FSM instance to the `fsmscheduler` via `resumeEventForFsmWorker`                           | — (no equivalent)                                                                                                                                           |
@@ -305,22 +307,24 @@ against PostgreSQL and exit; they don't validate, register, or listen for work.
 
 ```bash
 # fsmctl
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/fsmctl.ts -c create -n creditCheck -v 1
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/fsmctl.ts -c resume -q <instance-uuid>
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/fsmctl.ts -c send -q <instance-uuid> -e APPROVE
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/fsmctl.ts -c stop -q <instance-uuid>
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmctl.ts -c create -n creditCheck -v 1
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmctl.ts -c resume -q <instance-uuid>
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmctl.ts -c send -q <instance-uuid> -e APPROVE
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmctl.ts -c stop -q <instance-uuid>
 
 # async-operation-ctl
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/async-operation-ctl.ts -c list-instances
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/async-operation-ctl.ts -c list-meta
-deno run --allow-all apps/fsm-core-worker-ts/src/cli/async-operation-ctl.ts -c dispatch \
+deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts -c list-instances
+deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts -c list-meta
+deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts -c dispatch \
   -n checkBureau -v 1 -t promise \
   --parent-fsm-name creditCheck --parent-fsm-version 1 \
   -l typescript
 ```
 
-See [`CLI-USAGE.md`](./apps/fsm-core-worker-ts/docs/guides/CLI-USAGE.md) for the
-full flag reference.
+See [`CLI-USAGE.md`](./packages/fsm-sync-worker-ts/docs/guides/CLI-USAGE.md)
+(fsmctl) and
+[`CLI-USAGE.md`](./packages/fsm-async-worker-ts/docs/guides/CLI-USAGE.md)
+(async-operation-ctl) for the full flag reference.
 
 ---
 
@@ -328,7 +332,7 @@ full flag reference.
 
 | Design term (this spec)                     | Today's implementation                                                                                                                                                                                | Status                                                          |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `asyncOperationWorkerlet`                   | `apps/fsm-core-worker-ts/src/asyncOperationWorkerlet/asyncOperationWorkerlet.ts`, CLI `async-operation-workerlet.ts`                                                                                  | ✅ Shipped                                                      |
+| `asyncOperationWorkerlet`                   | `packages/fsm-async-worker-ts/src/asyncOperationWorkerlet/asyncOperationWorkerlet.ts`, CLI `async-operation-workerlet.ts`                                                                             | ✅ Shipped                                                      |
 | `async_operation_meta` (actor registry)     | `async_operation_meta` table, loaded via `loadAsyncOperation` → `load_async_operation_meta_v2`                                                                                                        | ✅ Shipped                                                      |
 | `async_operation_workerlet` (node registry) | `async_operation_workerlet` table — `registerAsyncOperationWorkerlet` / `asyncOperationWorkerletHeartbeat` / `deregisterAsyncOperationWorkerlet`                                                      | ✅ Shipped                                                      |
 | `lang` arg / `fsmLanguage` routing          | `generate-sync-logic --lang`; `generate-async-logic` (by `fsmLanguage`); `validate-async-operation --lang`; `async-operation-workerlet -l`; ts/python/rust/go                                         | ✅ Shipped (scaffold/validate) — 🔭 Planned (Go/Rust execution) |
@@ -336,20 +340,22 @@ full flag reference.
 | sync op scaffolding (actions/…)             | `generate-sync-logic --lang` command (`generate-sync-operation-logic.ts`)                                                                                                                             | ✅ Shipped                                                      |
 | validate `fsm.json` + operation logic       | `validate-sync-operation-logic.ts`, `validate-async-operation-logic-v2.ts`                                                                                                                            | ✅ Shipped                                                      |
 | load `fsm.json`                             | `load-fsm-json.ts` (`loadFsmJSONFromFolders`); `loadFsmFromJson` → `load_fsm_from_json_v2`                                                                                                            | ✅ Shipped                                                      |
-| `fsmlet`, `registerFsmlet`, loop            | `apps/fsm-core-worker-ts/src/fsmlet/fsmlet.ts`, `packages/fsm-core-db-ts/src/fsm-workerlet.ts` (`fsm_workerlet` table)                                                                                | ✅ Shipped                                                      |
+| `fsmlet`, `registerFsmlet`, loop            | `packages/fsm-sync-worker-ts/src/fsmlet/fsmlet.ts`, `packages/fsm-core-db-ts/src/fsm-workerlet.ts` (`fsm_workerlet` table)                                                                            | ✅ Shipped                                                      |
 | heartbeat (5s)                              | `fsmletHeartbeat` / `asyncOperationWorkerletHeartbeat` (`HEARTBEAT_INTERVAL_MS = 5_000`)                                                                                                              | ✅ Shipped                                                      |
 | scheduler / dispatch (FSM)                  | `fsmscheduler.ts`, `schedule_next_pending`, `enqueue_fsm_dispatch_v2`, `fsm_dispatch_queue`                                                                                                           | ✅ Shipped                                                      |
 | scheduler / dispatch (async operation)      | `async-operation-scheduler.ts`, `async_operation_schedule_next_pending`, `createAsyncOperationInstanceAndNotifyAsyncOperationSchedulerWork`, `async_operation_instance_and_async_operation_workerlet` | ✅ Shipped                                                      |
 | fsmlet ↔ async-actor liveness check         | `asyncOperationVerificationMode` (`checkRegistryForAsyncActors` / `checkRegistryAndWorkingForAsyncActors`) — library option, not exposed as an `fsmlet` CLI flag                                      | ⚠️ Shipped, not wired to CLI                                    |
-| `fsmctl` (control CLI)                      | `apps/fsm-core-worker-ts/src/cli/fsmctl.ts` — `create` / `resume` / `send` / `stop`                                                                                                                   | ✅ Shipped                                                      |
-| `async-operation-ctl` (control CLI)         | `apps/fsm-core-worker-ts/src/cli/async-operation-ctl.ts` — `list-instances` / `list-meta` / `dispatch`                                                                                                | ✅ Shipped                                                      |
+| `fsmctl` (control CLI)                      | `packages/fsm-sync-worker-ts/src/cli/fsmctl.ts` — `create` / `resume` / `send` / `stop`                                                                                                               | ✅ Shipped                                                      |
+| `async-operation-ctl` (control CLI)         | `packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts` — `list-instances` / `list-meta` / `dispatch`                                                                                           | ✅ Shipped                                                      |
 
 ## References
 
 - Compiler CLI —
   [`cli-usage.md`](./packages/fsm-compiler-ts/docs/guides/cli-usage.md)
-- Worker CLI —
-  [`CLI-USAGE.md`](./apps/fsm-core-worker-ts/docs/guides/CLI-USAGE.md)
+- Sync worker CLI —
+  [`CLI-USAGE.md`](./packages/fsm-sync-worker-ts/docs/guides/CLI-USAGE.md)
+- Async worker CLI —
+  [`CLI-USAGE.md`](./packages/fsm-async-worker-ts/docs/guides/CLI-USAGE.md)
 - Worker control plane —
   [`adr-002-fsm-sync-operation-worker-execution-model.md`](./docs/adr/adr-002-fsm-sync-operation-worker-execution-model.md)
 - Polyglot direction —

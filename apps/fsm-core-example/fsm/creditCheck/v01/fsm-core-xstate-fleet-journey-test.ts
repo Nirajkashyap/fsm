@@ -4,16 +4,13 @@ import { assertEquals } from "@std/assert";
 import { Pool } from "pg";
 
 import { machineWithProvider } from "./machine-with-provider.ts";
+import { runFsmScheduler, startFsmlet } from "@pgfsm/sync-worker";
+import type { FsmletHandle } from "@pgfsm/sync-worker";
 import {
   runAsyncOperationScheduler,
-  runFsmScheduler,
   startAsyncOperationWorkerlet,
-  startFsmlet,
-} from "@pgfsm/worker";
-import type {
-  AsyncOperationWorkerletHandle,
-  FsmletHandle,
-} from "@pgfsm/worker";
+} from "@pgfsm/async-worker";
+import type { AsyncOperationWorkerletHandle } from "@pgfsm/async-worker";
 import {
   createAsyncOperationInstanceAndNotifyAsyncOperationSchedulerWork,
   createFsmInstanceFromName,

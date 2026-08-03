@@ -8,7 +8,7 @@ const logger = getLogger(["@pgfsm/api", "fsmpromise"]);
 import type { ListRoute, ResumeRoute, StopRoute } from "./fsmpromise.routes.ts";
 import { getSupabase } from "../../middlewares/supabase.ts";
 
-import { startFSMPromiseWorker } from "@pgfsm/worker";
+import { startFSMPromiseWorker } from "@pgfsm/async-worker";
 import { pgmqQueueExists } from "@pgfsm/db";
 
 // lock=true: worker running. lock=false: stop requested, worker finishing current iteration.

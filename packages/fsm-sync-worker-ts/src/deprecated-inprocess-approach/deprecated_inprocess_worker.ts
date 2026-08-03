@@ -7,10 +7,10 @@ import {
   bootstrapFsmModules,
   createAndStartFSMWorker,
   createAndStartPromiseWorker,
-  startFSMPromiseWorker,
   startFSMWorkerWithDBLock,
 } from "../index.ts";
 import type { FsmStartupConfig, FsmWorkerEntry } from "../index.ts";
+import { startFSMPromiseWorker } from "@pgfsm/async-worker";
 import { stopEventForFsmWorker } from "@pgfsm/db";
 
 // Sets up a single shared LISTEN connection for the app's lifetime.

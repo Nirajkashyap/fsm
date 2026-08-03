@@ -1,12 +1,12 @@
 import { parseArgs } from "@std/cli/parse-args";
 import dotenv from "dotenv";
 import { getLogger } from "@logtape/logtape";
-import { configureWorkerLogger } from "../logger.ts";
+import { configureAsyncWorkerLogger } from "../logger.ts";
 import { runAsyncOperationWorkerlet } from "../asyncOperationWorkerlet/asyncOperationWorkerlet.ts";
 import type { OperationLang, WorkflowType } from "@pgfsm/compiler";
 
 const logger = getLogger(["@pgfsm/worker", "async-op-workerlet", "cli"]);
-await configureWorkerLogger();
+await configureAsyncWorkerLogger();
 
 const args = parseArgs(Deno.args, {
   string: [

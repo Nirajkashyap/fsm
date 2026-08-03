@@ -1,12 +1,12 @@
 import { parseArgs } from "@std/cli/parse-args";
 import dotenv from "dotenv";
 import { getLogger } from "@logtape/logtape";
-import { configureWorkerLogger } from "../logger.ts";
+import { configureAsyncWorkerLogger } from "../logger.ts";
 import { runAsyncOperationScheduler } from "../asyncOperationScheduler/asyncOperationScheduler.ts";
 import type { AsyncOperationSchedulerOptions } from "../asyncOperationScheduler/asyncOperationScheduler.ts";
 
 const logger = getLogger(["@pgfsm/scheduler", "async-operation", "cli"]);
-await configureWorkerLogger();
+await configureAsyncWorkerLogger();
 
 const args = parseArgs(Deno.args, {
   string: ["db-url", "poll-interval", "stale-threshold"],
