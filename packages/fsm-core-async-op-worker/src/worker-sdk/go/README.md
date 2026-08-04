@@ -1,15 +1,16 @@
 # worker-sdk/go
 
 Go reference worker for the Activity Gateway — follows the same shape as
-`../typescript` and `../python`/`../rust`, with the same unavoidable difference
-`../rust`'s README explains: **Go has no dynamic-loading mechanism** for `.go`
-source files at runtime (Go plugins exist but require exact toolchain/build-flag
-matching between plugin and host and aren't practical here — see
-[SPEC-001](../../../../../docs/specs/spec-001-compiled-lang-actor-workers.md)'s
-Problem section). So this SDK is **registry-based**: `ActorWorker` takes an
-explicit `[]ActorRegistration` — real, compiled-in Go functions paired with
-their FSM identity — built by hand in `registry.go`, instead of discovered from
-a folder at startup.
+`../typescript`, `../python`, and `../rust`, with the same unavoidable
+difference `../rust`'s README explains: **Go has no dynamic-loading mechanism**
+for `.go` source files at runtime. So this SDK is **registry-based**:
+`ActorWorker` takes an explicit `[]ActorRegistration` — real, compiled-in Go
+functions paired with their FSM identity.
+
+That registry is no longer hand-maintained. `fsm-compiler-ts` generates it
+(`writeAggregateGoRegistry`) as its own standalone Go module,
+`apps/fsm-core-example/go-actors-registry-generated/`, and this package's own
+`go.mod` imports it — see [#84](https://github.com/pgfsm/fsm/issues/84).
 
 ## Pieces
 
@@ -19,55 +20,54 @@ a folder at startup.
   gateway, then serves invoke requests. Plain blocking `net.Conn` + a goroutine
   for heartbeats (stdlib only, no external dependencies). A `defer`/`recover()`
   around every handler call reports a panicking actor as an `INTERNAL` invoke
-  error rather than crashing the worker (verified with a real panicking handler
-  — the process survives and keeps serving).
-- `validate_async_operation.go` — `ValidateAsyncOperationFromFoldersGo()`: walks
-  `<folderPath>/<fsmName>/<version>/go/actors/<actorName>/<actorName>.go` (this
-  repo's real FSM actor convention) and inlines
-  `packages/fsm-compiler-ts/src/checkers/check_fn.go`'s own check (`go/ast` walk
-  for a `FuncDecl` matching the actor name, regardless of export case)
-  in-process. This part _is_ full parity with the TS/Python versions — folder
-  discovery needs no dynamic loading, just parsing.
-- `registry.go` — `knownHandlers`: the compile-time table mapping `FsmName` to
-  an actual linked-in function. Kept out of `main.go` so adding an actor (a new
-  import + map entry) doesn't churn the CLI/orchestration code.
-- `main.go` — the reference binary. `--folder-path` is required (no default —
-  pass `apps/fsm-core-example/fsm` explicitly to scan this repo's fixtures),
-  calls the validator, and matches each verified result against `knownHandlers`.
-
-### `checkReportsTable` → `CheckReportsTable`
-
-This repo's one real Go actor,
-`apps/fsm-core-example/fsm/creditCheck/v01/go/actors/CheckReportsTable/CheckReportsTable.go`,
-originally declared an **unexported** (lowercase) function — matching the same
-convention `check_fn.go`'s own validation expects (it doesn't care about export
-status). Go enforces exports at the _compiler_ level for cross-package access,
-unlike Rust's `pub`, which was already the established convention for Rust
-actors (`checkBureauRust.rs`) and could be `#[path]`-included directly. There is
-no Go equivalent of Rust's `#[path]` — packages are strictly directory-based —
-so the actor was renamed to `CheckReportsTable` (folder, file, and function) and
-given its own scoped `go.mod`, referenced from this package's `go.mod` via a
-local `replace` directive
-(`fsm-core-example/creditcheck/v01/go/actors/checkreportstable`) since it isn't
-part of this module. Only the one FSM invoke using this actor in the
-`"go"`-language variant (`gavUnionDBActor`) had its `src` updated to match, in
-`machine.ts`/`fsm.json`/`xstate-fsm.json`/`machine-with-provider.ts` — the two
-other invokes sharing the old `checkReportsTable` name are `typescript`-language
-and untouched.
-
-`registry.go` wires it into `knownHandlers["CheckReportsTable"]`; running this
-binary against the real fixtures discovers, links, registers, and serves it
-end-to-end.
+  error rather than crashing the worker.
+- `main.go` — the reference binary. Imports
+  `fsm-core-example/go-actors-registry-generated` (see `go.mod`) and adapts its
+  `[]generatedregistry.ActorRegistration` into `sdk.ActorRegistration`. No
+  folder scan, no hand-written handler table — the generated module's linked-in
+  actor functions are what make this build in the first place: it wouldn't
+  compile if an actor's function didn't exist or had the wrong signature.
+- `go.mod` — two things worth knowing:
+  - A `require`/`replace` for `fsm-core-example/go-actors-registry-generated`
+    itself — stable, never changes.
+  - A **generated section**
+    (`// --- BEGIN/END fsm-compiler-ts generated actor
+    requires ---`) with
+    one `require`+`replace` **per Go actor**, rewritten by `fsm-compiler-ts`'s
+    `generate-async-logic` on every run. This looks redundant with the aggregate
+    module's own `require`/`replace` for the same actors, but it isn't: **Go's
+    `replace` directives are only honored in the module actually being built,
+    not in a dependency's own `go.mod`** — they don't propagate transitively. So
+    even though `go-actors-registry-generated` is what logically imports each
+    actor module, this package (as the thing actually being built) needs its own
+    entry for every actor the aggregate transitively needs, or the build can't
+    resolve them. Don't hand-edit between the markers; they're overwritten every
+    regeneration.
 
 ## Running
 
-`--folder-path` is required:
-
 ```bash
-go run . --folder-path /abs/path/to/fsm-core-example/fsm --worker-id go-1
-# or, with a subset:
-go run . --folder-path /abs/path/to/fsm --skip-dirs taskMachineConfig
+go run . --worker-id go-1
 ```
 
 Requires a running gateway (`deno task gateway` from the package root) — the
 default `--gateway-socket` matches the gateway's default sidecar socket.
+
+## Adding a new working actor
+
+1. Write the actor in
+   `apps/fsm-core-example/fsm/<fsmName>/<version>/go/actors/<actorName>/<actorName>.go`
+   with a real `func(input any) (any, error)` body — **exported** (capitalized
+   name), since Go enforces exports at compile time for cross-package access.
+2. Regenerate:
+   `deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts
+   -c generate-async-logic -f <abs path to apps/fsm-core-example/fsm>`
+   — this rewrites `go-actors-registry-generated/` (module + registry) and this
+   package's `go.mod` generated section.
+3. `go build ./...` — the new actor is linked in and registered automatically.
+
+Regeneration unconditionally overwrites every actor file it touches with a fresh
+TODO stub, even one with real hand-written logic — write the actor's real
+implementation, run `generate-async-logic` once to produce the file and wire it
+into the registry, then don't run it again for that actor (or be ready to
+re-apply your changes afterward).
