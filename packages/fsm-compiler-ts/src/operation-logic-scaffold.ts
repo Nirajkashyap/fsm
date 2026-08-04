@@ -139,11 +139,25 @@ function goActorModulePath(
   absFolderPath: string,
   actorDirName: string,
 ): string {
+  const { fsmName, fsmVersion } = fsmIdentityFromVersionFolderPath(
+    absFolderPath,
+  );
+  const appRoot = absFolderPath.split("/").at(-4)!; // .../<appRoot>/fsm/<fsmName>/<version>
+  return `${appRoot}/${fsmName.toLowerCase()}/${fsmVersion}/go/actors/${actorDirName.toLowerCase()}`;
+}
+
+/**
+ * Extracts `{ fsmName, fsmVersion }` from a version-folder absolute path
+ * (e.g. `.../apps/fsm-core-example/fsm/creditCheck/v01` ->
+ * `{ fsmName: "creditCheck", fsmVersion: "v01" }`), matching the
+ * `<pluginRoot>/<fsmName>/<version>` convention {@linkcode eachVersionedFsmFolder}
+ * walks.
+ */
+function fsmIdentityFromVersionFolderPath(
+  absFolderPath: string,
+): { fsmName: string; fsmVersion: string } {
   const parts = absFolderPath.split("/");
-  const version = parts.at(-1)!;
-  const fsmName = parts.at(-2)!;
-  const appRoot = parts.at(-4)!; // .../<appRoot>/fsm/<fsmName>/<version>
-  return `${appRoot}/${fsmName.toLowerCase()}/${version}/go/actors/${actorDirName.toLowerCase()}`;
+  return { fsmVersion: parts.at(-1)!, fsmName: parts.at(-2)! };
 }
 
 /** Writes the `go.mod` for a single Go actor's own module (see {@linkcode goActorModulePath}). */
@@ -215,6 +229,50 @@ export function toWrittenActor(
       operationFileExtension(lang)
     }`,
     exportedName: lang === "go" ? toGoExportedName(actor.src) : actor.src,
+  };
+}
+
+/**
+ * A {@linkcode WrittenActor} plus the activity-registration identity a
+ * worker SDK needs to register with the Activity Gateway (see
+ * `actorKey()`/`RegisteredActor` in
+ * `packages/fsm-core-async-op-worker/src/sidecar/protocol.ts`) — everything
+ * {@linkcode writeActorsRegistry}/{@linkcode writeAggregateActorsRegistry}
+ * need to emit a self-describing registration, not just a name -> callable
+ * map. Matches the flattened identity model `fsm-compiler-ts`'s own
+ * `validateAsyncOperationFromFolders` already used: `fsmName` is the actor's
+ * own `src` (not a separate sub-FSM reference), `fsmVersion` is the parent
+ * FSM's version, and `fsmType` is always `"promise"` (the only kind this
+ * scaffolds).
+ */
+export type RegisteredActor = WrittenActor & {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: "promise";
+  fsmName: string;
+  fsmVersion: string;
+};
+
+/**
+ * Builds the {@linkcode RegisteredActor} record for the file a
+ * {@linkcode writeActorFile} call for this actor produces, given the
+ * version-folder path it was written under.
+ */
+export function toRegisteredActor(
+  absFolderPath: string,
+  lang: OperationLang,
+  actor: ActorReference,
+): RegisteredActor {
+  const written = toWrittenActor(lang, actor);
+  const { fsmName: parentFsmName, fsmVersion: parentFsmVersion } =
+    fsmIdentityFromVersionFolderPath(absFolderPath);
+  return {
+    ...written,
+    parentFsmName,
+    parentFsmVersion,
+    fsmType: "promise",
+    fsmName: written.src,
+    fsmVersion: parentFsmVersion,
   };
 }
 
@@ -305,22 +363,141 @@ const ACTORS_REGISTRY_FILE_NAME: Record<ActorsBarrelLang, string> = {
 };
 
 /**
- * Writes a key -> callable lookup registry re-exporting every actor for one
- * language, at `<absFolderPath>/<lang>/actors/<registry filename>`. Unlike
+ * Renders one registration entry's activity-identity fields (everything but
+ * the handler reference itself, which differs in shape per language). A
+ * worker SDK needs these to register with the Activity Gateway
+ * (`actorKey()`) without recomputing them itself.
+ */
+function registrationIdentityFields(a: RegisteredActor): {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: string;
+  fsmName: string;
+  fsmVersion: string;
+  fsmLanguage: string;
+} {
+  return {
+    parentFsmName: a.parentFsmName,
+    parentFsmVersion: a.parentFsmVersion,
+    fsmType: a.fsmType,
+    fsmName: a.fsmName,
+    fsmVersion: a.fsmVersion,
+    fsmLanguage: a.fsmLanguage,
+  };
+}
+
+/**
+ * Renders one FSM-version's registry file content: actors here are always
+ * siblings of the file being written (same `<lang>/actors/` directory), so
+ * imports/`#[path]`s never need to reach outside it. Used by
+ * {@linkcode writeActorsRegistry} only — the aggregate
+ * ({@linkcode writeAggregateActorsRegistry}) re-uses these per-version files
+ * rather than re-deriving entries itself (see its own doc comment for why).
+ */
+function buildActorsRegistryContent(
+  langActors: RegisteredActor[],
+  lang: ActorsBarrelLang,
+): string {
+  switch (lang) {
+    case "typescript": {
+      const imports = langActors.map((a) =>
+        `import { ${a.src} } from "./${a.fileBaseName}/${a.fileBaseName}.ts";`
+      ).join("\n");
+      const entries = langActors.map((a) => {
+        const id = registrationIdentityFields(a);
+        return `  {
+    parentFsmName: ${JSON.stringify(id.parentFsmName)},
+    parentFsmVersion: ${JSON.stringify(id.parentFsmVersion)},
+    fsmType: ${JSON.stringify(id.fsmType)},
+    fsmName: ${JSON.stringify(id.fsmName)},
+    fsmVersion: ${JSON.stringify(id.fsmVersion)},
+    fsmLanguage: ${JSON.stringify(id.fsmLanguage)},
+    handler: ${a.src},
+  },`;
+      }).join("\n");
+      return `${imports}\n
+export type ActorRegistration = {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: string;
+  fsmName: string;
+  fsmVersion: string;
+  fsmLanguage: string;
+  handler: (input: unknown) => unknown;
+};
+
+export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
+${entries}
+];
+`;
+    }
+    case "python": {
+      const imports = langActors.map((a) =>
+        `from .${a.fileBaseName}.${a.fileBaseName} import ${a.src}`
+      ).join("\n");
+      const entries = langActors.map((a) => {
+        const id = registrationIdentityFields(a);
+        return `    {
+        "parent_fsm_name": ${JSON.stringify(id.parentFsmName)},
+        "parent_fsm_version": ${JSON.stringify(id.parentFsmVersion)},
+        "fsm_type": ${JSON.stringify(id.fsmType)},
+        "fsm_name": ${JSON.stringify(id.fsmName)},
+        "fsm_version": ${JSON.stringify(id.fsmVersion)},
+        "fsm_language": ${JSON.stringify(id.fsmLanguage)},
+        "handler": ${a.src},
+    },`;
+      }).join("\n");
+      return `${imports}\n\nACTOR_REGISTRATIONS = [\n${entries}\n]\n`;
+    }
+    case "rust": {
+      const entries = langActors.map((a) => {
+        const id = registrationIdentityFields(a);
+        return `        ActorRegistration {
+            parent_fsm_name: ${JSON.stringify(id.parentFsmName)},
+            parent_fsm_version: ${JSON.stringify(id.parentFsmVersion)},
+            fsm_type: ${JSON.stringify(id.fsmType)},
+            fsm_name: ${JSON.stringify(id.fsmName)},
+            fsm_version: ${JSON.stringify(id.fsmVersion)},
+            fsm_language: ${JSON.stringify(id.fsmLanguage)},
+            handler: actors::${a.src},
+        },`;
+      }).join("\n");
+      return `#[path = "mod.rs"]
+mod actors;
+
+pub struct ActorRegistration {
+    pub parent_fsm_name: &'static str,
+    pub parent_fsm_version: &'static str,
+    pub fsm_type: &'static str,
+    pub fsm_name: &'static str,
+    pub fsm_version: &'static str,
+    pub fsm_language: &'static str,
+    pub handler: fn(serde_json::Value) -> serde_json::Value,
+}
+
+pub fn actor_registrations() -> Vec<ActorRegistration> {
+    vec![
+${entries}
+    ]
+}
+`;
+    }
+  }
+}
+
+/**
+ * Writes a registration registry re-exporting every actor for one language,
+ * at `<absFolderPath>/<lang>/actors/<registry filename>`. Unlike
  * {@linkcode writeActorsBarrel} (named exports, for consumers who know the
- * actor name at compile time), this is for runtime dispatch by string key —
- * what a worker SDK needs to route an invocation to the right function
- * without a folder scan or dynamic `import()`/`importlib`. Returns
- * `undefined` (writes nothing) when there are no actors for that language.
- *
- * Rust's registry reuses the barrel's `#[path]` module declarations
- * (`#[path = "mod.rs"] mod actors;`) instead of redeclaring them, since Rust
- * treats a duplicate `#[path]`/`mod` pair for the same file as a compile
- * error if both the barrel and the registry declared it independently.
+ * actor name at compile time), this is for runtime dispatch — what a worker
+ * SDK needs to register with the Activity Gateway and route an invocation to
+ * the right function, without a folder scan or dynamic
+ * `import()`/`importlib`. Returns `undefined` (writes nothing) when there are
+ * no actors for that language.
  */
 export async function writeActorsRegistry(
   absFolderPath: string,
-  actors: WrittenActor[],
+  actors: RegisteredActor[],
   lang: ActorsBarrelLang,
 ): Promise<string | undefined> {
   const langActors = actors.filter((a) => a.fsmLanguage === lang);
@@ -329,39 +506,215 @@ export async function writeActorsRegistry(
   const dir = `${absFolderPath}/${lang}/actors`;
   await Deno.mkdir(dir, { recursive: true });
   const file = `${dir}/${ACTORS_REGISTRY_FILE_NAME[lang]}`;
+  await Deno.writeTextFile(file, buildActorsRegistryContent(langActors, lang));
+  return file;
+}
 
-  let content: string;
-  switch (lang) {
-    case "typescript": {
-      const imports = langActors.map((a) =>
-        `import { ${a.src} } from "./${a.fileBaseName}/${a.fileBaseName}.ts";`
-      ).join("\n");
-      const entries = langActors.map((a) => `  ${a.src},`).join("\n");
-      content =
-        `${imports}\n\nexport const ACTOR_REGISTRY: Record<string, (input: unknown) => unknown> = {\n${entries}\n};\n`;
-      break;
-    }
-    case "python": {
-      const imports = langActors.map((a) =>
-        `from .${a.fileBaseName}.${a.fileBaseName} import ${a.src}`
-      ).join("\n");
-      const entries = langActors.map((a) => `    "${a.src}": ${a.src},`)
-        .join("\n");
-      content = `${imports}\n\nACTOR_REGISTRY = {\n${entries}\n}\n`;
-      break;
-    }
-    case "rust": {
-      const entries = langActors.map((a) =>
-        `        "${a.src}" => Some(actors::${a.src}),`
-      ).join("\n");
-      content =
-        `#[path = "mod.rs"]\nmod actors;\n\npub type ActorFn = fn(serde_json::Value) -> serde_json::Value;\n\npub fn actor_registry(name: &str) -> Option<ActorFn> {\n    match name {\n${entries}\n        _ => None,\n    }\n}\n`;
-      break;
+const AGGREGATE_ACTORS_REGISTRY_FILE_NAME: Record<ActorsBarrelLang, string> = {
+  typescript: "typescript-actors-registry.generated.ts",
+  // Must be a valid Python module identifier (no dashes).
+  python: "python_actors_registry_generated.py",
+  rust: "rust-actors-registry.generated.rs",
+};
+
+/** Groups actors by their parent `<fsmName>/<fsmVersion>`, preserving first-seen order. */
+function groupByParentFsm(
+  actors: RegisteredActor[],
+): Map<string, RegisteredActor[]> {
+  const groups = new Map<string, RegisteredActor[]>();
+  for (const a of actors) {
+    const key = `${a.parentFsmName}/${a.parentFsmVersion}`;
+    const group = groups.get(key);
+    if (group) {
+      group.push(a);
+    } else {
+      groups.set(key, [a]);
     }
   }
+  return groups;
+}
 
-  await Deno.writeTextFile(file, content);
+/** A `<fsmName>/<fsmVersion>` group key turned into a valid TS/Python/Rust identifier. */
+function groupKeyToIdentifier(key: string): string {
+  return key.replace(/[^A-Za-z0-9]+/g, "_").toLowerCase();
+}
+
+/**
+ * Renders the aggregate registry content for one language, combining every
+ * FSM-version group's actors. TS/Python re-import each FSM-version's already
+ * -generated {@linkcode writeActorsRegistry} output and flatten it — simpler
+ * and avoids re-deriving every entry, since both languages can statically
+ * import an arbitrarily-nested sibling file. Rust can't do the equivalent
+ * (each per-version `generated_registry.rs` defines its own nominally
+ * distinct `ActorRegistration` type, so `Vec`s of them can't be concatenated)
+ * — instead it `#[path]`-includes each FSM-version's actor barrel (`mod.rs`,
+ * functions only, no competing type) under a unique per-group module alias,
+ * and re-derives entries against one `ActorRegistration` type defined once
+ * here.
+ */
+function buildAggregateRegistryContent(
+  langActors: RegisteredActor[],
+  lang: ActorsBarrelLang,
+  pluginRootDirName: string,
+): string {
+  const groups = groupByParentFsm(langActors);
+  // The aggregate lives one level above the plugin root (e.g.
+  // apps/fsm-core-example/, sibling to apps/fsm-core-example/fsm/), so every
+  // generated path re-descends into the plugin root by name first.
+  const pathPrefix = `${pluginRootDirName}/`;
+
+  switch (lang) {
+    case "typescript": {
+      const imports: string[] = [];
+      const spreads: string[] = [];
+      for (const key of groups.keys()) {
+        const alias = groupKeyToIdentifier(key);
+        imports.push(
+          `import { ACTOR_REGISTRATIONS as ${alias} } from "./${pathPrefix}${key}/typescript/actors/generated-registry.ts";`,
+        );
+        spreads.push(`  ...${alias},`);
+      }
+      return `${imports.join("\n")}\n\nexport const ACTOR_REGISTRATIONS = [\n${
+        spreads.join("\n")
+      }\n];\n`;
+    }
+    case "python": {
+      const loads: string[] = [];
+      const spreads: string[] = [];
+      for (const key of groups.keys()) {
+        const alias = groupKeyToIdentifier(key);
+        loads.push(
+          `${alias} = _load_registrations(${
+            JSON.stringify(
+              `${pathPrefix}${key}/python/actors/generated_registry.py`,
+            )
+          })`,
+        );
+        spreads.push(`    *${alias},`);
+      }
+      return `# Each FSM-version's registry is loaded from a fixed, compiler-generated
+# path -- not a runtime scan -- since Python has no static-import syntax that
+# reaches an arbitrarily-nested sibling directory the way TS/Rust do.
+import importlib.util
+import os
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _load_registrations(rel_path):
+    spec = importlib.util.spec_from_file_location(
+        "generated_registry", os.path.join(_BASE_DIR, rel_path)
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.ACTOR_REGISTRATIONS
+
+
+${loads.join("\n")}
+
+ACTOR_REGISTRATIONS = [
+${spreads.join("\n")}
+]
+`;
+    }
+    case "rust": {
+      const modDecls: string[] = [];
+      const entries: string[] = [];
+      for (const [key, groupActors] of groups) {
+        const alias = groupKeyToIdentifier(key);
+        modDecls.push(
+          `#[path = "${pathPrefix}${key}/rust/actors/mod.rs"]\nmod ${alias};`,
+        );
+        for (const a of groupActors) {
+          const id = registrationIdentityFields(a);
+          entries.push(`        ActorRegistration {
+            parent_fsm_name: ${JSON.stringify(id.parentFsmName)},
+            parent_fsm_version: ${JSON.stringify(id.parentFsmVersion)},
+            fsm_type: ${JSON.stringify(id.fsmType)},
+            fsm_name: ${JSON.stringify(id.fsmName)},
+            fsm_version: ${JSON.stringify(id.fsmVersion)},
+            fsm_language: ${JSON.stringify(id.fsmLanguage)},
+            handler: ${alias}::${a.src},
+        },`);
+        }
+      }
+      return `${modDecls.join("\n\n")}
+
+pub struct ActorRegistration {
+    pub parent_fsm_name: &'static str,
+    pub parent_fsm_version: &'static str,
+    pub fsm_type: &'static str,
+    pub fsm_name: &'static str,
+    pub fsm_version: &'static str,
+    pub fsm_language: &'static str,
+    pub handler: fn(serde_json::Value) -> serde_json::Value,
+}
+
+pub fn actor_registrations() -> Vec<ActorRegistration> {
+    vec![
+${entries.join("\n")}
+    ]
+}
+`;
+    }
+  }
+}
+
+/**
+ * Writes ONE aggregate registration registry per language at
+ * `<appRootAbsPath>/<aggregate filename>` — one level above the plugin root
+ * (e.g. `apps/fsm-core-example/`, sibling to the `fsm/` folder
+ * {@linkcode eachVersionedFsmFolder} walks) — combining actors across every
+ * FSM/version processed in a single such run (see
+ * `generateAsyncOperationLogicFromFolders`). This is the fixed, known file a
+ * worker SDK build imports — a worker process serves every actor for its
+ * language across the whole plugin root, so its build has exactly one thing
+ * to import, not a per-FSM-version file it would have to discover. Returns
+ * `undefined` (writes nothing) when there are no actors for that language
+ * across the whole run.
+ *
+ * `pluginRootDirName` is the plugin root's own directory name (e.g. `"fsm"`)
+ * — every generated import/`#[path]` re-descends into it by name, since the
+ * aggregate lives one level above.
+ */
+export async function writeAggregateActorsRegistry(
+  appRootAbsPath: string,
+  pluginRootDirName: string,
+  actors: RegisteredActor[],
+  lang: ActorsBarrelLang,
+): Promise<string | undefined> {
+  const langActors = actors.filter((a) => a.fsmLanguage === lang);
+  if (langActors.length === 0) return undefined;
+
+  const file = `${appRootAbsPath}/${AGGREGATE_ACTORS_REGISTRY_FILE_NAME[lang]}`;
+  await Deno.writeTextFile(
+    file,
+    buildAggregateRegistryContent(langActors, lang, pluginRootDirName),
+  );
   return file;
+}
+
+/**
+ * Resolves a plugin-root folder path (relative to `Deno.cwd()`, or already
+ * absolute) to an absolute path, and validates it's neither dot-relative nor
+ * trailing-slashed. Shared by {@linkcode eachVersionedFsmFolder} and callers
+ * that need the plugin root itself (e.g. `generateAsyncOperationLogicFromFolders`'s
+ * aggregate registry, written one level above every FSM/version it processes).
+ */
+export function resolvePluginRootAbsPath(folderPath: string): string {
+  if (folderPath.startsWith(".")) {
+    throw new Error(
+      `Invalid folder path: ${folderPath}. Folder paths cannot start with '.'`,
+    );
+  }
+  if (folderPath.endsWith("/")) {
+    throw new Error(
+      `Invalid folder path: ${folderPath}. Folder paths cannot end with '/'`,
+    );
+  }
+  return folderPath.startsWith("/")
+    ? folderPath
+    : `${Deno.cwd()}/${folderPath}`;
 }
 
 /**
@@ -374,20 +727,7 @@ export async function eachVersionedFsmFolder(
   skipDirs: string[],
   handler: (absFolderPath: string, fsmData: FsmMachineJson) => Promise<void>,
 ): Promise<void> {
-  if (folderPath.startsWith(".")) {
-    throw new Error(
-      `Invalid folder path: ${folderPath}. Folder paths cannot start with '.'`,
-    );
-  }
-  if (folderPath.endsWith("/")) {
-    throw new Error(
-      `Invalid folder path: ${folderPath}. Folder paths cannot end with '/'`,
-    );
-  }
-
-  const absFolderPath = folderPath.startsWith("/")
-    ? folderPath
-    : `${Deno.cwd()}/${folderPath}`;
+  const absFolderPath = resolvePluginRootAbsPath(folderPath);
 
   for await (const dirEntry of Deno.readDir(absFolderPath)) {
     if (!dirEntry.isDirectory || skipDirs.includes(dirEntry.name)) continue;

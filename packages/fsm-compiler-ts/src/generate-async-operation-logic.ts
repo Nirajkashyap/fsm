@@ -5,12 +5,14 @@ import {
   type ActorsBarrelLang,
   eachVersionedFsmFolder,
   isOperationLang,
-  toWrittenActor,
+  type RegisteredActor,
+  resolvePluginRootAbsPath,
+  toRegisteredActor,
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
   writeActorsRegistry,
-  type WrittenActor,
+  writeAggregateActorsRegistry,
 } from "./operation-logic-scaffold.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "async-logic"]);
@@ -28,17 +30,22 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  * own `go.mod` — see {@linkcode writeActorFile}). Invokes that resolve to the
  * same `<fsmType>_<fsmVersion>_<src>` within a language are written once.
  *
- * Three kinds of additional files are written per version folder:
- * `actors-manifest.json` (every actor across all languages — `{ src,
- * fsmLanguage, filePath, exportedName }`), a per-language barrel
- * (`typescript/actors/index.ts`, `python/actors/__init__.py`,
- * `rust/actors/mod.rs`) re-exporting each actor for that language by name,
- * and a per-language generated registry (`generated-registry.ts`/
- * `generated_registry.py`/`generated_registry.rs`) — a string-keyed lookup
- * map for runtime dispatch, what a worker SDK needs instead of a folder scan
- * or dynamic `import()`/`importlib`. Both are written only when at least one
- * actor exists for that language. Go has neither — see
- * {@linkcode ActorsBarrelLang}'s doc comment.
+ * Per version folder: `actors-manifest.json` (every actor across all
+ * languages — `{ src, fsmLanguage, filePath, exportedName }`), a per-language
+ * barrel (`typescript/actors/index.ts`, `python/actors/__init__.py`,
+ * `rust/actors/mod.rs`) re-exporting each actor by name, and a per-language
+ * generated registry (`generated-registry.ts`/`generated_registry.py`/
+ * `generated_registry.rs`) carrying each actor's full activity-registration
+ * identity + handler — written only when at least one actor exists for that
+ * language. Go has neither — see {@linkcode ActorsBarrelLang}'s doc comment.
+ *
+ * Once, at the plugin root (one level above every FSM/version folder
+ * processed in this run): a per-language **aggregate** registry
+ * (`typescript-actors-registry.generated.ts`/
+ * `python_actors_registry_generated.py`/`rust-actors-registry.generated.rs`)
+ * combining every FSM-version's registry — what a worker SDK build imports,
+ * since a single worker process serves its language's actors across every
+ * FSM, not just one (see {@linkcode writeAggregateActorsRegistry}).
  */
 export async function generateAsyncOperationLogicFromFolders(
   folderPath: string,
@@ -48,6 +55,8 @@ export async function generateAsyncOperationLogicFromFolders(
   logger.info("Scaffolding async operation logic from {path}", {
     path: folderPath,
   });
+
+  const allRegisteredActors: RegisteredActor[] = [];
 
   await eachVersionedFsmFolder(
     folderPath,
@@ -59,7 +68,7 @@ export async function generateAsyncOperationLogicFromFolders(
       // are written once, while actors that differ in type/version/src get
       // their own files.
       const seen = new Set<string>();
-      const writtenActors: WrittenActor[] = [];
+      const writtenActors: RegisteredActor[] = [];
       for (const actor of actors) {
         const fsmType = actor.fsmType ?? "promise";
         if (fsmType !== "promise") {
@@ -85,7 +94,7 @@ export async function generateAsyncOperationLogicFromFolders(
         seen.add(key);
 
         const file = await writeActorFile(absFolderPath, lang, actor);
-        writtenActors.push(toWrittenActor(lang, actor));
+        writtenActors.push(toRegisteredActor(absFolderPath, lang, actor));
         logger.info("Wrote actor file {file}", { file });
       }
 
@@ -125,6 +134,30 @@ export async function generateAsyncOperationLogicFromFolders(
           });
         }
       }
+
+      allRegisteredActors.push(...writtenActors);
     },
   );
+
+  // One level above the plugin root (e.g. apps/fsm-core-example/fsm ->
+  // apps/fsm-core-example) -- a sibling of every FSM name folder this run
+  // processed, not nested inside any one of them.
+  const pluginRootAbsPath = resolvePluginRootAbsPath(folderPath);
+  const pluginRootDirName = pluginRootAbsPath.split("/").at(-1)!;
+  const appRootAbsPath = pluginRootAbsPath.split("/").slice(0, -1).join("/");
+
+  for (const lang of BARREL_LANGS) {
+    const aggregateFile = await writeAggregateActorsRegistry(
+      appRootAbsPath,
+      pluginRootDirName,
+      allRegisteredActors,
+      lang,
+    );
+    if (aggregateFile) {
+      logger.info("Wrote {lang} aggregate actors registry {file}", {
+        lang,
+        file: aggregateFile,
+      });
+    }
+  }
 }
