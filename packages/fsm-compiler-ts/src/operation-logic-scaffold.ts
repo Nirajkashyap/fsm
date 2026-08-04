@@ -535,7 +535,26 @@ export async function writeActorsRegistry(
   await Deno.mkdir(dir, { recursive: true });
   const file = `${dir}/${ACTORS_REGISTRY_FILE_NAME[lang]}`;
   await Deno.writeTextFile(file, buildActorsRegistryContent(langActors, lang));
+  if (lang === "rust") await formatRustFileBestEffort(file);
   return file;
+}
+
+/**
+ * Runs `rustfmt` on a generated `.rs` file so it matches what `cargo fmt
+ * --check` expects — needed once a generated registry is actually
+ * `#[path]`-included into a real crate (e.g. worker-sdk/rust), since our own
+ * codegen doesn't hand-replicate rustfmt's line-wrapping rules. Best-effort:
+ * silently does nothing if `rustfmt` isn't on `PATH`, matching this file's
+ * existing tolerance for missing toolchains elsewhere (see
+ * `validate-async-operation-logic.ts`'s checker compilation).
+ */
+async function formatRustFileBestEffort(path: string): Promise<void> {
+  try {
+    await new Deno.Command("rustfmt", { args: [path], stderr: "null" })
+      .output();
+  } catch {
+    // rustfmt not installed — leave the file as generated.
+  }
 }
 
 const AGGREGATE_ACTORS_REGISTRY_FILE_NAME: Record<ActorsBarrelLang, string> = {
@@ -719,6 +738,7 @@ export async function writeAggregateActorsRegistry(
     file,
     buildAggregateRegistryContent(langActors, lang, pluginRootDirName),
   );
+  if (lang === "rust") await formatRustFileBestEffort(file);
   return file;
 }
 
