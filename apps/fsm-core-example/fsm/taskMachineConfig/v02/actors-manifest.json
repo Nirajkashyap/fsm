@@ -1,0 +1,14 @@
+{
+  "actors": [
+    {
+      "src": "fetchTasks",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/fetchTasks/fetchTasks.ts"
+    },
+    {
+      "src": "updateTask",
+      "fsmLanguage": "typescript",
+      "filePath": "typescript/actors/updateTask/updateTask.ts"
+    }
+  ]
+}

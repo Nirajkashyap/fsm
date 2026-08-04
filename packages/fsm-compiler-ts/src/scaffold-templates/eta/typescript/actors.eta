@@ -1,0 +1,5 @@
+// <%~ it.label %>: <%~ it.name %>
+export function <%~ it.fnName %>(context: any, event: any) {
+  // <%~ it.todo %>
+}
+

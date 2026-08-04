@@ -10,9 +10,9 @@ Gaps tracked against the compiler PRDs in [`../prd/`](../prd/):
 
 Scaffolding is split into two commands/modules: `generate-async-logic`
 (`src/generate-async-operation-logic.ts`) for actors, and `generate-sync-logic`
-(`src/generate-sync-operation-logic.ts`) for actions/guards/delays. Shared
-language templates + the folder walker live in
-`src/operation-logic-scaffold.ts`.
+(`src/generate-sync-operation-logic.ts`) for actions/guards/delays. The folder
+walker lives in `src/operation-logic-scaffold.ts`; per-language stub templates
+live in `src/scaffold-templates/`.
 
 ## Design FSM JSON schema (PRD-001)
 
@@ -34,8 +34,8 @@ language templates + the folder walker live in
 - [ ] **Fix actor stub signature.** `operation-logic-scaffold.ts` emits actor
       stubs as `<src>(context, event)` returning nothing, but actors are invoked
       as `actorFn(input): Promise<output>` (see
-      `apps/fsm-core-worker-ts/src/fsmpromiseworker-helper.ts`). Emit an async,
-      single-`input` stub returning `Promise`.
+      `packages/fsm-async-worker-ts/src/asyncOperationWorkerlet/fsmpromiseworker-helper.ts`).
+      Emit an async, single-`input` stub returning `Promise`.
 - [ ] **Distinguish internal vs external actors.** `extractFsmPluginRefs`
       carries `{ src, fsmType?, fsmVersion?, fsmLanguage? }` but no ownership
       signal, so a local stub is emitted for every `src`. External actors (owned
@@ -61,8 +61,8 @@ language templates + the folder walker live in
 ## Scaffold sync operation logic (PRD-003)
 
 Signatures below reference how the `fsmlet` worker invokes each kind in
-`apps/fsm-core-worker-ts/src/fsmworker-helper.ts`. Validation only checks that a
-name exports a `function` (not its arity), so mismatched stubs pass
+`packages/fsm-sync-worker-ts/src/fsmworker-helper.ts`. Validation only checks
+that a name exports a `function` (not its arity), so mismatched stubs pass
 `validate-sync-operation` but do not match the call convention.
 
 - [ ] **Fix action stub signature.** Generator emits `<name>(context, event)`

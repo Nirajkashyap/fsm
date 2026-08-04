@@ -1,0 +1,55 @@
+# CLAUDE.md — DB Helpers (`packages/fsm-core-db-ts/`)
+
+Scoped guidance for the raw pg client helpers. Repo-wide conventions and session
+protocol live in the root `CLAUDE.md` / `AGENTS.md`.
+
+## Structure (`src/`)
+
+- `fsm-instance.ts` — create instances, manage state, archive events
+- `fsm-helper.ts` — load states/transitions from JSON, DB queries
+- `fsm-instance-lock.ts` — advisory lock concurrency control
+- `queue.ts` — pgmq-based event queue management
+- `fsm-workerlet.ts` — `fsm_workerlet` table ops for the fsmlet node-agent
+  (dispatch-queue worker model)
+- `fsm-scheduler.ts` — FSM dispatch enqueue/resume ops for `fsmscheduler`
+- `async-operation.ts` — async-operation dispatch-table ops (promise/callback
+  workflows)
+- `async-operation-workerlet.ts` — `async_operation_workerlet` table ops for the
+  async-operation node-agent
+- `pg-utils.ts` — small pg param helpers (e.g. `toJsonbParam`)
+- `const.ts` — schema/table name constants (`FSM_SCHEMA`,
+  `FSM_SCHEMA_FN_VERSION`, `QUEUE_SCHEMA`, …)
+- `custom-type.ts` — shared types (e.g. `DBDeps`)
+- `index.ts` — public barrel export; this package is a library and only calls
+  `getLogger()` — logging is configured once by the host process (see
+  `packages/fsm-logging-ts/CLAUDE.md`)
+
+## Naming Conventions
+
+PostgreSQL is the source of truth. TypeScript wrappers here must stay aligned
+with PG function names and parameter names.
+
+### PG → TS Function Name Rules
+
+- Strip `_v1` / `_v2` version suffix from TS names — version is driven by
+  `FSM_SCHEMA_FN_VERSION = "v2"` in `const.ts`
+- Use camelCase matching the PG snake_case name (e.g.,
+  `archive_event_from_fsm_type_worker_v2` → `archiveEventFromFsmTypeWorker`)
+- No added verbs or abbreviations not in the PG name
+
+### Parameter Name Rules (PG schema)
+
+- All PG function parameters use `input_*` prefix (e.g., `input_fsm_name`,
+  `input_state_value`)
+- Exception: internal orchestration params keep their names (e.g.,
+  `fsm_name_param`, `event_name`, `transition_record`)
+- v1 functions still use `p_*` prefix — not to be changed (superseded by v2)
+
+### Reference Document
+
+See `packages/database-src/docs/reference/pg-ts-function-mapping.md` for the
+complete PG→TS function mapping table, including:
+
+- All 18 direct 1:1 mappings (Table 1)
+- TS functions not directly mapped to a PG function (Table 2)
+- Gap: PG functions with no TS wrapper (Table 3)

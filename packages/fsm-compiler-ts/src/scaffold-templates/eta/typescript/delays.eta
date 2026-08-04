@@ -1,0 +1,6 @@
+// <%~ it.label %>: <%~ it.name %>
+export function <%~ it.fnName %>(context: any, event: any): number {
+  // <%~ it.todo %>
+  return 0;
+}
+

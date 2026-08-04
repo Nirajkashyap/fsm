@@ -1,0 +1,21 @@
+{
+  "name": "@pgfsm/async-worker",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "imports": {
+    "@logtape/logtape": "jsr:@logtape/logtape@^2.2",
+    "@std/cli": "jsr:@std/cli@1",
+    "@types/pg": "npm:@types/pg@^8.15.2",
+    "dotenv": "npm:dotenv@^16.5.0",
+    "pg": "npm:pg@^8.16.0"
+  },
+  "tasks": {
+    "async-operation-ctl": "deno run --allow-all src/cli/async-operation-ctl.ts",
+    "async-operation-workerlet": "deno run --allow-all src/cli/async-operation-workerlet.ts",
+    "async-operation-scheduler": "deno run --allow-all src/cli/async-operation-scheduler.ts",
+    "check": "deno check src/index.ts"
+  }
+}

@@ -5,7 +5,7 @@ import { Pool } from "pg";
 
 import machineConfig from "./machine.ts";
 import { resolveStateValue } from "@pgfsm/db";
-import { macrostepV2 } from "@pgfsm/worker";
+import { macrostepV2 } from "@pgfsm/sync-worker";
 import {
   replaceSpacesWithUnderscores,
   replaceUnderscoresWithSpaces,

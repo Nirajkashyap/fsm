@@ -1,0 +1,23 @@
+{
+  "name": "@pgfsm/sync-worker",
+  "version": "0.1.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "imports": {
+    "@logtape/logtape": "jsr:@logtape/logtape@^2.2",
+    "@std/cli": "jsr:@std/cli@1",
+    "@types/pg": "npm:@types/pg@^8.15.2",
+    "dotenv": "npm:dotenv@^16.5.0",
+    "pg": "npm:pg@^8.16.0",
+    "xstate": "npm:xstate@^5.26.0"
+  },
+  "tasks": {
+    "cli": "deno run --allow-all src/cli/fsmctl.ts",
+    "dev": "deno run --allow-all --watch src/cli/fsmctl.ts",
+    "fsmlet": "deno run --allow-all src/cli/fsmlet.ts",
+    "fsmscheduler": "deno run --allow-all src/cli/fsmscheduler.ts",
+    "check": "deno check src/index.ts"
+  }
+}

@@ -11,7 +11,7 @@ import { getSupabase } from "../../middlewares/supabase.ts";
 import {
   createAndStartFSMWorker,
   startFSMWorkerWithDBLock,
-} from "@pgfsm/worker";
+} from "@pgfsm/sync-worker";
 import { getFsmDataResolveStateValue } from "@pgfsm/db";
 
 const logger = getLogger(["@pgfsm/api", "fsm.inprocess"]);

@@ -7,8 +7,8 @@ import type { Database } from "@pgfsm/db/database.types";
 // @logtape/hono uses withContext() instead of injecting into c.var, so there is
 // no per-request logger variable here. Use getLogger() at module level in handlers.
 
-export type { FsmFolderConfig, FsmStartupConfig } from "@pgfsm/worker";
-import type { FsmStartupConfig } from "@pgfsm/worker";
+export type { FsmFolderConfig, FsmStartupConfig } from "@pgfsm/sync-worker";
+import type { FsmStartupConfig } from "@pgfsm/sync-worker";
 import type { FsmPluginValidationResult } from "@pgfsm/compiler";
 
 export interface AppBindings {

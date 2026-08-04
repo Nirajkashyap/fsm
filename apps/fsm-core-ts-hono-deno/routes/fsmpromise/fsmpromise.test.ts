@@ -6,7 +6,7 @@
  *
  * Mocked dependencies:
  *   - @pgfsm/db (pgmqQueueExists)
- *   - fsm-core-worker-ts/src/index (startFSMPromiseWorker)
+ *   - fsm-async-worker-ts/src/index (startFSMPromiseWorker)
  *   - middlewares/supabase (getSupabase)
  *
  * Note on handler behaviour:
@@ -26,12 +26,12 @@ vi.mock("@pgfsm/db", () => ({
   pgmqQueueExists: vi.fn(),
 }));
 
-vi.mock("../../../fsm-core-worker-ts/src/index.ts", () => ({
+vi.mock("../../../../packages/fsm-async-worker-ts/src/index.ts", () => ({
   startFSMPromiseWorker: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { pgmqQueueExists } from "@pgfsm/db";
-import { startFSMPromiseWorker } from "../../../fsm-core-worker-ts/src/index.ts";
+import { startFSMPromiseWorker } from "../../../../packages/fsm-async-worker-ts/src/index.ts";
 import { createRouter } from "../../lib/create-app.ts";
 import { activePromiseLocks } from "./fsmpromise.handlers.ts";
 import router from "./fsmpromise.index.ts";

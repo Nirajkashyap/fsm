@@ -10,7 +10,8 @@
 Three packages in the monorepo had no structured logging — only ad-hoc
 `console.log/warn/error` calls with emoji prefixes:
 
-- `apps/fsm-core-worker-ts` (`@pgfsm/worker`) — 81 console calls across 7 files
+- `packages/fsm-sync-worker-ts` (`@pgfsm/worker`) — 81 console calls across 7
+  files
 - `packages/fsm-core-db-ts` (`@pgfsm/db`) — 22 console calls, all in catch
   blocks
 - `packages/fsm-compiler-ts` (`@pgfsm/compiler`) — 60+ console calls across 6

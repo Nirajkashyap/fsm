@@ -1,0 +1,5 @@
+# <%~ it.label %>: <%~ it.name %>
+def <%~ it.fnName %>(context, event):
+    # <%~ it.todo %>
+    return True
+

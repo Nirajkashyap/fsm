@@ -66,8 +66,8 @@ Walks every versioned folder, extracts action/guard/delay names via
 
 ### R2 — Correct stub signatures
 
-The `fsmlet` worker (`apps/fsm-core-worker-ts/src/fsmworker-helper.ts`) invokes
-each kind as:
+The `fsmlet` worker (`packages/fsm-sync-worker-ts/src/fsmworker-helper.ts`)
+invokes each kind as:
 
 | Kind   | Worker call                                      | Contract                          |
 | ------ | ------------------------------------------------ | --------------------------------- |

@@ -21,8 +21,10 @@ At the start of every session, before doing anything else, ask:
 ### (a) Explore / experiment / Q&A
 
 Continue normally. Don't touch GitHub issues. Code changes are fine here —
-experiments and throwaway work don't need an issue. If exploration turns into
-real design or implementation work, stop and re-enter the gate as (b) or (c).
+experiments and throwaway work don't need an issue, a branch, or a worktree
+(there's no issue number to name one with). If exploration turns into real
+design or implementation work, stop and re-enter the gate as (b) or (c) — that's
+the point a worktree gets created.
 
 ### (b) Design / architecture → spec-driven path
 
@@ -32,9 +34,10 @@ reviewed spec, not code.
 1. Interrogate the design before writing anything. Cover, in order:
    - **Problem** — what breaks or is impossible today? Who is affected?
    - **Constraints** — what is fixed? Check the standing architectural
-     constraints in `docs/kb/` (e.g. KB-001: bounded worker fleet, connection
-     minimization, polyglot via queue) and `docs/adr/` — a spec that violates an
-     accepted ADR must say so explicitly and propose superseding it.
+     constraints in `docs/kb/` and `docs/adr/` (e.g. ADR-002: bounded worker
+     fleet and dispatch strategy; ADR-003: connection minimization, polyglot via
+     queue) — a spec that violates an accepted ADR must say so explicitly and
+     propose superseding it.
    - **Options** — at least two, with trade-offs. Propose options the user
      didn't mention.
    - **Decision drivers** — why the chosen option wins.
@@ -49,10 +52,17 @@ reviewed spec, not code.
    gh issue create --title "design: <title>" --body "<one-paragraph summary + link to spec path>" --label design --assignee @me
    ```
 
-4. Open a **spec-only PR** on branch `design/<issue-number>-short-slug`. The PR
+4. Create a worktree for this branch before making any changes — see
+   [Multi-agent coordination](#multi-agent-coordination):
+
+   ```bash
+   git worktree add .claude/worktrees/design-<issue-number> -b design/<issue-number>-short-slug
+   ```
+
+5. Open a **spec-only PR** on branch `design/<issue-number>-short-slug`. The PR
    body must contain `Spec: docs/specs/spec-NNN-short-slug.md` and
    `Closes #<issue-number>`. No implementation code rides along.
-5. Humans review the design in the PR. On merge, the spec's status becomes
+6. Humans review the design in the PR. On merge, the spec's status becomes
    **Accepted**; cut implementation issues that link back to the spec. Durable,
    hard-to-reverse decisions graduate to `docs/adr/` (see `docs/specs/README.md`
    for the lifecycle).
@@ -99,6 +109,15 @@ Issues created via `gh` bypass the issue forms, so also add the matching
 `area: *` label — the component→label mapping lives in
 `.github/advanced-issue-labeler.yml`.
 
+#### Before making any changes
+
+Create a worktree for this issue's branch — see
+[Multi-agent coordination](#multi-agent-coordination):
+
+```bash
+git worktree add .claude/worktrees/<type>-<issue-number> -b <type>/<issue-number>-short-slug
+```
+
 ## Issue linking
 
 Every code-work session posts a comment on its issue so anyone can see which
@@ -115,23 +134,51 @@ Agents without a session id post their name and start time instead.
 
 ## Multi-agent coordination
 
+These rules apply to every code-work session, not only when another agent is
+known to be active — sessions can't reliably detect each other, so treat
+coordination as always-on.
+
 - **Assignment is the lock.** Never start work on an issue assigned to someone
   else. If an issue looks stale, comment and ask — don't take it.
 - **One issue, one branch.** Branch `<type>/<issue-number>-short-slug` where
   type is `feat | bug | chore | design` (e.g. `bug/142-worker-lock-timeout`).
 - **Commits reference the issue**: `fix(worker): handle lock timeout (#142)`.
-- **Agent attribution**: end commit messages with a
-  `Co-Authored-By: <agent> <noreply@...>` trailer so `git log` shows which agent
-  wrote what.
+- **Agent attribution**: never add a `Co-Authored-By: <agent> <noreply@...>`
+  trailer to commit messages — no commit in this repo should include that line.
 - **PRs include `Closes #<number>`** so merging auto-closes the issue. Design
   PRs also include the `Spec:` line.
-- **Parallel sessions use worktrees.** Default to working directly on a branch
-  in the current directory. If another agent session is already active on this
-  repo, or the user asks for isolation, create a worktree:
+- **Always work in a worktree.** Every code-work session creates its own
+  worktree before starting work — never commit directly on a branch checked out
+  in the shared working directory:
   `git worktree add .claude/worktrees/<type>-<issue-number> -b <type>/<issue-number>-slug`
   and tell the user the path. Caveat: the API dev server (port 9999) and local
   Supabase are shared services — only one worktree can run them at a time;
   coordinate before starting either, or change `PORT` in that worktree's `.env`.
+- **One worktree per session, reused across issues.** If a session pivots to a
+  second issue, reuse the same worktree — `git checkout -b` the new issue's
+  branch inside it — rather than adding another worktree directory.
+- **Clean up after merge, but never delete the remote branch.** Once an issue's
+  PR merges, remove its worktree and delete the local branch:
+  `git worktree remove .claude/worktrees/<type>-<issue-number>` then
+  `git branch -d <type>/<issue-number>-short-slug`. Don't remove a worktree that
+  still has uncommitted or unpushed changes. Do not delete the remote branch
+  (`git push origin --delete ...`, GitHub's "Delete branch" button, or
+  `gh pr merge --delete-branch`), even though the PR is merged — that's the
+  user's call, not the agent's.
+- **Guard against worktree sprawl.** Before creating a new worktree, run
+  `git worktree list`. If it already has more than 7 entries under
+  `.claude/worktrees/`, scan each one's PR before adding another:
+
+  ```bash
+  gh pr view <branch> --json state,url   # per worktree's branch
+  ```
+
+  - **PR merged or closed** — remove that worktree and delete its branch (same
+    as [Clean up after merge](#multi-agent-coordination) above), then proceed.
+  - **PR still open** — don't remove it silently. Tell the user which worktrees
+    are still open and let them choose: close/merge one of those PRs so its
+    worktree can be removed, or resume that session to finish the work. Only
+    remove an open-PR worktree if the user says to.
 
 ## Enforcement
 

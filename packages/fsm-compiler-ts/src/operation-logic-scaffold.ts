@@ -1,10 +1,8 @@
 import { getLogger } from "@logtape/logtape";
-import {
-  type ActorReference,
-  DELAY_ACTION_NAME_PREFIX,
-  isVersionFolderName,
-} from "./util.ts";
+import { type ActorReference, isVersionFolderName } from "./util.ts";
 import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
+import { deriveTemplateInput } from "./scaffold-templates/derive-template-input.ts";
+import { getPreamble, getTemplate } from "./scaffold-templates/registry.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "scaffold"]);
 
@@ -62,53 +60,23 @@ function sanitizeFileComponent(value: string): string {
   return value.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
-function stub(lang: OperationLang, kind: OperationKind, name: string): string {
-  // Delays are exposed under a prefixed function name; the comment keeps the
-  // original name for readability.
-  const fnName = kind === "delays"
-    ? `${DELAY_ACTION_NAME_PREFIX}${name}`
-    : name;
-  const label = kind.slice(0, 1).toUpperCase() + kind.slice(1, -1); // Action/Guard/Delay/Actor
-  const todo = kind === "actors"
-    ? "TODO: implement actor logic"
-    : kind === "delays"
-    ? "TODO: implement delay logic (return ms)"
-    : "TODO: implement";
+function renderStub(
+  lang: OperationLang,
+  kind: OperationKind,
+  name: string,
+): string {
+  return getTemplate(lang, kind)(deriveTemplateInput(kind, name));
+}
 
-  switch (lang) {
-    case "typescript":
-      if (kind === "guards") {
-        return `// ${label}: ${name}\nexport function ${fnName}(context: any, event: any) {\n  // ${todo}\n  return true;\n}\n\n`;
-      }
-      if (kind === "delays") {
-        return `// ${label}: ${name}\nexport function ${fnName}(context: any, event: any): number {\n  // ${todo}\n  return 0;\n}\n\n`;
-      }
-      return `// ${label}: ${name}\nexport function ${fnName}(context: any, event: any) {\n  // ${todo}\n}\n\n`;
-    case "python":
-      if (kind === "guards") {
-        return `# ${label}: ${name}\ndef ${fnName}(context, event):\n    # ${todo}\n    return True\n\n`;
-      }
-      if (kind === "delays") {
-        return `# ${label}: ${name}\ndef ${fnName}(context, event):\n    # ${todo}\n    return 0\n\n`;
-      }
-      return `# ${label}: ${name}\ndef ${fnName}(context, event):\n    # ${todo}\n    pass\n\n`;
-    case "rust":
-      if (kind === "guards") {
-        return `// ${label}: ${name}\npub fn ${fnName}(context: &serde_json::Value, event: &serde_json::Value) -> bool {\n    // ${todo}\n    true\n}\n\n`;
-      }
-      if (kind === "delays") {
-        return `// ${label}: ${name}\npub fn ${fnName}(context: &serde_json::Value, event: &serde_json::Value) -> u64 {\n    // ${todo}\n    0\n}\n\n`;
-      }
-      return `// ${label}: ${name}\npub fn ${fnName}(context: &serde_json::Value, event: &serde_json::Value) {\n    // ${todo}\n}\n\n`;
-    case "go":
-      if (kind === "guards") {
-        return `// ${label}: ${name}\nfunc ${fnName}(context map[string]any, event map[string]any) bool {\n\t// ${todo}\n\treturn true\n}\n\n`;
-      }
-      if (kind === "delays") {
-        return `// ${label}: ${name}\nfunc ${fnName}(context map[string]any, event map[string]any) int64 {\n\t// ${todo}\n\treturn 0\n}\n\n`;
-      }
-      return `// ${label}: ${name}\nfunc ${fnName}(context map[string]any, event map[string]any) {\n\t// ${todo}\n}\n\n`;
-  }
+/**
+ * Each stub template ends in a blank line so consecutive stubs concatenated
+ * into one module read with a separator between them — but that leaves a
+ * stray trailing blank line at the true end of the file, which `deno fmt`
+ * doesn't consider canonical (and silently strips on format-on-save/commit).
+ * Collapses that down to a single trailing newline.
+ */
+function withSingleTrailingNewline(content: string): string {
+  return content.replace(/\n+$/, "\n");
 }
 
 /**
@@ -122,11 +90,11 @@ export function renderOperationModule(
   names: string[],
 ): string {
   const unique = [...new Set(names)];
-  let out = lang === "go" ? `package ${kind}\n\n` : "";
+  let out = getPreamble(lang, kind);
   for (const name of unique) {
-    out += stub(lang, kind, name);
+    out += renderStub(lang, kind, name);
   }
-  return out;
+  return withSingleTrailingNewline(out);
 }
 
 /**
@@ -166,8 +134,117 @@ export async function writeActorFile(
   const dir = `${absFolderPath}/${lang}/actors/${name}`;
   await Deno.mkdir(dir, { recursive: true });
   const file = `${dir}/${name}.${operationFileExtension(lang)}`;
-  const header = lang === "go" ? "package actors\n\n" : "";
-  await Deno.writeTextFile(file, header + stub(lang, "actors", actor.src));
+  const header = getPreamble(lang, "actors");
+  await Deno.writeTextFile(
+    file,
+    withSingleTrailingNewline(header + renderStub(lang, "actors", actor.src)),
+  );
+  return file;
+}
+
+/** One actor file written by {@linkcode writeActorFile}, recorded for the manifest/barrel. */
+export type WrittenActor = {
+  /** The actor's original `src` — also the exported function name. */
+  src: string;
+  /** Sanitized filename component (see {@linkcode actorFileBaseName}) — the folder/file name on disk. */
+  fileBaseName: string;
+  fsmLanguage: OperationLang;
+  /** Path relative to the version-folder root, e.g. `typescript/actors/checkBureau/checkBureau.ts`. */
+  filePath: string;
+};
+
+/** Builds the {@linkcode WrittenActor} record for the file a {@linkcode writeActorFile} call for this actor produces. */
+export function toWrittenActor(
+  lang: OperationLang,
+  actor: ActorReference,
+): WrittenActor {
+  const fileBaseName = actorFileBaseName(actor);
+  return {
+    src: actor.src,
+    fileBaseName,
+    fsmLanguage: lang,
+    filePath: `${lang}/actors/${fileBaseName}/${fileBaseName}.${
+      operationFileExtension(lang)
+    }`,
+  };
+}
+
+/**
+ * Writes a single JSON manifest listing every actor written across all
+ * languages, at `<absFolderPath>/actors-manifest.json`. Always written, even
+ * when `actors` is empty, so a consumer always knows where to look.
+ */
+export async function writeActorsManifest(
+  absFolderPath: string,
+  actors: WrittenActor[],
+): Promise<string> {
+  const file = `${absFolderPath}/actors-manifest.json`;
+  const manifest = {
+    actors: actors.map(({ src, fsmLanguage, filePath }) => ({
+      src,
+      fsmLanguage,
+      filePath,
+    })),
+  };
+  await Deno.writeTextFile(file, JSON.stringify(manifest, null, 2) + "\n");
+  return file;
+}
+
+/**
+ * Languages with a natural single-file "re-export everything" idiom. Go is
+ * deliberately excluded: each actor already lives in its own subdirectory,
+ * which in Go makes it a separate package — there's no re-export syntax, and
+ * a working registry file would need every actor function to be exported
+ * (capitalized; not yet true, see #78) plus the consuming project's Go module
+ * import path (which this compiler has no way to know).
+ */
+export type ActorsBarrelLang = "typescript" | "python" | "rust";
+
+const ACTORS_BARREL_FILE_NAME: Record<ActorsBarrelLang, string> = {
+  typescript: "index.ts",
+  python: "__init__.py",
+  rust: "mod.rs",
+};
+
+/** Renders the barrel entry for one actor. Rust needs `#[path]` since the actor file isn't at Rust's default module location. */
+function actorsBarrelEntry(
+  lang: ActorsBarrelLang,
+  actor: WrittenActor,
+): string {
+  const { src, fileBaseName } = actor;
+  switch (lang) {
+    case "typescript":
+      return `export { ${src} } from "./${fileBaseName}/${fileBaseName}.ts";`;
+    case "python":
+      return `from .${fileBaseName}.${fileBaseName} import ${src}`;
+    case "rust":
+      return `#[path = "${fileBaseName}/${fileBaseName}.rs"]\n#[allow(non_snake_case)]\nmod ${fileBaseName};\npub use ${fileBaseName}::${src};`;
+  }
+}
+
+/**
+ * Writes a barrel module re-exporting every actor for one language, at
+ * `<absFolderPath>/<lang>/actors/<barrel filename>` (`index.ts`/`__init__.py`/
+ * `mod.rs`). Returns `undefined` (writes nothing) when there are no actors
+ * for that language.
+ */
+export async function writeActorsBarrel(
+  absFolderPath: string,
+  actors: WrittenActor[],
+  lang: ActorsBarrelLang,
+): Promise<string | undefined> {
+  const langActors = actors.filter((a) => a.fsmLanguage === lang);
+  if (langActors.length === 0) return undefined;
+
+  const dir = `${absFolderPath}/${lang}/actors`;
+  await Deno.mkdir(dir, { recursive: true });
+  const file = `${dir}/${ACTORS_BARREL_FILE_NAME[lang]}`;
+  // Rust entries are 3 lines each — a blank line between actors keeps it readable.
+  const separator = lang === "rust" ? "\n\n" : "\n";
+  const content = langActors.map((a) => actorsBarrelEntry(lang, a)).join(
+    separator,
+  ) + "\n";
+  await Deno.writeTextFile(file, content);
   return file;
 }
 
