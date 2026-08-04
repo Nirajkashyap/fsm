@@ -8,16 +8,30 @@ import {
   type RegisteredActor,
   resolvePluginRootAbsPath,
   toRegisteredActor,
+  updateConsumerGoModActorRequires,
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
   writeActorsRegistry,
   writeAggregateActorsRegistry,
+  writeAggregateGoRegistry,
 } from "./operation-logic-scaffold.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "async-logic"]);
 
 const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
+
+/**
+ * worker-sdk/go's own `go.mod`, relative to the app root (one level above
+ * the plugin root, e.g. `apps/fsm-core-example`) — a hardcoded, known
+ * consumer of the generated Go registry (see
+ * {@linkcode updateConsumerGoModActorRequires}'s doc comment for why this
+ * coupling exists at all: Go's `replace` directives aren't transitive, so
+ * this file needs its own per-actor entries, not just the compiler's
+ * generic, consumer-agnostic aggregate module).
+ */
+const WORKER_SDK_GO_GOMOD_RELATIVE_TO_APP_ROOT =
+  "../../packages/fsm-core-async-op-worker/src/worker-sdk/go/go.mod";
 
 /**
  * Scaffolds async operation logic (actors / invoke objects) for every versioned
@@ -158,6 +172,46 @@ export async function generateAsyncOperationLogicFromFolders(
         lang,
         file: aggregateFile,
       });
+    }
+  }
+
+  const goRegistryFile = await writeAggregateGoRegistry(
+    appRootAbsPath,
+    pluginRootDirName,
+    allRegisteredActors,
+  );
+  if (goRegistryFile) {
+    logger.info("Wrote go aggregate actors registry {file}", {
+      file: goRegistryFile,
+    });
+  }
+
+  const workerSdkGoModPath =
+    `${appRootAbsPath}/${WORKER_SDK_GO_GOMOD_RELATIVE_TO_APP_ROOT}`;
+  try {
+    // 5 levels up from worker-sdk/go/ to the repo root, then back down into
+    // <appRoot's parent dir name>/<appRoot name>/<pluginRootDirName> -- e.g.
+    // apps/fsm-core-example/fsm -- derived from the real plugin-root path
+    // rather than hardcoded, so a renamed app folder doesn't silently break.
+    const pluginRootSuffix = pluginRootAbsPath.split("/").slice(-3).join("/");
+    const relativePrefixToPluginRoot = `${"../".repeat(5)}${pluginRootSuffix}`;
+    await updateConsumerGoModActorRequires(
+      workerSdkGoModPath,
+      allRegisteredActors,
+      appRootAbsPath.split("/").at(-1)!,
+      relativePrefixToPluginRoot,
+    );
+    logger.info("Updated go.mod generated actor requires in {path}", {
+      path: workerSdkGoModPath,
+    });
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) {
+      logger.info(
+        "Skipping worker-sdk/go go.mod update: {path} not found",
+        { path: workerSdkGoModPath },
+      );
+    } else {
+      throw err;
     }
   }
 }
