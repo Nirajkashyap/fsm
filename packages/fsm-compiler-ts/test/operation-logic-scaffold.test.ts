@@ -87,28 +87,28 @@ const cases: Case[] = [
     kind: "actions",
     name: "sendEmail",
     expected:
-      "// Action: sendEmail\npub fn sendEmail(context: &serde_json::Value, event: &serde_json::Value) {\n    // TODO: implement\n}\n",
+      "// Action: sendEmail\n#[allow(non_snake_case)]\npub fn sendEmail(context: &serde_json::Value, event: &serde_json::Value) {\n    // TODO: implement\n}\n",
   },
   {
     lang: "rust",
     kind: "guards",
     name: "isEligible",
     expected:
-      "// Guard: isEligible\npub fn isEligible(context: &serde_json::Value, event: &serde_json::Value) -> bool {\n    // TODO: implement\n    true\n}\n",
+      "// Guard: isEligible\n#[allow(non_snake_case)]\npub fn isEligible(context: &serde_json::Value, event: &serde_json::Value) -> bool {\n    // TODO: implement\n    true\n}\n",
   },
   {
     lang: "rust",
     kind: "delays",
     name: "cooldown",
     expected:
-      "// Delay: cooldown\npub fn delaycooldown(context: &serde_json::Value, event: &serde_json::Value) -> u64 {\n    // TODO: implement delay logic (return ms)\n    0\n}\n",
+      "// Delay: cooldown\n#[allow(non_snake_case)]\npub fn delaycooldown(context: &serde_json::Value, event: &serde_json::Value) -> u64 {\n    // TODO: implement delay logic (return ms)\n    0\n}\n",
   },
   {
     lang: "rust",
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\npub fn creditCheck(context: &serde_json::Value, event: &serde_json::Value) {\n    // TODO: implement actor logic\n}\n",
+      "// Actor: creditCheck\n#[allow(non_snake_case)]\npub fn creditCheck(context: &serde_json::Value, event: &serde_json::Value) {\n    // TODO: implement actor logic\n}\n",
   },
   // go (renderOperationModule prefixes the `package <kind>` header — accounted
   // for separately below, these cases cover the per-name stub only)
@@ -298,6 +298,7 @@ Deno.test("writeActorsBarrel - rust writes a mod.rs with #[path] attributes", as
     assertEquals(
       content,
       '#[path = "checkBureau/checkBureau.rs"]\n' +
+        "#[allow(non_snake_case)]\n" +
         "mod checkBureau;\n" +
         "pub use checkBureau::checkBureau;\n",
     );
