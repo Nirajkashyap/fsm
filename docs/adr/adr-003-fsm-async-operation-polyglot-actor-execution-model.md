@@ -1,13 +1,13 @@
 # ADR-003: Polyglot Actor Execution Model — Activity-Tier Architecture & Compiled-Language IPC
 
-| Field      | Value                                                                                                                                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Field      | Value                                                                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status     | Architecture: Current. Compiled-language IPC decision: **Revised 2026-07-26 — Option B (Activity Gateway), implemented** (issues #55, #61, #84; PR #62) |
-| Date       | 2026-06-13 (architecture), 2026-07-22 (compiled-language IPC decision), 2026-07-26 (revised to Option B), 2026-08-04 (revision formalized here) |
-| Deciders   | Niraj (architecture); Niraj, Claude (IPC decision); Niraj, Claude (2026-07-26 revision)                                                    |
-| Affects    | `packages/fsm-async-worker-ts`, `packages/fsm-compiler-ts`, `apps/fsm-core-example`, `packages/fsm-core-async-op-worker`                    |
-| Supersedes | `docs/kb/kb-001-distributed-multilang-fsm.md`, `docs/specs/spec-001-compiled-lang-actor-workers.md`                                        |
-| Related    | [ADR-002](adr-002-fsm-sync-operation-worker-execution-model.md) — orchestrator tier (this ADR is its activity-tier counterpart); Issues #55, #61, #84 |
+| Date       | 2026-06-13 (architecture), 2026-07-22 (compiled-language IPC decision), 2026-07-26 (revised to Option B), 2026-08-04 (revision formalized here)         |
+| Deciders   | Niraj (architecture); Niraj, Claude (IPC decision); Niraj, Claude (2026-07-26 revision)                                                                 |
+| Affects    | `packages/fsm-async-worker-ts`, `packages/fsm-compiler-ts`, `apps/fsm-core-example`, `packages/fsm-core-async-op-worker`                                |
+| Supersedes | `docs/kb/kb-001-distributed-multilang-fsm.md`, `docs/specs/spec-001-compiled-lang-actor-workers.md`                                                     |
+| Related    | [ADR-002](adr-002-fsm-sync-operation-worker-execution-model.md) — orchestrator tier (this ADR is its activity-tier counterpart); Issues #55, #61, #84   |
 
 ---
 
@@ -316,14 +316,15 @@ actor driving it today. **(chosen on revision, 2026-07-26 — see the Revision
 section below)**
 
 **C. Orchestrator-held poll + warm per-queue subprocess + Unix domain socket IPC
-(original decision, superseded 2026-07-26)** — the TS orchestrator (`asyncOperationWorkerlet.ts`) keeps 100% of
-PGMQ poll/claim/archive logic — nothing moves out of it. For `"rust"` (and later
-`"go"`), `startPromiseWorkerForLang` launches one warm subprocess per active
-queue (`Deno.Command`, no container), tracked in `activeWorkers` and killed via
-the existing `AbortController`/signal pattern — the same lifecycle shape
-Python's subprocess already uses. Instead of the subprocess polling PGMQ itself,
-the orchestrator sends it one request at a time over a **Unix domain socket**
-and awaits the response; the subprocess never opens a DB connection. A single
+(original decision, superseded 2026-07-26)** — the TS orchestrator
+(`asyncOperationWorkerlet.ts`) keeps 100% of PGMQ poll/claim/archive logic —
+nothing moves out of it. For `"rust"` (and later `"go"`),
+`startPromiseWorkerForLang` launches one warm subprocess per active queue
+(`Deno.Command`, no container), tracked in `activeWorkers` and killed via the
+existing `AbortController`/signal pattern — the same lifecycle shape Python's
+subprocess already uses. Instead of the subprocess polling PGMQ itself, the
+orchestrator sends it one request at a time over a **Unix domain socket** and
+awaits the response; the subprocess never opens a DB connection. A single
 generic "poll + dispatch-over-socket" harness is written once in TS and reused
 for every compiled language. Pros: zero DB connections in the polyglot worker;
 one harness reused across languages instead of a bespoke poller per language; no
@@ -432,12 +433,11 @@ The Option C decision above was made 2026-07-22. Before any Rust/Go actor was
 implemented against it, a standalone prototype (`polygot-lang-ipc-worker`,
 external to this monorepo at the time) was built exploring the Activity Gateway
 shape independently and validated it end to end: a gRPC gateway + Unix-socket
-sidecar protocol with persistent, self-registering per-language worker
-processes (Python and TypeScript SDKs both proven against the same wire
-contract). That prototype directly retires the risk that got Option B rejected
-on 2026-06-23 ("too complex for now") — the complexity was speculative then and
-is now a working reference. The decision is revised from Option C to
-**Option B**.
+sidecar protocol with persistent, self-registering per-language worker processes
+(Python and TypeScript SDKs both proven against the same wire contract). That
+prototype directly retires the risk that got Option B rejected on 2026-06-23
+("too complex for now") — the complexity was speculative then and is now a
+working reference. The decision is revised from Option C to **Option B**.
 
 ### Decision
 
@@ -445,17 +445,18 @@ is now a working reference. The decision is revised from Option C to
 only which option wins changes). Decision drivers, in order:
 
 1. **The prototype retires the risk that sank the 2026-06-14 attempt.**
-   `polygot-lang-ipc-worker` proves the gateway + sidecar shape works end to
-   end — a gRPC gateway, a length-prefixed JSON-frame sidecar protocol, and
-   worker SDKs registering functions and serving invocations.
+   `polygot-lang-ipc-worker` proves the gateway + sidecar shape works end to end
+   — a gRPC gateway, a length-prefixed JSON-frame sidecar protocol, and worker
+   SDKs registering functions and serving invocations.
 2. **Zero DB connections, on both the gateway and the workers** — the same
-   property Option C was chosen for, still satisfied: `asyncOperationWorkerlet.ts`
-   is unchanged in its ownership of PGMQ poll/claim/archive; it becomes a gRPC
-   client of the gateway, and the gateway itself never touches Postgres, only
-   routes invocations to registered workers over the sidecar socket.
+   property Option C was chosen for, still satisfied:
+   `asyncOperationWorkerlet.ts` is unchanged in its ownership of PGMQ
+   poll/claim/archive; it becomes a gRPC client of the gateway, and the gateway
+   itself never touches Postgres, only routes invocations to registered workers
+   over the sidecar socket.
 3. **General over special-cased.** Option C's design was Rust-specific with Go
-   "following later against the same contract" — but every new compiled
-   language still needed its own warm-subprocess-per-queue wiring inside
+   "following later against the same contract" — but every new compiled language
+   still needed its own warm-subprocess-per-queue wiring inside
    `startPromiseWorkerForLang`. Option B needs that wiring exactly once (a gRPC
    client call); a new language is purely a worker-SDK exercise.
 4. **Reuse over rebuild, applied to a bigger and now-available base.** Rather
@@ -473,37 +474,36 @@ which scoped Rust first and deferred Go.
   net-new capability. TS and Python branches of `startPromiseWorkerForLang` are
   untouched by the gateway (wiring the `"rust"`/`"go"` branches to call it is
   tracked separately — see Implementation below).
-- **New operational surface** (the real cost of this revision vs. Option C):
-  the Activity Gateway is a new long-running local process that must be
-  started, supervised, and monitored; each compiled language additionally
-  needs one long-lived worker process (started via its worker SDK's CLI) that
+- **New operational surface** (the real cost of this revision vs. Option C): the
+  Activity Gateway is a new long-running local process that must be started,
+  supervised, and monitored; each compiled language additionally needs one
+  long-lived worker process (started via its worker SDK's CLI) that
   self-registers at startup and must be kept alive/restarted independently of
-  queue activity. This is more moving parts than Option C's ephemeral
-  per-queue subprocess model.
-- **What gets harder**: one more service (the gateway) and one more
-  long-lived process per language to keep running; a wire protocol
-  (register/invoke/heartbeat/cancel/unregister over the sidecar socket, plus
-  the client-facing gRPC contract) to keep stable as languages are added;
-  debugging a compiled-language actor invocation now involves two hops
-  (orchestrator → gRPC gateway → sidecar socket → worker) instead of one.
+  queue activity. This is more moving parts than Option C's ephemeral per-queue
+  subprocess model.
+- **What gets harder**: one more service (the gateway) and one more long-lived
+  process per language to keep running; a wire protocol
+  (register/invoke/heartbeat/cancel/unregister over the sidecar socket, plus the
+  client-facing gRPC contract) to keep stable as languages are added; debugging
+  a compiled-language actor invocation now involves two hops (orchestrator →
+  gRPC gateway → sidecar socket → worker) instead of one.
 - **Rollback story**: the gateway/worker-SDK code path is new and additive —
-  `startPromiseWorkerForLang`'s `"rust"`/`"go"` branches still need to be
-  wired to call it (not yet done as of this ADR update); until that wiring
-  lands, rollback is simply not wiring it, with zero impact on TS/Python.
+  `startPromiseWorkerForLang`'s `"rust"`/`"go"` branches still need to be wired
+  to call it (not yet done as of this ADR update); until that wiring lands,
+  rollback is simply not wiring it, with zero impact on TS/Python.
 - **Handler discovery, still evolving**: the first implementation (PR #62) has
   each worker SDK discover its own handlers by scanning the FSM folder tree at
-  startup (TS/Python: dynamic `import()`/`importlib`; Rust/Go: a
-  hand-maintained compile-time registry) and re-validating what
-  `fsm-compiler-ts`'s own `check_fn.*` already validated at generation time.
-  Issue #84 replaces this with `fsm-compiler-ts` emitting a generated,
-  statically-referenced handler registry per language, so worker SDKs no
-  longer scan a folder or dynamically load code at startup. This is a
-  discovery-mechanism change only — the gateway/sidecar protocol and the
-  Option B decision above are unaffected.
+  startup (TS/Python: dynamic `import()`/`importlib`; Rust/Go: a hand-maintained
+  compile-time registry) and re-validating what `fsm-compiler-ts`'s own
+  `check_fn.*` already validated at generation time. Issue #84 replaces this
+  with `fsm-compiler-ts` emitting a generated, statically-referenced handler
+  registry per language, so worker SDKs no longer scan a folder or dynamically
+  load code at startup. This is a discovery-mechanism change only — the
+  gateway/sidecar protocol and the Option B decision above are unaffected.
 - **Explicitly deferred, not solved by this revision**: per-actor dependency
-  isolation (e.g. two Rust actors needing incompatible native library
-  versions) — out of scope given the "no confirmed container runtime"
-  constraint carried over from the original decision.
+  isolation (e.g. two Rust actors needing incompatible native library versions)
+  — out of scope given the "no confirmed container runtime" constraint carried
+  over from the original decision.
 
 ### Acceptance criteria
 
@@ -512,16 +512,15 @@ which scoped Rust first and deferred Go.
       `src/proto/activity-gateway.proto`).
 - [x] `packages/fsm-core-async-op-worker` hosts the gateway + sidecar router.
 - [x] The TS orchestrator retains sole ownership of `readMessage` (PGMQ poll)
-      and archive logic — neither the gateway nor any worker process opens a
-      DB connection.
-- [x] Reference workers exist for all four languages (TypeScript, Python,
-      Rust, Go), proving the full path end-to-end: worker registers with the
-      gateway → gateway routes an invocation to the worker over the sidecar
-      socket → response returned. Verified against both synthetic fixtures and
-      the real `apps/fsm-core-example` actors.
+      and archive logic — neither the gateway nor any worker process opens a DB
+      connection.
+- [x] Reference workers exist for all four languages (TypeScript, Python, Rust,
+      Go), proving the full path end-to-end: worker registers with the gateway →
+      gateway routes an invocation to the worker over the sidecar socket →
+      response returned. Verified against both synthetic fixtures and the real
+      `apps/fsm-core-example` actors.
 - [x] Failure modes covered: panic/error recovery in Rust (`catch_unwind`) and
-      Go (`recover()`) — a panicking actor invocation doesn't crash the
-      worker.
+      Go (`recover()`) — a panicking actor invocation doesn't crash the worker.
 - [ ] `startPromiseWorkerForLang`'s `"rust"`/`"go"` branches call the gateway
       instead of logging "not yet implemented" — not yet wired (tracked as
       follow-up work, not part of issue #61/#84's scope).

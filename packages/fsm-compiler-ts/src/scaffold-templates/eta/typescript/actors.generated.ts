@@ -4,7 +4,7 @@ import { eta } from "../eta-instance.ts";
 import type { TemplateFn } from "../../types.ts";
 
 const compiled = eta.compile(
-  "// <%~ it.label %>: <%~ it.name %>\nexport function <%~ it.fnName %>(context: any, event: any) {\n  // <%~ it.todo %>\n}\n\n",
+  "// <%~ it.label %>: <%~ it.name %>\nexport function <%~ it.fnName %>(input: unknown): unknown {\n  // <%~ it.todo %>\n  return {};\n}\n\n",
 );
 
 export const render: TemplateFn = (input) => compiled.call(eta, input);

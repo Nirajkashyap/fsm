@@ -1,6 +1,7 @@
 // <%~ it.label %>: <%~ it.name %>
 #[allow(non_snake_case)]
-pub fn <%~ it.fnName %>(context: &serde_json::Value, event: &serde_json::Value) {
+pub fn <%~ it.fnName %>(input: serde_json::Value) -> serde_json::Value {
     // <%~ it.todo %>
+    serde_json::json!({})
 }
 

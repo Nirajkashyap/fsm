@@ -9,6 +9,7 @@ import {
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
+  writeActorsRegistry,
   type WrittenActor,
 } from "./operation-logic-scaffold.ts";
 
@@ -23,15 +24,20 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  * Each invoke object gets its **own file** at
  * `<lang>/actors/<fsmType>_<fsmVersion>_<src>.<ext>`, where `<lang>` is the
  * actor's `fsmLanguage` (defaulting to typescript). The file exports one
- * function named after the actor `src`. Invokes that resolve to the same
- * `<fsmType>_<fsmVersion>_<src>` within a language are written once.
+ * function named after the actor `src` (Go: exported/capitalized, plus its
+ * own `go.mod` — see {@linkcode writeActorFile}). Invokes that resolve to the
+ * same `<fsmType>_<fsmVersion>_<src>` within a language are written once.
  *
- * Two kinds of additional files are written per version folder:
+ * Three kinds of additional files are written per version folder:
  * `actors-manifest.json` (every actor across all languages — `{ src,
- * fsmLanguage, filePath }`), and a per-language barrel
+ * fsmLanguage, filePath, exportedName }`), a per-language barrel
  * (`typescript/actors/index.ts`, `python/actors/__init__.py`,
- * `rust/actors/mod.rs`) re-exporting each actor for that language, written
- * only when at least one actor exists in it. Go has no barrel — see
+ * `rust/actors/mod.rs`) re-exporting each actor for that language by name,
+ * and a per-language generated registry (`generated-registry.ts`/
+ * `generated_registry.py`/`generated_registry.rs`) — a string-keyed lookup
+ * map for runtime dispatch, what a worker SDK needs instead of a folder scan
+ * or dynamic `import()`/`importlib`. Both are written only when at least one
+ * actor exists for that language. Go has neither — see
  * {@linkcode ActorsBarrelLang}'s doc comment.
  */
 export async function generateAsyncOperationLogicFromFolders(
@@ -104,6 +110,18 @@ export async function generateAsyncOperationLogicFromFolders(
           logger.info("Wrote {lang} actors barrel {file}", {
             lang,
             file: barrelFile,
+          });
+        }
+
+        const registryFile = await writeActorsRegistry(
+          absFolderPath,
+          writtenActors,
+          lang,
+        );
+        if (registryFile) {
+          logger.info("Wrote {lang} actors registry {file}", {
+            lang,
+            file: registryFile,
           });
         }
       }

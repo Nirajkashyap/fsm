@@ -7,6 +7,7 @@ import {
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
+  writeActorsRegistry,
   type WrittenActor,
 } from "../src/operation-logic-scaffold.ts";
 import type { ActorReference } from "../src/util.ts";
@@ -50,7 +51,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\nexport function creditCheck(context: any, event: any) {\n  // TODO: implement actor logic\n}\n",
+      "// Actor: creditCheck\nexport function creditCheck(input: unknown): unknown {\n  // TODO: implement actor logic\n  return {};\n}\n",
   },
   // python
   {
@@ -79,7 +80,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "# Actor: creditCheck\ndef creditCheck(context, event):\n    # TODO: implement actor logic\n    pass\n",
+      "# Actor: creditCheck\ndef creditCheck(input):\n    # TODO: implement actor logic\n    return {}\n",
   },
   // rust
   {
@@ -108,7 +109,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\n#[allow(non_snake_case)]\npub fn creditCheck(context: &serde_json::Value, event: &serde_json::Value) {\n    // TODO: implement actor logic\n}\n",
+      "// Actor: creditCheck\n#[allow(non_snake_case)]\npub fn creditCheck(input: serde_json::Value) -> serde_json::Value {\n    // TODO: implement actor logic\n    serde_json::json!({})\n}\n",
   },
   // go (renderOperationModule prefixes the `package <kind>` header — accounted
   // for separately below, these cases cover the per-name stub only)
@@ -138,7 +139,9 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\nfunc creditCheck(context map[string]any, event map[string]any) {\n\t// TODO: implement actor logic\n}\n",
+      // Go exports (capitalizes) actor function names for cross-package
+      // access — see toGoExportedName / #83. Other kinds/languages don't.
+      "// Actor: creditCheck\nfunc CreditCheck(input any) (any, error) {\n\t// TODO: implement actor logic\n\treturn map[string]any{}, nil\n}\n",
   },
 ];
 
@@ -165,7 +168,7 @@ Deno.test("renderOperationModule - multiple stubs keep a blank-line separator be
   );
 });
 
-Deno.test("writeActorFile - go actor gets a package header and its own subfolder", async () => {
+Deno.test("writeActorFile - go actor gets a package header, exported (capitalized) function, and its own subfolder", async () => {
   const dir = await Deno.makeTempDir();
   try {
     const actor: ActorReference = { src: "creditCheck" };
@@ -174,7 +177,26 @@ Deno.test("writeActorFile - go actor gets a package header and its own subfolder
     const content = await Deno.readTextFile(file);
     assertEquals(
       content,
-      "package actors\n\n// Actor: creditCheck\nfunc creditCheck(context map[string]any, event map[string]any) {\n\t// TODO: implement actor logic\n}\n",
+      "package actors\n\n// Actor: creditCheck\nfunc CreditCheck(input any) (any, error) {\n\t// TODO: implement actor logic\n\treturn map[string]any{}, nil\n}\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorFile - go actor also writes its own go.mod, module path derived from the FSM/version/actor folder names", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const absFolderPath = `${dir}/apps/fsm-core-example/fsm/creditCheck/v01`;
+    await Deno.mkdir(absFolderPath, { recursive: true });
+    const actor: ActorReference = { src: "checkBureau" };
+    await writeActorFile(absFolderPath, "go", actor);
+    const goModContent = await Deno.readTextFile(
+      `${absFolderPath}/go/actors/checkBureau/go.mod`,
+    );
+    assertEquals(
+      goModContent,
+      "module fsm-core-example/creditcheck/v01/go/actors/checkbureau\n\ngo 1.19\n",
     );
   } finally {
     await Deno.remove(dir, { recursive: true });
@@ -190,7 +212,7 @@ Deno.test("writeActorFile - typescript actor has no package header", async () =>
     const content = await Deno.readTextFile(file);
     assertEquals(
       content,
-      "// Actor: creditCheck\nexport function creditCheck(context: any, event: any) {\n  // TODO: implement actor logic\n}\n",
+      "// Actor: creditCheck\nexport function creditCheck(input: unknown): unknown {\n  // TODO: implement actor logic\n  return {};\n}\n",
     );
   } finally {
     await Deno.remove(dir, { recursive: true });
@@ -204,6 +226,18 @@ Deno.test("toWrittenActor - builds record matching writeActorFile's path convent
     fileBaseName: "checkBureau",
     fsmLanguage: "typescript",
     filePath: "typescript/actors/checkBureau/checkBureau.ts",
+    exportedName: "checkBureau",
+  });
+});
+
+Deno.test("toWrittenActor - go capitalizes exportedName for cross-package export, src is untouched", () => {
+  const actor: ActorReference = { src: "checkBureau" };
+  assertEquals(toWrittenActor("go", actor), {
+    src: "checkBureau",
+    fileBaseName: "checkBureau",
+    fsmLanguage: "go",
+    filePath: "go/actors/checkBureau/checkBureau.go",
+    exportedName: "CheckBureau",
   });
 });
 
@@ -213,6 +247,7 @@ Deno.test("writeActorsManifest - writes all actors across all languages", async 
     const actors: WrittenActor[] = [
       toWrittenActor("typescript", { src: "checkBureau" }),
       toWrittenActor("python", { src: "checkBureauPython" }),
+      toWrittenActor("go", { src: "checkBureauGo" }),
     ];
     const file = await writeActorsManifest(dir, actors);
     assertEquals(file, `${dir}/actors-manifest.json`);
@@ -223,11 +258,19 @@ Deno.test("writeActorsManifest - writes all actors across all languages", async 
           src: "checkBureau",
           fsmLanguage: "typescript",
           filePath: "typescript/actors/checkBureau/checkBureau.ts",
+          exportedName: "checkBureau",
         },
         {
           src: "checkBureauPython",
           fsmLanguage: "python",
           filePath: "python/actors/checkBureauPython/checkBureauPython.py",
+          exportedName: "checkBureauPython",
+        },
+        {
+          src: "checkBureauGo",
+          fsmLanguage: "go",
+          filePath: "go/actors/checkBureauGo/checkBureauGo.go",
+          exportedName: "CheckBureauGo",
         },
       ],
     });
@@ -314,6 +357,99 @@ Deno.test("writeActorsBarrel - writes nothing when there are no actors for that 
       toWrittenActor("python", { src: "checkBureauPython" }),
     ];
     const file = await writeActorsBarrel(dir, actors, "typescript");
+    assertEquals(file, undefined);
+    let existsErr: unknown;
+    try {
+      await Deno.stat(`${dir}/typescript`);
+    } catch (err) {
+      existsErr = err;
+    }
+    assertExists(existsErr);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorsRegistry - typescript writes a string-keyed lookup map", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeActorsRegistry(
+      dir,
+      actorsForBarrelTests,
+      "typescript",
+    );
+    assertEquals(file, `${dir}/typescript/actors/generated-registry.ts`);
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      'import { checkBureau } from "./checkBureau/checkBureau.ts";\n' +
+        'import { determineMiddleScore } from "./determineMiddleScore/determineMiddleScore.ts";\n' +
+        "\n" +
+        "export const ACTOR_REGISTRY: Record<string, (input: unknown) => unknown> = {\n" +
+        "  checkBureau,\n" +
+        "  determineMiddleScore,\n" +
+        "};\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorsRegistry - python writes a string-keyed dict", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeActorsRegistry(
+      dir,
+      actorsForBarrelTests,
+      "python",
+    );
+    assertEquals(file, `${dir}/python/actors/generated_registry.py`);
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      "from .checkBureauPython.checkBureauPython import checkBureauPython\n" +
+        "\n" +
+        "ACTOR_REGISTRY = {\n" +
+        '    "checkBureauPython": checkBureauPython,\n' +
+        "}\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorsRegistry - rust reuses the barrel's #[path] module instead of redeclaring it", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeActorsRegistry(dir, actorsForBarrelTests, "rust");
+    assertEquals(file, `${dir}/rust/actors/generated_registry.rs`);
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      '#[path = "mod.rs"]\n' +
+        "mod actors;\n" +
+        "\n" +
+        "pub type ActorFn = fn(serde_json::Value) -> serde_json::Value;\n" +
+        "\n" +
+        "pub fn actor_registry(name: &str) -> Option<ActorFn> {\n" +
+        "    match name {\n" +
+        '        "checkBureau" => Some(actors::checkBureau),\n' +
+        "        _ => None,\n" +
+        "    }\n" +
+        "}\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorsRegistry - writes nothing when there are no actors for that language", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const actors: WrittenActor[] = [
+      toWrittenActor("python", { src: "checkBureauPython" }),
+    ];
+    const file = await writeActorsRegistry(dir, actors, "typescript");
     assertEquals(file, undefined);
     let existsErr: unknown;
     try {

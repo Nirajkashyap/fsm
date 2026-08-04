@@ -1,5 +1,9 @@
 import { getLogger } from "@logtape/logtape";
-import { type ActorReference, isVersionFolderName } from "./util.ts";
+import {
+  type ActorReference,
+  isVersionFolderName,
+  toGoExportedName,
+} from "./util.ts";
 import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
 import { deriveTemplateInput } from "./scaffold-templates/derive-template-input.ts";
 import { getPreamble, getTemplate } from "./scaffold-templates/registry.ts";
@@ -65,7 +69,7 @@ function renderStub(
   kind: OperationKind,
   name: string,
 ): string {
-  return getTemplate(lang, kind)(deriveTemplateInput(kind, name));
+  return getTemplate(lang, kind)(deriveTemplateInput(kind, name, lang));
 }
 
 /**
@@ -120,9 +124,48 @@ export function actorFileBaseName(actor: ActorReference): string {
 }
 
 /**
+ * Derives the Go module path for a single actor's own `go.mod`, matching the
+ * convention already established by hand for `apps/fsm-core-example`'s Go
+ * actors (see `CheckReportsTable/go.mod`):
+ * `<appRoot>/<fsmName>/<version>/go/actors/<actorDir>`, lowercased.
+ * `<appRoot>` is the directory name two levels above the FSM's plugin root
+ * (e.g. `apps/fsm-core-example/fsm/creditCheck/v01` -> appRoot
+ * `fsm-core-example`). Each Go actor is its own Go module so a consumer in a
+ * different module (e.g. a worker-sdk/go build) can pull it in via a
+ * `require`/`replace` directive — Go has no dynamic-loading equivalent to
+ * TS/Python's `import()`/`importlib`.
+ */
+function goActorModulePath(
+  absFolderPath: string,
+  actorDirName: string,
+): string {
+  const parts = absFolderPath.split("/");
+  const version = parts.at(-1)!;
+  const fsmName = parts.at(-2)!;
+  const appRoot = parts.at(-4)!; // .../<appRoot>/fsm/<fsmName>/<version>
+  return `${appRoot}/${fsmName.toLowerCase()}/${version}/go/actors/${actorDirName.toLowerCase()}`;
+}
+
+/** Writes the `go.mod` for a single Go actor's own module (see {@linkcode goActorModulePath}). */
+async function writeGoActorModule(
+  absFolderPath: string,
+  actorDirName: string,
+): Promise<void> {
+  const modulePath = goActorModulePath(absFolderPath, actorDirName);
+  const dir = `${absFolderPath}/go/actors/${actorDirName}`;
+  await Deno.writeTextFile(
+    `${dir}/go.mod`,
+    `module ${modulePath}\n\ngo 1.19\n`,
+  );
+}
+
+/**
  * Writes a single actor to its own file at
  * `<absFolderPath>/<lang>/actors/<src>/<src>.<ext>`.
- * The file exports one function named after the actor `src`.
+ * The file exports one function named after the actor `src` — except Go,
+ * whose function is exported (capitalized) instead, and which also gets its
+ * own `go.mod` (see {@linkcode writeGoActorModule}), since Go enforces
+ * exports and module boundaries at compile time.
  * Returns the absolute path written.
  */
 export async function writeActorFile(
@@ -139,18 +182,23 @@ export async function writeActorFile(
     file,
     withSingleTrailingNewline(header + renderStub(lang, "actors", actor.src)),
   );
+  if (lang === "go") {
+    await writeGoActorModule(absFolderPath, name);
+  }
   return file;
 }
 
 /** One actor file written by {@linkcode writeActorFile}, recorded for the manifest/barrel. */
 export type WrittenActor = {
-  /** The actor's original `src` — also the exported function name. */
+  /** The actor's original `src` — its identity (invoke id), independent of language. */
   src: string;
   /** Sanitized filename component (see {@linkcode actorFileBaseName}) — the folder/file name on disk. */
   fileBaseName: string;
   fsmLanguage: OperationLang;
   /** Path relative to the version-folder root, e.g. `typescript/actors/checkBureau/checkBureau.ts`. */
   filePath: string;
+  /** The callable/importable symbol name in `fsmLanguage` — equals `src` except for Go (see {@linkcode toGoExportedName}). */
+  exportedName: string;
 };
 
 /** Builds the {@linkcode WrittenActor} record for the file a {@linkcode writeActorFile} call for this actor produces. */
@@ -166,6 +214,7 @@ export function toWrittenActor(
     filePath: `${lang}/actors/${fileBaseName}/${fileBaseName}.${
       operationFileExtension(lang)
     }`,
+    exportedName: lang === "go" ? toGoExportedName(actor.src) : actor.src,
   };
 }
 
@@ -180,10 +229,11 @@ export async function writeActorsManifest(
 ): Promise<string> {
   const file = `${absFolderPath}/actors-manifest.json`;
   const manifest = {
-    actors: actors.map(({ src, fsmLanguage, filePath }) => ({
+    actors: actors.map(({ src, fsmLanguage, filePath, exportedName }) => ({
       src,
       fsmLanguage,
       filePath,
+      exportedName,
     })),
   };
   await Deno.writeTextFile(file, JSON.stringify(manifest, null, 2) + "\n");
@@ -244,6 +294,72 @@ export async function writeActorsBarrel(
   const content = langActors.map((a) => actorsBarrelEntry(lang, a)).join(
     separator,
   ) + "\n";
+  await Deno.writeTextFile(file, content);
+  return file;
+}
+
+const ACTORS_REGISTRY_FILE_NAME: Record<ActorsBarrelLang, string> = {
+  typescript: "generated-registry.ts",
+  python: "generated_registry.py",
+  rust: "generated_registry.rs",
+};
+
+/**
+ * Writes a key -> callable lookup registry re-exporting every actor for one
+ * language, at `<absFolderPath>/<lang>/actors/<registry filename>`. Unlike
+ * {@linkcode writeActorsBarrel} (named exports, for consumers who know the
+ * actor name at compile time), this is for runtime dispatch by string key —
+ * what a worker SDK needs to route an invocation to the right function
+ * without a folder scan or dynamic `import()`/`importlib`. Returns
+ * `undefined` (writes nothing) when there are no actors for that language.
+ *
+ * Rust's registry reuses the barrel's `#[path]` module declarations
+ * (`#[path = "mod.rs"] mod actors;`) instead of redeclaring them, since Rust
+ * treats a duplicate `#[path]`/`mod` pair for the same file as a compile
+ * error if both the barrel and the registry declared it independently.
+ */
+export async function writeActorsRegistry(
+  absFolderPath: string,
+  actors: WrittenActor[],
+  lang: ActorsBarrelLang,
+): Promise<string | undefined> {
+  const langActors = actors.filter((a) => a.fsmLanguage === lang);
+  if (langActors.length === 0) return undefined;
+
+  const dir = `${absFolderPath}/${lang}/actors`;
+  await Deno.mkdir(dir, { recursive: true });
+  const file = `${dir}/${ACTORS_REGISTRY_FILE_NAME[lang]}`;
+
+  let content: string;
+  switch (lang) {
+    case "typescript": {
+      const imports = langActors.map((a) =>
+        `import { ${a.src} } from "./${a.fileBaseName}/${a.fileBaseName}.ts";`
+      ).join("\n");
+      const entries = langActors.map((a) => `  ${a.src},`).join("\n");
+      content =
+        `${imports}\n\nexport const ACTOR_REGISTRY: Record<string, (input: unknown) => unknown> = {\n${entries}\n};\n`;
+      break;
+    }
+    case "python": {
+      const imports = langActors.map((a) =>
+        `from .${a.fileBaseName}.${a.fileBaseName} import ${a.src}`
+      ).join("\n");
+      const entries = langActors.map((a) => `    "${a.src}": ${a.src},`)
+        .join("\n");
+      content = `${imports}\n\nACTOR_REGISTRY = {\n${entries}\n}\n`;
+      break;
+    }
+    case "rust": {
+      const entries = langActors.map((a) =>
+        `        "${a.src}" => Some(actors::${a.src}),`
+      ).join("\n");
+      content =
+        `#[path = "mod.rs"]\nmod actors;\n\npub type ActorFn = fn(serde_json::Value) -> serde_json::Value;\n\npub fn actor_registry(name: &str) -> Option<ActorFn> {\n    match name {\n${entries}\n        _ => None,\n    }\n}\n`;
+      break;
+    }
+  }
+
   await Deno.writeTextFile(file, content);
   return file;
 }
