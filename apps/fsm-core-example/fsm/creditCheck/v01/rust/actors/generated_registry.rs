@@ -12,15 +12,13 @@ pub struct ActorRegistration {
 }
 
 pub fn actor_registrations() -> Vec<ActorRegistration> {
-    vec![
-        ActorRegistration {
-            parent_fsm_name: "creditCheck",
-            parent_fsm_version: "v01",
-            fsm_type: "promise",
-            fsm_name: "checkBureauRust",
-            fsm_version: "v01",
-            fsm_language: "rust",
-            handler: actors::checkBureauRust,
-        },
-    ]
+    vec![ActorRegistration {
+        parent_fsm_name: "creditCheck",
+        parent_fsm_version: "v01",
+        fsm_type: "promise",
+        fsm_name: "checkBureauRust",
+        fsm_version: "v01",
+        fsm_language: "rust",
+        handler: actors::checkBureauRust,
+    }]
 }
