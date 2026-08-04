@@ -442,7 +442,22 @@ Deno.test("writeActorsRegistry - python carries the full activity-registration i
     const content = await Deno.readTextFile(file!);
     assertEquals(
       content,
-      "from .checkBureauPython.checkBureauPython import checkBureauPython\n" +
+      "import importlib.util\n" +
+        "import os\n" +
+        "\n" +
+        "_BASE_DIR = os.path.dirname(os.path.abspath(__file__))\n" +
+        "\n" +
+        "\n" +
+        "def _load_actor(rel_path, fn_name):\n" +
+        "    spec = importlib.util.spec_from_file_location(\n" +
+        "        fn_name, os.path.join(_BASE_DIR, rel_path)\n" +
+        "    )\n" +
+        "    module = importlib.util.module_from_spec(spec)\n" +
+        "    spec.loader.exec_module(module)\n" +
+        "    return getattr(module, fn_name)\n" +
+        "\n" +
+        "\n" +
+        'checkBureauPython = _load_actor("checkBureauPython/checkBureauPython.py", "checkBureauPython")\n' +
         "\n" +
         "ACTOR_REGISTRATIONS = [\n" +
         "    {\n" +

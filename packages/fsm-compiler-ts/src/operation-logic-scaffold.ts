@@ -432,8 +432,16 @@ ${entries}
 `;
     }
     case "python": {
-      const imports = langActors.map((a) =>
-        `from .${a.fileBaseName}.${a.fileBaseName} import ${a.src}`
+      // A relative import (`from .X.X import Y`) only resolves when this
+      // file is loaded as part of a proper package -- but the aggregate
+      // registry loads each per-version registry via
+      // importlib.util.spec_from_file_location (a fixed path, no package
+      // context), which breaks relative imports. Loading each actor the same
+      // fixed-path way here keeps this file correct standalone too.
+      const loads = langActors.map((a) =>
+        `${a.src} = _load_actor(${
+          JSON.stringify(`${a.fileBaseName}/${a.fileBaseName}.py`)
+        }, ${JSON.stringify(a.src)})`
       ).join("\n");
       const entries = langActors.map((a) => {
         const id = registrationIdentityFields(a);
@@ -447,7 +455,27 @@ ${entries}
         "handler": ${a.src},
     },`;
       }).join("\n");
-      return `${imports}\n\nACTOR_REGISTRATIONS = [\n${entries}\n]\n`;
+      return `import importlib.util
+import os
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _load_actor(rel_path, fn_name):
+    spec = importlib.util.spec_from_file_location(
+        fn_name, os.path.join(_BASE_DIR, rel_path)
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return getattr(module, fn_name)
+
+
+${loads}
+
+ACTOR_REGISTRATIONS = [
+${entries}
+]
+`;
     }
     case "rust": {
       const entries = langActors.map((a) => {
