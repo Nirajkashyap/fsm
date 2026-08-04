@@ -1,0 +1,33 @@
+import { fetchTasks } from "./fetchTasks/fetchTasks.ts";
+import { updateTask } from "./updateTask/updateTask.ts";
+
+export type ActorRegistration = {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: string;
+  fsmName: string;
+  fsmVersion: string;
+  fsmLanguage: string;
+  handler: (input: unknown) => unknown;
+};
+
+export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
+  {
+    parentFsmName: "taskMachineConfig",
+    parentFsmVersion: "v01",
+    fsmType: "promise",
+    fsmName: "fetchTasks",
+    fsmVersion: "v01",
+    fsmLanguage: "typescript",
+    handler: fetchTasks,
+  },
+  {
+    parentFsmName: "taskMachineConfig",
+    parentFsmVersion: "v01",
+    fsmType: "promise",
+    fsmName: "updateTask",
+    fsmVersion: "v01",
+    fsmLanguage: "typescript",
+    handler: updateTask,
+  },
+];

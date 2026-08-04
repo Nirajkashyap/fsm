@@ -1,29 +1,19 @@
 // TypeScript worker SDK: connects to the gateway's sidecar Unix socket,
-// registers verified actors, and serves invoke requests.
-// Ported from the polygot-lang-ipc-worker prototype's
-// worker-sdk/typescript/src/cli.ts, with changes:
+// registers actors from a compiler-generated registry, and serves invoke
+// requests.
 //
-// - Reuses this package's own sidecar/protocol.ts for framing/envelopes
-//   instead of duplicating the wire protocol (the prototype had to
-//   duplicate it because the gateway and each worker-sdk were separate
-//   deployable units; here they're the same monorepo package).
-// - Routes by `actorKey()`'s
-//   `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage`
-//   instead of a free-form function name, matching the activity contract
-//   this gateway speaks.
-// - Actor discovery is validate-async-operation.ts's
-//   `validateAsyncOperationFromFoldersTypescript` (this repo's real FSM
-//   actor convention — see check_fn.ts), not a standalone directory scan.
-//   `ActorWorker` takes the verified `ActorPluginValidationResult[]`
-//   directly and dynamically imports each `fsmModulePath`/`method` pair
-//   itself.
+// Actor discovery is no longer a runtime folder scan + dynamic `import()` —
+// `fsm-compiler-ts` generates a static, self-describing registry
+// (`ActorRegistration[]`, see `packages/fsm-compiler-ts/src/operation-logic-scaffold.ts`'s
+// `writeActorsRegistry`/`writeAggregateActorsRegistry`) that this SDK just
+// iterates. `ActorWorker` takes that array directly; the CLI is what wires it
+// to a fixed, statically-imported registry file (see cli.ts) — this module
+// stays registry-source-agnostic so it's easy to test with a synthetic array.
 //
 // This is the reference implementation for a compiled-language worker SDK
-// (e.g. Rust) to follow — see SPEC-001's acceptance criteria.
+// (e.g. Rust) to follow — see ADR-003's Activity Gateway revision.
 
-import { toFileUrl } from "@std/path";
 import { getLogger } from "@logtape/logtape";
-import type { ActorPluginValidationResult } from "@pgfsm/compiler";
 import {
   actorKey,
   type InvokeBody,
@@ -45,6 +35,17 @@ const logger = getLogger([
 
 export type ActorHandler = (input: unknown) => unknown | Promise<unknown>;
 
+/** One entry from a compiler-generated actor registry (see module doc comment). */
+export type ActorRegistration = {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: string;
+  fsmName: string;
+  fsmVersion: string;
+  fsmLanguage: string;
+  handler: ActorHandler;
+};
+
 const DEFAULT_HEARTBEAT_MS = 5_000;
 
 export interface ActorWorkerOptions {
@@ -54,10 +55,9 @@ export interface ActorWorkerOptions {
   heartbeatMs?: number;
 }
 
-// Connects to the gateway's sidecar socket, registers `verifiedActors`
-// (already filtered to `isVerified === true` by the caller), and serves
-// invoke requests until the gateway unregisters this worker or `stop()` is
-// called.
+// Connects to the gateway's sidecar socket, registers `registrations`, and
+// serves invoke requests until the gateway unregisters this worker or
+// `stop()` is called.
 export class ActorWorker {
   private conn: Deno.Conn | null = null;
   private stopped = false;
@@ -65,42 +65,34 @@ export class ActorWorker {
 
   constructor(
     private readonly options: ActorWorkerOptions,
-    private readonly verifiedActors: ActorPluginValidationResult[],
+    private readonly registrations: ActorRegistration[],
   ) {}
 
   async run(): Promise<void> {
-    if (this.verifiedActors.length === 0) {
+    if (this.registrations.length === 0) {
       throw new Error("no actors to register, refusing to start worker");
     }
 
     const registeredActors: RegisteredActor[] = [];
-    for (const actor of this.verifiedActors) {
-      const mod = await import(toFileUrl(actor.fsmModulePath).href);
-      const handler = mod[actor.method];
-      if (typeof handler !== "function") {
-        throw new Error(
-          `'${actor.method}' is not exported as a function from ${actor.fsmModulePath}`,
-        );
-      }
-
+    for (const reg of this.registrations) {
       this.handlers.set(
         actorKey(
-          actor.parentFsmName,
-          actor.parentFsmVersion,
-          actor.fsmType,
-          actor.fsmName,
-          actor.fsmVersion,
-          actor.fsmLanguage,
+          reg.parentFsmName,
+          reg.parentFsmVersion,
+          reg.fsmType,
+          reg.fsmName,
+          reg.fsmVersion,
+          reg.fsmLanguage,
         ),
-        handler as ActorHandler,
+        reg.handler,
       );
       registeredActors.push({
-        parentFsmName: actor.parentFsmName,
-        parentFsmVersion: actor.parentFsmVersion,
-        fsmType: actor.fsmType,
-        fsmName: actor.fsmName,
-        fsmVersion: actor.fsmVersion,
-        fsmLanguage: actor.fsmLanguage,
+        parentFsmName: reg.parentFsmName,
+        parentFsmVersion: reg.parentFsmVersion,
+        fsmType: reg.fsmType,
+        fsmName: reg.fsmName,
+        fsmVersion: reg.fsmVersion,
+        fsmLanguage: reg.fsmLanguage,
       });
     }
 

@@ -1,0 +1,63 @@
+import { verifyCredentials } from "./verifyCredentials/verifyCredentials.ts";
+import { checkReportsTable } from "./checkReportsTable/checkReportsTable.ts";
+import { checkBureau } from "./checkBureau/checkBureau.ts";
+import { determineMiddleScore } from "./determineMiddleScore/determineMiddleScore.ts";
+import { generateInterestRates } from "./generateInterestRates/generateInterestRates.ts";
+
+export type ActorRegistration = {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: string;
+  fsmName: string;
+  fsmVersion: string;
+  fsmLanguage: string;
+  handler: (input: unknown) => unknown;
+};
+
+export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
+  {
+    parentFsmName: "creditCheck",
+    parentFsmVersion: "v01",
+    fsmType: "promise",
+    fsmName: "verifyCredentials",
+    fsmVersion: "v01",
+    fsmLanguage: "typescript",
+    handler: verifyCredentials,
+  },
+  {
+    parentFsmName: "creditCheck",
+    parentFsmVersion: "v01",
+    fsmType: "promise",
+    fsmName: "checkReportsTable",
+    fsmVersion: "v01",
+    fsmLanguage: "typescript",
+    handler: checkReportsTable,
+  },
+  {
+    parentFsmName: "creditCheck",
+    parentFsmVersion: "v01",
+    fsmType: "promise",
+    fsmName: "checkBureau",
+    fsmVersion: "v01",
+    fsmLanguage: "typescript",
+    handler: checkBureau,
+  },
+  {
+    parentFsmName: "creditCheck",
+    parentFsmVersion: "v01",
+    fsmType: "promise",
+    fsmName: "determineMiddleScore",
+    fsmVersion: "v01",
+    fsmLanguage: "typescript",
+    handler: determineMiddleScore,
+  },
+  {
+    parentFsmName: "creditCheck",
+    parentFsmVersion: "v01",
+    fsmType: "promise",
+    fsmName: "generateInterestRates",
+    fsmVersion: "v01",
+    fsmLanguage: "typescript",
+    handler: generateInterestRates,
+  },
+];

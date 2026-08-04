@@ -17,6 +17,6 @@ export type {
 export { ActorWorker } from "./worker-sdk/typescript/sdk.ts";
 export type {
   ActorHandler,
+  ActorRegistration,
   ActorWorkerOptions,
 } from "./worker-sdk/typescript/sdk.ts";
-export { validateAsyncOperationFromFoldersTypescript } from "./worker-sdk/typescript/validate-async-operation.ts";

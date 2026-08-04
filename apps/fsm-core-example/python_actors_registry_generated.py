@@ -1,0 +1,23 @@
+# Each FSM-version's registry is loaded from a fixed, compiler-generated
+# path -- not a runtime scan -- since Python has no static-import syntax that
+# reaches an arbitrarily-nested sibling directory the way TS/Rust do.
+import importlib.util
+import os
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _load_registrations(rel_path):
+    spec = importlib.util.spec_from_file_location(
+        "generated_registry", os.path.join(_BASE_DIR, rel_path)
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.ACTOR_REGISTRATIONS
+
+
+creditcheck_v01 = _load_registrations("fsm/creditCheck/v01/python/actors/generated_registry.py")
+
+ACTOR_REGISTRATIONS = [
+    *creditcheck_v01,
+]

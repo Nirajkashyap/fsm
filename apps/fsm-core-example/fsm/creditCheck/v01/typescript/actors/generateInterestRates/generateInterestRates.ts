@@ -1,4 +1,5 @@
 // Actor: generateInterestRates
-export function generateInterestRates(context: any, event: any) {
+export function generateInterestRates(input: unknown): unknown {
   // TODO: implement actor logic
+  return {};
 }

@@ -1,58 +1,59 @@
 #!/usr/bin/env python3
 """worker-sdk/python cli — Python reference worker for the Activity Gateway.
 
-Python counterpart of ../typescript/cli.ts: validates python actor folders
-under --folder-path (validate_async_operation.py), filters to verified
-results, and (for `start`) hands that array straight to sdk.ActorWorker,
-which dynamically imports each fsm_module_path/method pair itself.
+Python counterpart of ../typescript/cli.ts: loads actors from a
+compiler-generated registry (a fixed, known file — see fsm-compiler-ts's
+writeAggregateActorsRegistry) instead of scanning a folder path, and hands
+that list straight to sdk.ActorWorker.
 
 USAGE
-  python3 cli.py <scan|start> --folder-path <path> [options]
+  python3 cli.py <list|start> [options]
 
 EXAMPLE
-  python3 cli.py start \\
-    --folder-path /abs/path/to/fsm-core-example/fsm \\
-    --workflow-type promise
+  python3 cli.py start --gateway-socket /tmp/pgfsm-activity-gateway-workers.sock
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import os
 import signal
 import sys
 import uuid
 
 from sdk import ActorWorker
-from validate_async_operation import validate_async_operation_from_folders_python
 
-VALID_WORKFLOW_TYPES = ["promise", "sharedPromise"]
 DEFAULT_GATEWAY_SOCKET = "/tmp/pgfsm-activity-gateway-workers.sock"
 DEFAULT_HEARTBEAT_MS = 5000
+
+# Fixed, compiler-generated registry -- see fsm-compiler-ts's
+# writeAggregateActorsRegistry. Regenerate with
+# `deno task cli -c generate-async-logic -f <plugin-root>` after actors
+# change; this path is a build-time coupling to that one app's FSM
+# definitions by design (see #84 for why).
+_REGISTRY_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "../../../../../apps/fsm-core-example/python_actors_registry_generated.py",
+)
+
+
+def _load_registrations() -> list[dict]:
+    spec = importlib.util.spec_from_file_location(
+        "python_actors_registry_generated", _REGISTRY_PATH
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load registry from {_REGISTRY_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.ACTOR_REGISTRATIONS
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="worker-sdk/python cli — reference worker for the Activity Gateway"
     )
-    parser.add_argument("command", choices=["scan", "start"])
-    parser.add_argument(
-        "-f",
-        "--folder-path",
-        required=True,
-        help="Absolute path to FSM folder, e.g. fsm-core-example/fsm",
-    )
-    parser.add_argument(
-        "-t",
-        "--workflow-type",
-        default="promise",
-        choices=VALID_WORKFLOW_TYPES,
-        help=f"Workflow type: {' | '.join(VALID_WORKFLOW_TYPES)} (default: promise)",
-    )
-    parser.add_argument(
-        "--skip-dirs",
-        default="",
-        help="Comma-separated top-level directory names to skip",
-    )
+    parser.add_argument("command", choices=["list", "start"])
     parser.add_argument(
         "-g",
         "--gateway-socket",
@@ -77,36 +78,27 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str]) -> int:
     args = build_parser().parse_args(argv)
 
-    skip_dirs = [d.strip() for d in args.skip_dirs.split(",") if d.strip()]
     worker_id = args.worker_id or f"python-{uuid.uuid4().hex[:8]}"
+    registrations = _load_registrations()
 
-    results = validate_async_operation_from_folders_python(
-        args.folder_path, args.workflow_type, skip_dirs
-    )
-    verified = [r for r in results if r.is_verified]
-
-    print(f"Discovered {len(results)} actor(s) under {args.folder_path}")
-    for r in results:
-        key = (
-            f"{r.parent_fsm_name}@{r.parent_fsm_version}@{r.fsm_type}"
-            f"@{r.fsm_name}@{r.fsm_version}@{r.fsm_language}"
+    print(f"{len(registrations)} actor(s) compiled into this registry")
+    for reg in registrations:
+        print(
+            f"  + {reg['fsm_name']}@{reg['fsm_version']} "
+            f"(parent {reg['parent_fsm_name']}@{reg['parent_fsm_version']})"
         )
-        if r.is_verified:
-            print(f"  + {key} ({r.fsm_module_path})")
-        else:
-            print(f"  - {key} ({r.fsm_module_path}): {r.error_message}")
 
-    if args.command == "scan":
+    if args.command == "list":
         return 0
 
-    if not verified:
-        print("No verified actors found, refusing to start worker", file=sys.stderr)
+    if not registrations:
+        print("No actors in the registry, refusing to start worker", file=sys.stderr)
         return 1
 
     worker = ActorWorker(
         worker_id=worker_id,
         gateway_socket_path=args.gateway_socket,
-        verified_actors=verified,
+        registrations=registrations,
         heartbeat_ms=args.heartbeat_ms,
     )
 
@@ -118,10 +110,7 @@ def main(argv: list[str]) -> int:
     signal.signal(signal.SIGINT, _on_signal)
     signal.signal(signal.SIGTERM, _on_signal)
 
-    print(
-        f"Starting worker {worker_id}: gateway-socket={args.gateway_socket}, "
-        f"folder-path={args.folder_path}"
-    )
+    print(f"Starting worker {worker_id}: gateway-socket={args.gateway_socket}")
     try:
         worker.run()
     except Exception as exc:  # noqa: BLE001 — reported and turned into an exit code

@@ -15,7 +15,7 @@
   "tasks": {
     "gateway": "deno run --allow-all src/cli/async-operation-worker-gateway.ts",
     "gateway-ctl": "deno run --allow-all src/cli/async-operation-worker-gateway-ctl.ts",
-    "worker-ts-scan": "deno run --allow-all src/worker-sdk/typescript/cli.ts scan",
+    "worker-ts-list": "deno run --allow-all src/worker-sdk/typescript/cli.ts list",
     "worker-ts-start": "deno run --allow-all src/worker-sdk/typescript/cli.ts start",
     "check": "deno check src/index.ts"
   }
