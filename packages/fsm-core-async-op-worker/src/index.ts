@@ -14,9 +14,3 @@ export type {
   ActivityInvokeInput,
   ActivityInvokeResult,
 } from "./sidecar/gateway.ts";
-export { ActorWorker } from "./worker-sdk/typescript/sdk.ts";
-export type {
-  ActorHandler,
-  ActorRegistration,
-  ActorWorkerOptions,
-} from "./worker-sdk/typescript/sdk.ts";

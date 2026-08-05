@@ -446,8 +446,14 @@ export async function writeActorsRegistry(
  */
 async function formatRustFileBestEffort(path: string): Promise<void> {
   try {
-    await new Deno.Command("rustfmt", { args: [path], stderr: "null" })
-      .output();
+    // --edition 2021: standalone `rustfmt` defaults to edition 2015 (some
+    // formatting decisions, e.g. macro/println! call wrapping, differ from
+    // `cargo fmt`, which reads edition 2021 from Cargo.toml) -- without this
+    // flag, output here wouldn't match what `cargo fmt --check` expects.
+    await new Deno.Command("rustfmt", {
+      args: ["--edition", "2021", path],
+      stderr: "null",
+    }).output();
   } catch {
     // rustfmt not installed — leave the file as generated.
   }
