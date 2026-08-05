@@ -1,0 +1,4 @@
+<% for (const r of it.requires) { -%>
+require <%~ r.modulePath %> v0.0.0
+replace <%~ r.modulePath %> => <%~ r.target %>
+<% } -%>

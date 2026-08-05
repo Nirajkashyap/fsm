@@ -7,6 +7,16 @@ import {
 import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
 import { deriveTemplateInput } from "./scaffold-templates/derive-template-input.ts";
 import { getPreamble, getTemplate } from "./scaffold-templates/registry.ts";
+import { render as renderTsActorsRegistry } from "./scaffold-templates/eta/typescript/actors-registry.generated.ts";
+import { render as renderTsActorsRegistryAggregate } from "./scaffold-templates/eta/typescript/actors-registry-aggregate.generated.ts";
+import { render as renderPyActorsRegistry } from "./scaffold-templates/eta/python/actors-registry.generated.ts";
+import { render as renderPyActorsRegistryAggregate } from "./scaffold-templates/eta/python/actors-registry-aggregate.generated.ts";
+import { render as renderRustActorsRegistry } from "./scaffold-templates/eta/rust/actors-registry.generated.ts";
+import { render as renderRustActorsRegistryAggregate } from "./scaffold-templates/eta/rust/actors-registry-aggregate.generated.ts";
+import { render as renderGoActorsRegistryAggregate } from "./scaffold-templates/eta/go/actors-registry-aggregate.generated.ts";
+import { render as renderGoModActor } from "./scaffold-templates/eta/go/go-mod-actor.generated.ts";
+import { render as renderGoModAggregate } from "./scaffold-templates/eta/go/go-mod-aggregate.generated.ts";
+import { render as renderGoModConsumerSection } from "./scaffold-templates/eta/go/go-mod-consumer-section.generated.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "scaffold"]);
 
@@ -169,7 +179,7 @@ async function writeGoActorModule(
   const dir = `${absFolderPath}/go/actors/${actorDirName}`;
   await Deno.writeTextFile(
     `${dir}/go.mod`,
-    `module ${modulePath}\n\ngo 1.19\n`,
+    renderGoModActor({ modulePath }),
   );
 }
 
@@ -363,33 +373,10 @@ const ACTORS_REGISTRY_FILE_NAME: Record<ActorsBarrelLang, string> = {
 };
 
 /**
- * Renders one registration entry's activity-identity fields (everything but
- * the handler reference itself, which differs in shape per language). A
- * worker SDK needs these to register with the Activity Gateway
- * (`actorKey()`) without recomputing them itself.
- */
-function registrationIdentityFields(a: RegisteredActor): {
-  parentFsmName: string;
-  parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
-} {
-  return {
-    parentFsmName: a.parentFsmName,
-    parentFsmVersion: a.parentFsmVersion,
-    fsmType: a.fsmType,
-    fsmName: a.fsmName,
-    fsmVersion: a.fsmVersion,
-    fsmLanguage: a.fsmLanguage,
-  };
-}
-
-/**
- * Renders one FSM-version's registry file content: actors here are always
- * siblings of the file being written (same `<lang>/actors/` directory), so
- * imports/`#[path]`s never need to reach outside it. Used by
+ * Renders one FSM-version's registry file content via the language's Eta
+ * template (`scaffold-templates/eta/<lang>/actors-registry.eta`): actors
+ * here are always siblings of the file being written (same `<lang>/actors/`
+ * directory), so imports/`#[path]`s never need to reach outside it. Used by
  * {@linkcode writeActorsRegistry} only — the aggregate
  * ({@linkcode writeAggregateActorsRegistry}) re-uses these per-version files
  * rather than re-deriving entries itself (see its own doc comment for why).
@@ -399,117 +386,12 @@ function buildActorsRegistryContent(
   lang: ActorsBarrelLang,
 ): string {
   switch (lang) {
-    case "typescript": {
-      const imports = langActors.map((a) =>
-        `import { ${a.src} } from "./${a.fileBaseName}/${a.fileBaseName}.ts";`
-      ).join("\n");
-      const entries = langActors.map((a) => {
-        const id = registrationIdentityFields(a);
-        return `  {
-    parentFsmName: ${JSON.stringify(id.parentFsmName)},
-    parentFsmVersion: ${JSON.stringify(id.parentFsmVersion)},
-    fsmType: ${JSON.stringify(id.fsmType)},
-    fsmName: ${JSON.stringify(id.fsmName)},
-    fsmVersion: ${JSON.stringify(id.fsmVersion)},
-    fsmLanguage: ${JSON.stringify(id.fsmLanguage)},
-    handler: ${a.src},
-  },`;
-      }).join("\n");
-      return `${imports}\n
-export type ActorRegistration = {
-  parentFsmName: string;
-  parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
-  handler: (input: unknown) => unknown;
-};
-
-export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
-${entries}
-];
-`;
-    }
-    case "python": {
-      // A relative import (`from .X.X import Y`) only resolves when this
-      // file is loaded as part of a proper package -- but the aggregate
-      // registry loads each per-version registry via
-      // importlib.util.spec_from_file_location (a fixed path, no package
-      // context), which breaks relative imports. Loading each actor the same
-      // fixed-path way here keeps this file correct standalone too.
-      const loads = langActors.map((a) =>
-        `${a.src} = _load_actor(${
-          JSON.stringify(`${a.fileBaseName}/${a.fileBaseName}.py`)
-        }, ${JSON.stringify(a.src)})`
-      ).join("\n");
-      const entries = langActors.map((a) => {
-        const id = registrationIdentityFields(a);
-        return `    {
-        "parent_fsm_name": ${JSON.stringify(id.parentFsmName)},
-        "parent_fsm_version": ${JSON.stringify(id.parentFsmVersion)},
-        "fsm_type": ${JSON.stringify(id.fsmType)},
-        "fsm_name": ${JSON.stringify(id.fsmName)},
-        "fsm_version": ${JSON.stringify(id.fsmVersion)},
-        "fsm_language": ${JSON.stringify(id.fsmLanguage)},
-        "handler": ${a.src},
-    },`;
-      }).join("\n");
-      return `import importlib.util
-import os
-
-_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def _load_actor(rel_path, fn_name):
-    spec = importlib.util.spec_from_file_location(
-        fn_name, os.path.join(_BASE_DIR, rel_path)
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return getattr(module, fn_name)
-
-
-${loads}
-
-ACTOR_REGISTRATIONS = [
-${entries}
-]
-`;
-    }
-    case "rust": {
-      const entries = langActors.map((a) => {
-        const id = registrationIdentityFields(a);
-        return `        ActorRegistration {
-            parent_fsm_name: ${JSON.stringify(id.parentFsmName)},
-            parent_fsm_version: ${JSON.stringify(id.parentFsmVersion)},
-            fsm_type: ${JSON.stringify(id.fsmType)},
-            fsm_name: ${JSON.stringify(id.fsmName)},
-            fsm_version: ${JSON.stringify(id.fsmVersion)},
-            fsm_language: ${JSON.stringify(id.fsmLanguage)},
-            handler: actors::${a.src},
-        },`;
-      }).join("\n");
-      return `#[path = "mod.rs"]
-mod actors;
-
-pub struct ActorRegistration {
-    pub parent_fsm_name: &'static str,
-    pub parent_fsm_version: &'static str,
-    pub fsm_type: &'static str,
-    pub fsm_name: &'static str,
-    pub fsm_version: &'static str,
-    pub fsm_language: &'static str,
-    pub handler: fn(serde_json::Value) -> serde_json::Value,
-}
-
-pub fn actor_registrations() -> Vec<ActorRegistration> {
-    vec![
-${entries}
-    ]
-}
-`;
-    }
+    case "typescript":
+      return renderTsActorsRegistry({ actors: langActors });
+    case "python":
+      return renderPyActorsRegistry({ actors: langActors });
+    case "rust":
+      return renderRustActorsRegistry({ actors: langActors });
   }
 }
 
@@ -588,16 +470,18 @@ function groupKeyToIdentifier(key: string): string {
 
 /**
  * Renders the aggregate registry content for one language, combining every
- * FSM-version group's actors. TS/Python re-import each FSM-version's already
- * -generated {@linkcode writeActorsRegistry} output and flatten it — simpler
- * and avoids re-deriving every entry, since both languages can statically
- * import an arbitrarily-nested sibling file. Rust can't do the equivalent
- * (each per-version `generated_registry.rs` defines its own nominally
- * distinct `ActorRegistration` type, so `Vec`s of them can't be concatenated)
- * — instead it `#[path]`-includes each FSM-version's actor barrel (`mod.rs`,
+ * FSM-version group's actors, via the language's Eta template
+ * (`scaffold-templates/eta/<lang>/actors-registry-aggregate.eta`). TS/Python
+ * re-import each FSM-version's already-generated
+ * {@linkcode writeActorsRegistry} output and flatten it — simpler and avoids
+ * re-deriving every entry, since both languages can statically import an
+ * arbitrarily-nested sibling file. Rust can't do the equivalent (each
+ * per-version `generated_registry.rs` defines its own nominally distinct
+ * `ActorRegistration` type, so `Vec`s of them can't be concatenated) —
+ * instead it `#[path]`-includes each FSM-version's actor barrel (`mod.rs`,
  * functions only, no competing type) under a unique per-group module alias,
  * and re-derives entries against one `ActorRegistration` type defined once
- * here.
+ * in the template.
  */
 function buildAggregateRegistryContent(
   langActors: RegisteredActor[],
@@ -605,104 +489,32 @@ function buildAggregateRegistryContent(
   pluginRootDirName: string,
 ): string {
   const groups = groupByParentFsm(langActors);
-  // The aggregate lives one level above the plugin root (e.g.
-  // apps/fsm-core-example/, sibling to apps/fsm-core-example/fsm/), so every
-  // generated path re-descends into the plugin root by name first.
-  const pathPrefix = `${pluginRootDirName}/`;
+  const groupList = [...groups.keys()].map((key) => ({
+    key,
+    alias: groupKeyToIdentifier(key),
+  }));
 
   switch (lang) {
-    case "typescript": {
-      const imports: string[] = [];
-      const spreads: string[] = [];
-      for (const key of groups.keys()) {
-        const alias = groupKeyToIdentifier(key);
-        imports.push(
-          `import { ACTOR_REGISTRATIONS as ${alias} } from "./${pathPrefix}${key}/typescript/actors/generated-registry.ts";`,
-        );
-        spreads.push(`  ...${alias},`);
-      }
-      return `${imports.join("\n")}\n\nexport const ACTOR_REGISTRATIONS = [\n${
-        spreads.join("\n")
-      }\n];\n`;
-    }
-    case "python": {
-      const loads: string[] = [];
-      const spreads: string[] = [];
-      for (const key of groups.keys()) {
-        const alias = groupKeyToIdentifier(key);
-        loads.push(
-          `${alias} = _load_registrations(${
-            JSON.stringify(
-              `${pathPrefix}${key}/python/actors/generated_registry.py`,
-            )
-          })`,
-        );
-        spreads.push(`    *${alias},`);
-      }
-      return `# Each FSM-version's registry is loaded from a fixed, compiler-generated
-# path -- not a runtime scan -- since Python has no static-import syntax that
-# reaches an arbitrarily-nested sibling directory the way TS/Rust do.
-import importlib.util
-import os
-
-_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def _load_registrations(rel_path):
-    spec = importlib.util.spec_from_file_location(
-        "generated_registry", os.path.join(_BASE_DIR, rel_path)
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.ACTOR_REGISTRATIONS
-
-
-${loads.join("\n")}
-
-ACTOR_REGISTRATIONS = [
-${spreads.join("\n")}
-]
-`;
-    }
+    case "typescript":
+      return renderTsActorsRegistryAggregate({
+        groups: groupList,
+        pluginRootDirName,
+      });
+    case "python":
+      return renderPyActorsRegistryAggregate({
+        groups: groupList,
+        pluginRootDirName,
+      });
     case "rust": {
-      const modDecls: string[] = [];
-      const entries: string[] = [];
-      for (const [key, groupActors] of groups) {
-        const alias = groupKeyToIdentifier(key);
-        modDecls.push(
-          `#[path = "${pathPrefix}${key}/rust/actors/mod.rs"]\nmod ${alias};`,
-        );
-        for (const a of groupActors) {
-          const id = registrationIdentityFields(a);
-          entries.push(`        ActorRegistration {
-            parent_fsm_name: ${JSON.stringify(id.parentFsmName)},
-            parent_fsm_version: ${JSON.stringify(id.parentFsmVersion)},
-            fsm_type: ${JSON.stringify(id.fsmType)},
-            fsm_name: ${JSON.stringify(id.fsmName)},
-            fsm_version: ${JSON.stringify(id.fsmVersion)},
-            fsm_language: ${JSON.stringify(id.fsmLanguage)},
-            handler: ${alias}::${a.src},
-        },`);
-        }
-      }
-      return `${modDecls.join("\n\n")}
-
-pub struct ActorRegistration {
-    pub parent_fsm_name: &'static str,
-    pub parent_fsm_version: &'static str,
-    pub fsm_type: &'static str,
-    pub fsm_name: &'static str,
-    pub fsm_version: &'static str,
-    pub fsm_language: &'static str,
-    pub handler: fn(serde_json::Value) -> serde_json::Value,
-}
-
-pub fn actor_registrations() -> Vec<ActorRegistration> {
-    vec![
-${entries.join("\n")}
-    ]
-}
-`;
+      const actorsWithAlias = langActors.map((a) => ({
+        ...a,
+        alias: groupKeyToIdentifier(`${a.parentFsmName}/${a.parentFsmVersion}`),
+      }));
+      return renderRustActorsRegistryAggregate({
+        groups: groupList,
+        actors: actorsWithAlias,
+        pluginRootDirName,
+      });
     }
   }
 }
@@ -795,63 +607,30 @@ export async function writeAggregateGoRegistry(
   const dir = `${appRootAbsPath}/${GO_AGGREGATE_DIR_NAME}`;
   await Deno.mkdir(dir, { recursive: true });
 
-  const requireLines: string[] = [];
-  const replaceLines: string[] = [];
-  const importLines: string[] = [];
-  const entryLines: string[] = [];
-  for (const a of goActors) {
-    const modulePath = goActorModulePathFromRegisteredActor(appRoot, a);
-    const alias = goImportAlias(a);
-    requireLines.push(`require ${modulePath} v0.0.0`);
-    replaceLines.push(
-      `replace ${modulePath} => ../${pluginRootDirName}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
-    );
-    importLines.push(`\t${alias} "${modulePath}"`);
-    entryLines.push(`\t\t{
-\t\t\tParentFsmName:    ${JSON.stringify(a.parentFsmName)},
-\t\t\tParentFsmVersion: ${JSON.stringify(a.parentFsmVersion)},
-\t\t\tFsmType:          ${JSON.stringify(a.fsmType)},
-\t\t\tFsmName:          ${JSON.stringify(a.fsmName)},
-\t\t\tFsmVersion:       ${JSON.stringify(a.fsmVersion)},
-\t\t\tFsmLanguage:      ${JSON.stringify(a.fsmLanguage)},
-\t\t\tHandler:          ${alias}.${a.exportedName},
-\t\t},`);
-  }
+  const withMeta = goActors.map((a) => ({
+    ...a,
+    modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
+    alias: goImportAlias(a),
+  }));
 
-  const goModContent = `module ${appRoot}/${GO_AGGREGATE_DIR_NAME}
-
-go 1.19
-
-${requireLines.join("\n")}
-
-${replaceLines.join("\n")}
-`;
+  const goModContent = renderGoModAggregate({
+    moduleName: `${appRoot}/${GO_AGGREGATE_DIR_NAME}`,
+    requires: withMeta.map((a) => ({ modulePath: a.modulePath })),
+    replaces: withMeta.map((a) => ({
+      modulePath: a.modulePath,
+      target:
+        `../${pluginRootDirName}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
+    })),
+  });
   await Deno.writeTextFile(`${dir}/go.mod`, goModContent);
 
-  const registryContent =
-    `// AUTO-GENERATED by fsm-compiler-ts -- do not edit directly.
-package generatedregistry
-
-import (
-${importLines.join("\n")}
-)
-
-type ActorRegistration struct {
-\tParentFsmName    string
-\tParentFsmVersion string
-\tFsmType          string
-\tFsmName          string
-\tFsmVersion       string
-\tFsmLanguage      string
-\tHandler          func(input any) (any, error)
-}
-
-func ActorRegistrations() []ActorRegistration {
-\treturn []ActorRegistration{
-${entryLines.join("\n")}
-\t}
-}
-`;
+  const registryContent = renderGoActorsRegistryAggregate({
+    imports: withMeta.map((a) => ({
+      alias: a.alias,
+      modulePath: a.modulePath,
+    })),
+    actors: withMeta,
+  });
   const registryFile = `${dir}/registry.go`;
   await Deno.writeTextFile(registryFile, registryContent);
   await formatGoFileBestEffort(registryFile);
@@ -897,21 +676,18 @@ export async function updateConsumerGoModActorRequires(
     );
   }
 
-  const lines: string[] = [];
-  for (const a of goActors) {
-    const modulePath = goActorModulePathFromRegisteredActor(appRoot, a);
-    lines.push(`require ${modulePath} v0.0.0`);
-    lines.push(
-      `replace ${modulePath} => ${relativePrefixToPluginRoot}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
-    );
-  }
+  const requires = goActors.map((a) => ({
+    modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
+    target:
+      `${relativePrefixToPluginRoot}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
+  }));
 
   const before = existing.slice(
     0,
     beginIdx + GO_MOD_GENERATED_SECTION_BEGIN.length,
   );
   const after = existing.slice(endIdx);
-  const middle = lines.length > 0 ? `\n${lines.join("\n")}\n` : "\n";
+  const middle = `\n${renderGoModConsumerSection({ requires })}`;
   await Deno.writeTextFile(goModAbsPath, `${before}${middle}${after}`);
 }
 

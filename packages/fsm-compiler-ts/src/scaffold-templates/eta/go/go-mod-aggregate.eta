@@ -1,0 +1,11 @@
+module <%~ it.moduleName %>
+
+go 1.19
+
+<% for (const r of it.requires) { -%>
+require <%~ r.modulePath %> v0.0.0
+<% } -%>
+
+<% for (const r of it.replaces) { -%>
+replace <%~ r.modulePath %> => <%~ r.target %>
+<% } -%>
