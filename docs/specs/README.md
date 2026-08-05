@@ -36,7 +36,10 @@ Flow:
 
 ## Index
 
-_No specs currently in Draft/Accepted status. SPEC-001 (Polyglot Actor Workers
-for Compiled Languages via Local IPC) graduated directly to
+- [SPEC-003](spec-003-sidecar-protocol-codegen.md) — Codegen the Sidecar Wire
+  Protocol (`worker-sdk-protocol.eta` → buf). **Draft.**
+
+SPEC-001 (Polyglot Actor Workers for Compiled Languages via Local IPC) graduated
+directly to
 [ADR-003](../adr/adr-003-fsm-async-operation-polyglot-actor-execution-model.md)
-— see that ADR's "Supersedes" field._
+— see that ADR's "Supersedes" field.
