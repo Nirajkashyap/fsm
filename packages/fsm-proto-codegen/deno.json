@@ -1,0 +1,15 @@
+{
+  "tasks": {
+    "generate": "PATH=\"$PWD/node_modules/.bin:$PATH\" buf generate"
+  },
+  "fmt": {
+    "exclude": [
+      "gen/"
+    ]
+  },
+  "lint": {
+    "exclude": [
+      "gen/"
+    ]
+  }
+}

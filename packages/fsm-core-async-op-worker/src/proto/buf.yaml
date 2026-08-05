@@ -1,0 +1,22 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  except:
+    # activity-gateway.proto predates buf adoption and is an established,
+    # already-consumed contract (gatewayServer.ts/gatewayClient.ts load it by
+    # this exact filename via @grpc/proto-loader) -- renaming the file,
+    # moving it into a pgfsm/activitygateway/ directory, or adding a version
+    # suffix to the package name are real breaking changes to a shipped
+    # contract, not something to do as a drive-by part of adding codegen.
+    # Revisit if/when the contract itself gets a deliberate v1 pass.
+    - FILE_LOWER_SNAKE_CASE
+    - PACKAGE_DIRECTORY_MATCH
+    - PACKAGE_VERSION_SUFFIX
+    - SERVICE_SUFFIX
+    - RPC_REQUEST_STANDARD_NAME
+breaking:
+  use:
+    - FILE

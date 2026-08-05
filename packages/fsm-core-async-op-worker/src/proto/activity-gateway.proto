@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package pgfsm.activitygateway;
 
+option go_package = "github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/activitygateway";
+
 // Client-facing contract for the Activity Gateway. The orchestrator
 // (asyncOperationWorkerlet.ts) is the only intended client — it calls
 // Invoke() once per claimed PGMQ message for a compiled-language actor,

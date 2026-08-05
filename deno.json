@@ -8,6 +8,7 @@
     "packages/fsm-async-worker-ts",
     "apps/fsm-core-ts-hono-deno",
     "packages/fsm-compiler-ts",
+    "packages/fsm-proto-codegen",
     "packages/database-src"
   ],
   "fmt": {
