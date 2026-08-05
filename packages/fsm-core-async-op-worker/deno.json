@@ -6,11 +6,11 @@
     ".": "./src/index.ts"
   },
   "imports": {
-    "@grpc/grpc-js": "npm:@grpc/grpc-js@^1.13.4",
-    "@grpc/proto-loader": "npm:@grpc/proto-loader@^0.8.0",
+    "@connectrpc/connect": "npm:@connectrpc/connect@^1.7.0",
+    "@connectrpc/connect-node": "npm:@connectrpc/connect-node@^1.7.0",
+    "@bufbuild/protobuf": "npm:@bufbuild/protobuf@^1.10.1",
     "@logtape/logtape": "jsr:@logtape/logtape@^2.2",
-    "@std/cli": "jsr:@std/cli@1",
-    "@std/path": "jsr:@std/path@1"
+    "@std/cli": "jsr:@std/cli@1"
   },
   "tasks": {
     "gateway": "deno run --allow-all src/cli/async-operation-worker-gateway.ts",
