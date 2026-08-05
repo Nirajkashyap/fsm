@@ -18,7 +18,7 @@ def _load_registrations(rel_path):
 
 
 <% for (const g of it.groups) { -%>
-<%~ g.alias %> = _load_registrations(<%~ JSON.stringify(`${it.pluginRootDirName}/${g.key}/python/actors/generated_registry.py`) %>)
+<%~ g.alias %> = _load_registrations(<%~ JSON.stringify(`../../${it.pluginRootDirName}/${g.key}/python/actors/generated_registry.py`) %>)
 <% } -%>
 
 ACTOR_REGISTRATIONS = [

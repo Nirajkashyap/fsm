@@ -35,7 +35,7 @@ DEFAULT_HEARTBEAT_MS = 5000
 # definitions by design (see #84 for why).
 _REGISTRY_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "../../python_actors_registry_generated.py",
+    "./python_actors_registry_generated.py",
 )
 
 

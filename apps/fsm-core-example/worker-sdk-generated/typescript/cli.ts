@@ -8,7 +8,7 @@ import { ActorWorker } from "./sdk.ts";
 // `deno task cli -c generate-async-logic -f <plugin-root>` after actors
 // change; this import path is a build-time coupling to that one app's
 // FSM definitions by design (see #84 for why).
-import { ACTOR_REGISTRATIONS } from "../../typescript-actors-registry.generated.ts";
+import { ACTOR_REGISTRATIONS } from "./typescript-actors-registry.generated.ts";
 
 const logger = getLogger([
   "@pgfsm/worker",

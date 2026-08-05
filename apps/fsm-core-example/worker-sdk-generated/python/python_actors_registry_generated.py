@@ -17,7 +17,7 @@ def _load_registrations(rel_path):
     return module.ACTOR_REGISTRATIONS
 
 
-creditcheck_v01 = _load_registrations("fsm/creditCheck/v01/python/actors/generated_registry.py")
+creditcheck_v01 = _load_registrations("../../fsm/creditCheck/v01/python/actors/generated_registry.py")
 
 ACTOR_REGISTRATIONS = [
     *creditcheck_v01,

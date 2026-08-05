@@ -31,7 +31,7 @@ mod sdk;
 // definitions by design (see #84 for why). Nested `#[path]` declarations
 // inside the included file resolve relative to *that file's* own directory,
 // not this one, so its own `#[path = "fsm/..."]` mods still work correctly.
-#[path = "../../../rust-actors-registry.generated.rs"]
+#[path = "../rust-actors-registry.generated.rs"]
 mod generated_registry;
 
 use protocol::RegisteredActor;

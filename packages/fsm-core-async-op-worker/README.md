@@ -70,23 +70,29 @@ and its follow-up).
   carrying each promise actor's full activity identity
   (`parentFsmName`/`parentFsmVersion`/`fsmType`/`fsmName`/
   `fsmVersion`/`fsmLanguage`) plus its handler, and one **aggregate** registry
-  per language at the app root (e.g.
-  `apps/fsm-core-example/typescript-actors-registry.generated.ts`) combining
-  every FSM — what a worker process actually imports, since it serves its
-  language's actors across the whole app, not just one FSM.
+  per language combining every FSM — what a worker process actually imports,
+  since it serves its language's actors across the whole app, not just one FSM.
+  The aggregate lives inside that language's own `worker-sdk-generated/<lang>/`
+  directory too (e.g.
+  `apps/fsm-core-example/worker-sdk-generated/typescript/typescript-actors-registry.generated.ts`),
+  so the entire worker SDK for a language — registry included — ships from one
+  self-contained directory.
 - **TypeScript/Python**: `sdk.ts`/`sdk.py`'s `ActorWorker` takes that registry
   directly; `cli.ts`/`cli.py` statically import (TS) or fixed-path-load (Python
   — see the generated `cli.py`'s doc comment for why it can't use a plain static
-  import here) the generated aggregate file and pass it straight in. No dynamic
-  `import()`/`importlib` at actor-lookup time.
+  import here) the generated aggregate file, now a same-directory sibling, and
+  pass it straight in. No dynamic `import()`/`importlib` at actor-lookup time.
 - **Rust/Go**: no dynamic-loading mechanism exists for compiled languages at
   all, so these were always registry-based (`ActorWorker`/`NewActorWorker` take
   an explicit `Vec<ActorRegistration>`/`[]ActorRegistration`) — the generated
-  `main.rs` `#[path]`-includes the generated aggregate directly; the generated
-  `main.go` imports it as a real Go module
-  (`<app>/go-actors-registry-generated`, wired via a generated `go.mod`'s
+  `main.rs` `#[path]`-includes the generated aggregate (a sibling of
+  `Cargo.toml`) directly; the generated `main.go` imports it as a real Go module
+  (`<app>/go-actors-registry-generated`, nested under
+  `worker-sdk-generated/go/`, wired via a generated `go.mod`'s
   `require`+`replace` — Go actors each need their own module, since Go has no
-  `#[path]`-style escape hatch from its package/module boundaries).
+  `#[path]`-style escape hatch from its package/module boundaries). The module's
+  logical name is unrelated to its on-disk nesting — Go resolves it through
+  `replace`, so the name didn't need to change when the directory moved.
 - Each `cli.{ts,py}`/`main.{rs,go}` only takes gateway/worker-identity flags
   (`--gateway-socket`/`--worker-id`/`--heartbeat-ms`) — no
   `--folder-path`/`--skip-dirs`. There is no in-process folder-scan validator;

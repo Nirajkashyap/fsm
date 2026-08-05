@@ -41,13 +41,15 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  * identity + handler — written only when at least one actor exists for that
  * language. Go has neither — see {@linkcode ActorsBarrelLang}'s doc comment.
  *
- * Once, at the plugin root (one level above every FSM/version folder
- * processed in this run): a per-language **aggregate** registry
+ * Once, at `<appRoot>/worker-sdk-generated/<lang>/` (alongside that
+ * language's compiler-generated worker SDK — see {@linkcode writeWorkerSdk}):
+ * a per-language **aggregate** registry
  * (`typescript-actors-registry.generated.ts`/
- * `python_actors_registry_generated.py`/`rust-actors-registry.generated.rs`)
- * combining every FSM-version's registry — what a worker SDK build imports,
- * since a single worker process serves its language's actors across every
- * FSM, not just one (see {@linkcode writeAggregateActorsRegistry}).
+ * `python_actors_registry_generated.py`/`rust-actors-registry.generated.rs`/
+ * `go-actors-registry-generated/`) combining every FSM-version's registry —
+ * what a worker SDK build imports, since a single worker process serves its
+ * language's actors across every FSM, not just one (see
+ * {@linkcode writeAggregateActorsRegistry}, {@linkcode writeAggregateGoRegistry}).
  */
 export async function generateAsyncOperationLogicFromFolders(
   folderPath: string,
