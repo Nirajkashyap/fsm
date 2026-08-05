@@ -1,4 +1,4 @@
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import {
   type OperationKind,
   type OperationLang,
@@ -6,13 +6,13 @@ import {
   renderOperationModule,
   toRegisteredActor,
   toWrittenActor,
-  updateConsumerGoModActorRequires,
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
   writeActorsRegistry,
   writeAggregateActorsRegistry,
   writeAggregateGoRegistry,
+  writeWorkerSdk,
   type WrittenActor,
 } from "../src/operation-logic-scaffold.ts";
 import type { ActorReference } from "../src/util.ts";
@@ -797,59 +797,131 @@ Deno.test("writeAggregateGoRegistry - writes nothing when there are no go actors
   }
 });
 
-Deno.test("updateConsumerGoModActorRequires - rewrites the marked section with one require+replace per go actor", async () => {
+Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, only for languages with actors", async () => {
   const dir = await Deno.makeTempDir();
   try {
-    const goModPath = `${dir}/consumer/go.mod`;
-    await Deno.mkdir(`${dir}/consumer`, { recursive: true });
-    await Deno.writeTextFile(
-      goModPath,
-      "module consumer\n\ngo 1.19\n\n" +
-        "// --- BEGIN fsm-compiler-ts generated actor requires ---\n" +
-        "// --- END fsm-compiler-ts generated actor requires ---\n",
-    );
+    const appRootAbsPath = `${dir}/apps/fsm-core-example`;
+    const actors = [
+      ...actorsForBarrelTests, // typescript, python, rust
+      ...actorsForGoAggregateTests, // go
+    ];
+    const wrote = await writeWorkerSdk(appRootAbsPath, "fsm", actors);
+    assertEquals(wrote, {
+      typescript: true,
+      python: true,
+      rust: true,
+      go: true,
+    });
 
-    await updateConsumerGoModActorRequires(
-      goModPath,
-      actorsForGoAggregateTests,
-      "fsm-core-example",
-      "../../fsm",
-    );
+    const base = `${appRootAbsPath}/worker-sdk-generated`;
+    assertExists(await Deno.stat(`${base}/typescript/cli.ts`));
+    assertExists(await Deno.stat(`${base}/typescript/sdk.ts`));
+    assertExists(await Deno.stat(`${base}/python/cli.py`));
+    assertExists(await Deno.stat(`${base}/python/sdk.py`));
+    assertExists(await Deno.stat(`${base}/python/protocol.py`));
+    assertExists(await Deno.stat(`${base}/python/requirements.txt`));
+    assertExists(await Deno.stat(`${base}/rust/src/main.rs`));
+    assertExists(await Deno.stat(`${base}/rust/src/sdk.rs`));
+    assertExists(await Deno.stat(`${base}/rust/src/protocol.rs`));
+    assertExists(await Deno.stat(`${base}/rust/Cargo.toml`));
+    assertExists(await Deno.stat(`${base}/rust/.gitignore`));
+    assertExists(await Deno.stat(`${base}/go/main.go`));
+    assertExists(await Deno.stat(`${base}/go/sdk.go`));
+    assertExists(await Deno.stat(`${base}/go/protocol.go`));
+    assertExists(await Deno.stat(`${base}/go/go.mod`));
+    assertExists(await Deno.stat(`${base}/go/.gitignore`));
 
-    const content = await Deno.readTextFile(goModPath);
+    const tsCli = await Deno.readTextFile(`${base}/typescript/cli.ts`);
     assertEquals(
-      content,
-      "module consumer\n\ngo 1.19\n\n" +
-        "// --- BEGIN fsm-compiler-ts generated actor requires ---\n" +
-        "require fsm-core-example/creditcheck/v01/go/actors/checkbureau v0.0.0\n" +
-        "replace fsm-core-example/creditcheck/v01/go/actors/checkbureau => ../../fsm/creditCheck/v01/go/actors/checkBureau\n" +
-        "require fsm-core-example/otherfsm/v02/go/actors/someactor v0.0.0\n" +
-        "replace fsm-core-example/otherfsm/v02/go/actors/someactor => ../../fsm/otherFsm/v02/go/actors/someActor\n" +
-        "// --- END fsm-compiler-ts generated actor requires ---\n",
+      tsCli.includes(
+        'import { ACTOR_REGISTRATIONS } from "../../typescript-actors-registry.generated.ts";',
+      ),
+      true,
     );
+
+    const tsSdk = await Deno.readTextFile(`${base}/typescript/sdk.ts`);
+    assertEquals(
+      tsSdk.includes(
+        'from "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";',
+      ),
+      true,
+    );
+
+    const pyCli = await Deno.readTextFile(`${base}/python/cli.py`);
+    assertEquals(
+      pyCli.includes('"../../python_actors_registry_generated.py"'),
+      true,
+    );
+
+    const rustMain = await Deno.readTextFile(`${base}/rust/src/main.rs`);
+    assertEquals(
+      rustMain.includes(
+        '#[path = "../../../rust-actors-registry.generated.rs"]',
+      ),
+      true,
+    );
+
+    const goMod = await Deno.readTextFile(`${base}/go/go.mod`);
+    assertEquals(
+      goMod,
+      "module pgfsm/async-op-worker-sdk\n\ngo 1.19\n\n" +
+        "require fsm-core-example/go-actors-registry-generated v0.0.0\n" +
+        "require fsm-core-example/creditcheck/v01/go/actors/checkbureau v0.0.0\n" +
+        "require fsm-core-example/otherfsm/v02/go/actors/someactor v0.0.0\n\n" +
+        "replace fsm-core-example/go-actors-registry-generated => ../../go-actors-registry-generated\n" +
+        "replace fsm-core-example/creditcheck/v01/go/actors/checkbureau => ../../fsm/creditCheck/v01/go/actors/checkBureau\n" +
+        "replace fsm-core-example/otherfsm/v02/go/actors/someactor => ../../fsm/otherFsm/v02/go/actors/someActor\n",
+    );
+
+    for (
+      const [file, header] of [
+        [`${base}/typescript/cli.ts`, "// AUTO-GENERATED"],
+        [`${base}/typescript/sdk.ts`, "// AUTO-GENERATED"],
+        // cli.py's shebang must stay on line 1 to remain executable -- the
+        // header is the second line there, not the first.
+        [`${base}/python/cli.py`, "#!/usr/bin/env python3\n# AUTO-GENERATED"],
+        [`${base}/python/sdk.py`, "# AUTO-GENERATED"],
+        [`${base}/python/protocol.py`, "# AUTO-GENERATED"],
+        [`${base}/rust/src/main.rs`, "// AUTO-GENERATED"],
+        [`${base}/rust/src/sdk.rs`, "// AUTO-GENERATED"],
+        [`${base}/go/main.go`, "// AUTO-GENERATED"],
+        [`${base}/go/sdk.go`, "// AUTO-GENERATED"],
+      ] as const
+    ) {
+      const content = await Deno.readTextFile(file);
+      assertEquals(
+        content.startsWith(header),
+        true,
+        `${file} should start with ${header}`,
+      );
+    }
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("updateConsumerGoModActorRequires - throws when the go.mod is missing the generated-section markers", async () => {
+Deno.test("writeWorkerSdk - writes nothing for a language with no actors", async () => {
   const dir = await Deno.makeTempDir();
   try {
-    const goModPath = `${dir}/consumer/go.mod`;
-    await Deno.mkdir(`${dir}/consumer`, { recursive: true });
-    await Deno.writeTextFile(goModPath, "module consumer\n\ngo 1.19\n");
+    const appRootAbsPath = `${dir}/apps/fsm-core-example`;
+    const actors = [
+      toRegisteredActor(CREDIT_CHECK_V01, "typescript", { src: "checkBureau" }),
+    ];
+    const wrote = await writeWorkerSdk(appRootAbsPath, "fsm", actors);
+    assertEquals(wrote, {
+      typescript: true,
+      python: false,
+      rust: false,
+      go: false,
+    });
 
-    await assertRejects(
-      () =>
-        updateConsumerGoModActorRequires(
-          goModPath,
-          actorsForGoAggregateTests,
-          "fsm-core-example",
-          "../../fsm",
-        ),
-      Error,
-      "missing the generated-actor-requires markers",
-    );
+    let existsErr: unknown;
+    try {
+      await Deno.stat(`${appRootAbsPath}/worker-sdk-generated/python`);
+    } catch (err) {
+      existsErr = err;
+    }
+    assertExists(existsErr);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

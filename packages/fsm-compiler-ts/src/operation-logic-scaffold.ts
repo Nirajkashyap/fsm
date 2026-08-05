@@ -16,7 +16,21 @@ import { render as renderRustActorsRegistryAggregate } from "./scaffold-template
 import { render as renderGoActorsRegistryAggregate } from "./scaffold-templates/eta/go/actors-registry-aggregate.generated.ts";
 import { render as renderGoModActor } from "./scaffold-templates/eta/go/go-mod-actor.generated.ts";
 import { render as renderGoModAggregate } from "./scaffold-templates/eta/go/go-mod-aggregate.generated.ts";
-import { render as renderGoModConsumerSection } from "./scaffold-templates/eta/go/go-mod-consumer-section.generated.ts";
+import { render as renderTsWorkerSdkCli } from "./scaffold-templates/eta/typescript/worker-sdk-cli.generated.ts";
+import { render as renderTsWorkerSdkSdk } from "./scaffold-templates/eta/typescript/worker-sdk-sdk.generated.ts";
+import { render as renderPyWorkerSdkCli } from "./scaffold-templates/eta/python/worker-sdk-cli.generated.ts";
+import { render as renderPyWorkerSdkSdk } from "./scaffold-templates/eta/python/worker-sdk-sdk.generated.ts";
+import { render as renderPyWorkerSdkProtocol } from "./scaffold-templates/eta/python/worker-sdk-protocol.generated.ts";
+import { render as renderPyWorkerSdkRequirements } from "./scaffold-templates/eta/python/worker-sdk-requirements.generated.ts";
+import { render as renderRustWorkerSdkMain } from "./scaffold-templates/eta/rust/worker-sdk-main.generated.ts";
+import { render as renderRustWorkerSdkSdk } from "./scaffold-templates/eta/rust/worker-sdk-sdk.generated.ts";
+import { render as renderRustWorkerSdkProtocol } from "./scaffold-templates/eta/rust/worker-sdk-protocol.generated.ts";
+import { render as renderRustWorkerSdkCargoToml } from "./scaffold-templates/eta/rust/worker-sdk-cargo-toml.generated.ts";
+import { render as renderRustWorkerSdkGitignore } from "./scaffold-templates/eta/rust/worker-sdk-gitignore.generated.ts";
+import { render as renderGoWorkerSdkMain } from "./scaffold-templates/eta/go/worker-sdk-main.generated.ts";
+import { render as renderGoWorkerSdkSdk } from "./scaffold-templates/eta/go/worker-sdk-sdk.generated.ts";
+import { render as renderGoWorkerSdkProtocol } from "./scaffold-templates/eta/go/worker-sdk-protocol.generated.ts";
+import { render as renderGoWorkerSdkGitignore } from "./scaffold-templates/eta/go/worker-sdk-gitignore.generated.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "scaffold"]);
 
@@ -637,58 +651,167 @@ export async function writeAggregateGoRegistry(
   return registryFile;
 }
 
-const GO_MOD_GENERATED_SECTION_BEGIN =
-  "// --- BEGIN fsm-compiler-ts generated actor requires ---";
-const GO_MOD_GENERATED_SECTION_END =
-  "// --- END fsm-compiler-ts generated actor requires ---";
+const WORKER_SDK_DIR_NAME = "worker-sdk-generated";
 
 /**
- * Rewrites the fsm-compiler-ts-managed section of a Go consumer's own
- * `go.mod` (e.g. worker-sdk/go) with one `require`+`replace` per Go actor
- * across the whole run.
- *
- * Go's `replace` directives are only honored in the module actually being
- * built, not in a dependency's own `go.mod` — they don't propagate
- * transitively. So even though {@linkcode writeAggregateGoRegistry}'s
- * generated module is what logically imports each actor module, a *consumer*
- * of that aggregate (e.g. worker-sdk/go, which imports the aggregate) still
- * needs its own `require`+`replace` for every individual actor module the
- * aggregate pulls in, or its build can't resolve them.
- *
- * The section markers must already exist in `goModAbsPath` — bootstrap them
- * once by hand (alongside the consumer's own stable `require`+`replace` for
- * the aggregate module itself, which this never touches). This only rewrites
- * what's between the markers.
+ * Fixed relative path from `<appRoot>/worker-sdk-generated/typescript/` to
+ * the Activity Gateway's own sidecar wire protocol
+ * (`packages/fsm-core-async-op-worker/src/sidecar/protocol.ts`) — the one
+ * piece of worker-sdk that's genuinely gateway-owned and never duplicated
+ * per language, so generated `sdk.ts` imports it directly instead of
+ * getting its own copy (unlike Python/Rust/Go, whose `protocol.*` are full
+ * ports since they can't import a `.ts` file). A hardcoded, consumer-aware
+ * path by design — see `writeAggregateGoRegistry`'s doc comment for the
+ * same tradeoff elsewhere in this file.
  */
-export async function updateConsumerGoModActorRequires(
-  goModAbsPath: string,
+const GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH =
+  "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";
+
+/**
+ * Writes the full worker-sdk (cli/main entrypoint + sdk protocol
+ * implementation + build manifest) for one language, at
+ * `<appRootAbsPath>/worker-sdk-generated/<lang>/`. Returns `false` (writes
+ * nothing) when there are no actors for that language across the whole run —
+ * matches every other aggregate writer in this file.
+ *
+ * Unlike the registries, `sdk.{ts,py,rs,go}`/`protocol.{py,rs,go}` don't vary
+ * per project at all — every project using this gateway gets byte-identical
+ * content. They're still rendered through Eta (a static template, no `<% %>`
+ * tags) rather than written as plain strings, for the same reason every
+ * other generated file in this package is: consistency, and so the
+ * "AUTO-GENERATED, do not edit" header is never forgotten.
+ */
+export async function writeWorkerSdk(
+  appRootAbsPath: string,
+  pluginRootDirName: string,
   actors: RegisteredActor[],
-  appRoot: string,
-  relativePrefixToPluginRoot: string,
-): Promise<void> {
-  const goActors = actors.filter((a) => a.fsmLanguage === "go");
-  const existing = await Deno.readTextFile(goModAbsPath);
-  const beginIdx = existing.indexOf(GO_MOD_GENERATED_SECTION_BEGIN);
-  const endIdx = existing.indexOf(GO_MOD_GENERATED_SECTION_END);
-  if (beginIdx === -1 || endIdx === -1) {
-    throw new Error(
-      `${goModAbsPath} is missing the generated-actor-requires markers (${GO_MOD_GENERATED_SECTION_BEGIN} / ${GO_MOD_GENERATED_SECTION_END}) — bootstrap them once by hand before running this.`,
+): Promise<
+  { typescript: boolean; python: boolean; rust: boolean; go: boolean }
+> {
+  const appRoot = appRootAbsPath.split("/").at(-1)!;
+  const hasLang = (lang: OperationLang) =>
+    actors.some((a) => a.fsmLanguage === lang);
+
+  const wroteTypescript = hasLang("typescript");
+  if (wroteTypescript) {
+    const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/typescript`;
+    await Deno.mkdir(dir, { recursive: true });
+    await Deno.writeTextFile(
+      `${dir}/cli.ts`,
+      renderTsWorkerSdkCli({
+        registryImportPath: "../../typescript-actors-registry.generated.ts",
+      }),
+    );
+    await Deno.writeTextFile(
+      `${dir}/sdk.ts`,
+      renderTsWorkerSdkSdk({
+        protocolImportPath: GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH,
+      }),
     );
   }
 
-  const requires = goActors.map((a) => ({
-    modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
-    target:
-      `${relativePrefixToPluginRoot}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
-  }));
+  const wrotePython = hasLang("python");
+  if (wrotePython) {
+    const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/python`;
+    await Deno.mkdir(dir, { recursive: true });
+    await Deno.writeTextFile(
+      `${dir}/cli.py`,
+      renderPyWorkerSdkCli({
+        registryRelativePath: "../../python_actors_registry_generated.py",
+      }),
+    );
+    await Deno.writeTextFile(`${dir}/sdk.py`, renderPyWorkerSdkSdk({}));
+    await Deno.writeTextFile(
+      `${dir}/protocol.py`,
+      renderPyWorkerSdkProtocol({}),
+    );
+    await Deno.writeTextFile(
+      `${dir}/requirements.txt`,
+      renderPyWorkerSdkRequirements({}),
+    );
+  }
 
-  const before = existing.slice(
-    0,
-    beginIdx + GO_MOD_GENERATED_SECTION_BEGIN.length,
-  );
-  const after = existing.slice(endIdx);
-  const middle = `\n${renderGoModConsumerSection({ requires })}`;
-  await Deno.writeTextFile(goModAbsPath, `${before}${middle}${after}`);
+  const wroteRust = hasLang("rust");
+  if (wroteRust) {
+    const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/rust`;
+    await Deno.mkdir(`${dir}/src`, { recursive: true });
+    const mainFile = `${dir}/src/main.rs`;
+    await Deno.writeTextFile(
+      mainFile,
+      renderRustWorkerSdkMain({
+        registryRelativePath: "../../../rust-actors-registry.generated.rs",
+      }),
+    );
+    await formatRustFileBestEffort(mainFile);
+    await Deno.writeTextFile(`${dir}/src/sdk.rs`, renderRustWorkerSdkSdk({}));
+    await Deno.writeTextFile(
+      `${dir}/src/protocol.rs`,
+      renderRustWorkerSdkProtocol({}),
+    );
+    await Deno.writeTextFile(
+      `${dir}/Cargo.toml`,
+      renderRustWorkerSdkCargoToml({}),
+    );
+    await Deno.writeTextFile(
+      `${dir}/.gitignore`,
+      renderRustWorkerSdkGitignore({}),
+    );
+  }
+
+  const wroteGo = hasLang("go");
+  if (wroteGo) {
+    const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/go`;
+    await Deno.mkdir(dir, { recursive: true });
+    const mainFile = `${dir}/main.go`;
+    await Deno.writeTextFile(mainFile, renderGoWorkerSdkMain({}));
+    await Deno.writeTextFile(`${dir}/sdk.go`, renderGoWorkerSdkSdk({}));
+    await Deno.writeTextFile(
+      `${dir}/protocol.go`,
+      renderGoWorkerSdkProtocol({}),
+    );
+    await Deno.writeTextFile(
+      `${dir}/.gitignore`,
+      renderGoWorkerSdkGitignore({}),
+    );
+
+    // Go's `replace` directives are only honored in the module actually
+    // being built, not in a dependency's own `go.mod` — they don't
+    // propagate transitively. So even though the aggregate module (below)
+    // is what logically imports each actor module, THIS go.mod (the thing
+    // actually being built) still needs its own require+replace for every
+    // individual actor module the aggregate pulls in, on top of the
+    // aggregate's own require+replace, or the build can't resolve them.
+    const goActors = actors.filter((a) => a.fsmLanguage === "go");
+    const aggregateModulePath = `${appRoot}/${GO_AGGREGATE_DIR_NAME}`;
+    const goModContent = renderGoModAggregate({
+      moduleName: "pgfsm/async-op-worker-sdk",
+      requires: [
+        { modulePath: aggregateModulePath },
+        ...goActors.map((a) => ({
+          modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
+        })),
+      ],
+      replaces: [
+        {
+          modulePath: aggregateModulePath,
+          target: "../../go-actors-registry-generated",
+        },
+        ...goActors.map((a) => ({
+          modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
+          target:
+            `../../${pluginRootDirName}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
+        })),
+      ],
+    });
+    await Deno.writeTextFile(`${dir}/go.mod`, goModContent);
+  }
+
+  return {
+    typescript: wroteTypescript,
+    python: wrotePython,
+    rust: wroteRust,
+    go: wroteGo,
+  };
 }
 
 /**
