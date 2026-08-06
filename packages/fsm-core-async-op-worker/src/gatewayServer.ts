@@ -1,9 +1,11 @@
 // Activity Gateway server: a gRPC front door (client-facing) backed by the
-// Unix-socket sidecar (worker-facing). This is the standalone local service
-// SPEC-001's Option B introduces — it holds zero DB connections; the TS
-// orchestrator (asyncOperationWorkerlet.ts) remains the only PGMQ poll/claim/
-// archive owner and is meant to call this gateway as a gRPC client per
-// claimed compiled-language actor invocation.
+// Unix-socket sidecar (worker-facing), optionally paired with the 30-second
+// async-op poll loop (see asyncOpPollLoop.ts / GOAL.md) sharing that same
+// sidecar instance. This package is a standalone alternative to
+// fsm-async-worker-ts, not a passive service another orchestrator's
+// poll/claim/archive loop calls into — when `options.asyncOpPollLoop` is
+// set, this process owns its own Postgres connection and drives pending
+// promise-type work for its currently-registered actors itself.
 //
 // Ported from the polygot-lang-ipc-worker prototype's server/src/main.ts,
 // adapted to the ActivityGateway proto contract (proto/activity-gateway.proto)
@@ -24,8 +26,11 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import type { ConnectRouter, ServiceImpl } from "@connectrpc/connect";
 import * as http2 from "node:http2";
 import { getLogger } from "@logtape/logtape";
+import { type DBDeps, ensurePromiseQueueForWorker } from "@pgfsm/db";
 import { ActivityInvokeError, SidecarGateway } from "./sidecar/gateway.ts";
+import { actorKey, type RegisteredActor } from "./sidecar/protocol.ts";
 import { ActivityGateway } from "../../fsm-proto-codegen/gen/typescript/activity-gateway_connect.js";
+import { startAsyncOpPollLoop } from "./asyncOpPollLoop.ts";
 
 const logger = getLogger(["@pgfsm/worker", "async-op-worker-gateway"]);
 
@@ -65,6 +70,27 @@ export interface GatewayServerOptions {
   /** Default per-invoke timeout if the caller doesn't set one. */
   defaultInvokeTimeoutMs?: number;
   signal?: AbortSignal;
+  /**
+   * When set, also starts the async-op poll loop (asyncOpPollLoop.ts)
+   * against this server's own SidecarGateway instance — same process, same
+   * registered-worker state, no separate CLI/socket needed.
+   */
+  asyncOpPollLoop?: {
+    deps: DBDeps;
+    /** Poll interval in ms. Default 30_000, per GOAL.md. */
+    intervalMs?: number;
+    /** Per-invoke timeout for poll-loop-triggered invokes. Default 10_000. */
+    invokeTimeoutMs?: number;
+  };
+  /**
+   * When set, ensures a PGMQ queue exists (fsm_core.ensure_promise_queue_for_worker,
+   * idempotent) for every actor a worker registers — fire-and-forget, doesn't
+   * block or fail registration itself. Queue name is the actor's full
+   * identity joined with '_': parentFsmName_parentFsmVersion_fsmType_fsmName_fsmVersion_fsmLanguage.
+   */
+  ensureQueueOnRegister?: {
+    deps: DBDeps;
+  };
 }
 
 const DEFAULT_INVOKE_TIMEOUT_MS = 10_000;
@@ -124,13 +150,51 @@ export async function startActivityGatewayServer(
 ): Promise<void> {
   const timeoutMs = options.defaultInvokeTimeoutMs ?? DEFAULT_INVOKE_TIMEOUT_MS;
 
+  const ensureQueueDeps = options.ensureQueueOnRegister?.deps;
+  const onActorRegistered = ensureQueueDeps
+    ? (actor: RegisteredActor) => {
+      const key = actorKey(
+        actor.parentFsmName,
+        actor.parentFsmVersion,
+        actor.fsmType,
+        actor.fsmName,
+        actor.fsmVersion,
+        actor.fsmLanguage,
+      );
+      ensurePromiseQueueForWorker(ensureQueueDeps, actor).then((result) => {
+        logger.info(
+          "Ensured promise queue {queueName} for actor {actorKey} (alreadyExisted={alreadyExisted})",
+          {
+            queueName: result.queueName,
+            actorKey: key,
+            alreadyExisted: result.alreadyExisted,
+          },
+        );
+      }).catch((error) => {
+        logger.error(
+          "Failed to ensure promise queue for actor {actorKey}: {error}",
+          { actorKey: key, error },
+        );
+      });
+    }
+    : undefined;
+
   const sidecar = new SidecarGateway({
     socketPath: options.sidecarSocketPath,
+    onActorRegistered,
   });
   sidecar.start();
   logger.info("Sidecar worker gateway listening on unix:{path}", {
     path: options.sidecarSocketPath,
   });
+
+  if (options.asyncOpPollLoop) {
+    startAsyncOpPollLoop(sidecar, options.asyncOpPollLoop.deps, {
+      intervalMs: options.asyncOpPollLoop.intervalMs,
+      invokeTimeoutMs: options.asyncOpPollLoop.invokeTimeoutMs,
+      signal: options.signal,
+    });
+  }
 
   const serviceImpl: RawActivityGatewayServiceImpl = {
     invoke: async (req) => {

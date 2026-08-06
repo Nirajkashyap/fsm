@@ -82,16 +82,26 @@ interface ActorRoute {
 
 export interface SidecarGatewayOptions {
   socketPath: string;
+  /**
+   * Called once per actor, synchronously, whenever a worker registers it
+   * (including on re-registration). Fire-and-forget by design — registration
+   * itself never waits on this callback's own async work (e.g. an
+   * ensureQueueOnRegister DB call); callers that need to react to failures
+   * should handle them inside the callback itself.
+   */
+  onActorRegistered?: (actor: RegisteredActor) => void;
 }
 
 export class SidecarGateway {
   private readonly socketPath: string;
+  private readonly onActorRegistered?: (actor: RegisteredActor) => void;
   private listener: Deno.UnixListener | null = null;
   private readonly workers = new Map<string, WorkerState>();
   private readonly actorRoutes = new Map<string, ActorRoute>();
 
   constructor(options: SidecarGatewayOptions) {
     this.socketPath = options.socketPath;
+    this.onActorRegistered = options.onActorRegistered;
   }
 
   start(): void {
@@ -122,6 +132,16 @@ export class SidecarGateway {
 
   listRegisteredActors(): string[] {
     return Array.from(this.actorRoutes.keys()).sort();
+  }
+
+  /**
+   * Full identity of every currently-registered actor (not just the routing
+   * key) — the shape the async-op poll loop sends to
+   * `claimPendingPromiseEventsForWorkers` (minus a `handler`, since these are
+   * remote processes reached over the socket, not in-process functions).
+   */
+  listRegisteredActorIdentities(): RegisteredActor[] {
+    return Array.from(this.actorRoutes.values()).map((route) => route.meta);
   }
 
   async invoke(
@@ -263,6 +283,14 @@ export class SidecarGateway {
 
         if (envelope.type === "invoke_result") {
           const body = envelope.body as unknown as InvokeResultBody;
+          logger.info(
+            "Received invoke_result from worker {workerId} (invoke_id={invokeId}): {output}",
+            {
+              workerId,
+              invokeId: body.invoke_id,
+              output: body.output,
+            },
+          );
           this.resolvePendingInvoke(workerId, body.invoke_id, {
             output: body.output,
           });
@@ -271,6 +299,16 @@ export class SidecarGateway {
 
         if (envelope.type === "invoke_error") {
           const body = envelope.body as unknown as InvokeErrorBody;
+          logger.warn(
+            "Received invoke_error from worker {workerId} (invoke_id={invokeId}): {code} {message} (retriable={retriable})",
+            {
+              workerId,
+              invokeId: body.invoke_id,
+              code: body.error?.code ?? "UNKNOWN",
+              message: body.error?.message ?? "",
+              retriable: body.error?.retriable ?? false,
+            },
+          );
           this.rejectPendingInvoke(
             workerId,
             body.invoke_id,
@@ -339,6 +377,7 @@ export class SidecarGateway {
       );
       this.actorRoutes.set(key, { workerId: body.worker_id, meta });
       worker.actors.add(key);
+      this.onActorRegistered?.(meta);
     }
 
     logger.info(

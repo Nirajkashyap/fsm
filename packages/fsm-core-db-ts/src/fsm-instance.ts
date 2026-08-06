@@ -14,6 +14,8 @@ const ARCHIVE_EVENT_FROM_FSM_TYPE_WORKER_FN =
   `${FSM_SCHEMA}.archive_event_from_fsm_type_worker_${FSM_SCHEMA_FN_VERSION}`;
 const ARCHIVE_EVENT_FROM_FSM_PROMISE_TYPE_WORKER_FN =
   `${FSM_SCHEMA}.archive_event_from_fsm_promise_type_worker_${FSM_SCHEMA_FN_VERSION}`;
+const CLAIM_PENDING_PROMISE_EVENTS_FOR_WORKERS_FN =
+  `${FSM_SCHEMA}.claim_pending_promise_events_for_workers_${FSM_SCHEMA_FN_VERSION}`;
 const GET_FSM_DATA_RESOLVE_STATE_VALUE_FN =
   `${FSM_SCHEMA}.get_fsm_data_resolve_state_value_${FSM_SCHEMA_FN_VERSION}`;
 const SEND_EVENT_TO_QUEUE_WITH_EVENT_LOGS_FN =
@@ -258,6 +260,66 @@ export async function archiveEventFromFsmPromiseTypeWorker(
       error: err,
     });
     throw new Error("Failed to archive event from FSM promise type worker", {
+      cause: err,
+    });
+  }
+}
+
+/**
+ * A registered promise-actor identity, as sent to
+ * `claimPendingPromiseEventsForWorkers` — mirrors
+ * `@pgfsm/async-op-worker-gateway`'s `SidecarGateway`-registered actor shape
+ * minus `handler` (an in-process function reference, not serializable to
+ * Postgres).
+ */
+export interface PromiseWorkerIdentity {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: string;
+  fsmName: string;
+  fsmVersion: string;
+  fsmLanguage: string;
+}
+
+/**
+ * Thin wrapper around `claim_pending_promise_events_for_workers_v2()` — takes
+ * the caller's currently-registered worker identities (no `handler`) and
+ * returns pending promise-queue work matching them: for each identity, reads
+ * up to one message (if any) from that identity's PGMQ queue, skipping
+ * identities with no queue yet. See that function's own comment (and
+ * `packages/fsm-core-async-op-worker/docs/guides/CLI-USAGE.md`'s "PGMQ
+ * message payload shape" section) for the row shape returned.
+ */
+export async function claimPendingPromiseEventsForWorkers(
+  deps: DBDeps,
+  workers: PromiseWorkerIdentity[],
+): Promise<Json[]> {
+  try {
+    const text =
+      `SELECT * FROM ${CLAIM_PENDING_PROMISE_EVENTS_FOR_WORKERS_FN}($1::jsonb);`;
+    const values = [
+      toJsonbParam(
+        workers.map((w) => ({
+          parent_fsm_name: w.parentFsmName,
+          parent_fsm_version: w.parentFsmVersion,
+          fsm_type: w.fsmType,
+          fsm_name: w.fsmName,
+          fsm_version: w.fsmVersion,
+          fsm_language: w.fsmLanguage,
+        })),
+      ),
+    ];
+    const res = await deps.db.query<{
+      claim_pending_promise_events_for_workers_v2: Json;
+    }>(text, values);
+    return res.rows.map((row) =>
+      row.claim_pending_promise_events_for_workers_v2
+    );
+  } catch (err) {
+    logger.error("Error in claimPendingPromiseEventsForWorkers: {error}", {
+      error: err,
+    });
+    throw new Error("Failed to claim pending promise events for workers", {
       cause: err,
     });
   }

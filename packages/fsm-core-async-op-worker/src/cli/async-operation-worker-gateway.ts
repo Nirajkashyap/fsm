@@ -1,7 +1,12 @@
 import { parseArgs } from "@std/cli/parse-args";
+import dotenv from "dotenv";
+import { Pool } from "pg";
 import { getLogger } from "@logtape/logtape";
 import { CATEGORY, configureLogging, isTerminal } from "@pgfsm/logging";
+import type { DBDeps } from "@pgfsm/db";
 import { startActivityGatewayServer } from "../index.ts";
+
+dotenv.config({ path: ".env" });
 
 const logger = getLogger(["@pgfsm/worker", "async-op-worker-gateway", "cli"]);
 // Composition root for this CLI: configures LogTape once, same pattern as
@@ -11,14 +16,27 @@ await configureLogging({
 });
 
 const args = parseArgs(Deno.args, {
-  string: ["bind", "sidecar-socket", "invoke-timeout-ms"],
-  boolean: ["help"],
-  alias: { h: "help", b: "bind", s: "sidecar-socket", t: "invoke-timeout-ms" },
+  string: [
+    "bind",
+    "sidecar-socket",
+    "invoke-timeout-ms",
+    "db-url",
+    "poll-interval-ms",
+  ],
+  boolean: ["help", "disable-poll-loop", "ensure-queue-on-register"],
+  alias: {
+    h: "help",
+    b: "bind",
+    s: "sidecar-socket",
+    t: "invoke-timeout-ms",
+    d: "db-url",
+  },
 });
 
 function printHelp(): void {
   logger.info(`
-async-operation-worker-gateway — local Activity Gateway for compiled-language actors
+async-operation-worker-gateway — standalone async-op worker: Activity Gateway
++ 30s Postgres poll loop for compiled-language promise actors
 
 USAGE
   deno run --allow-all src/cli/async-operation-worker-gateway.ts [options]
@@ -27,15 +45,34 @@ OPTIONS
   -b, --bind <target>              gRPC bind target (default: unix:/tmp/pgfsm-activity-gateway.sock)
   -s, --sidecar-socket <path>      Unix socket path workers connect to (default: /tmp/pgfsm-activity-gateway-workers.sock)
   -t, --invoke-timeout-ms <ms>     Default per-invoke timeout (default: 10000)
+  -d, --db-url <url>               Database connection URL (overrides DATABASE_URL from .env)
+  --poll-interval-ms <ms>          Async-op poll loop interval (default: 30000)
+  --disable-poll-loop              Don't start the poll loop -- gateway/sidecar only
+  --ensure-queue-on-register       Ensure a PGMQ queue exists for every actor a worker registers (default: off)
   -h, --help                       Show this help message
 
 DESCRIPTION
   Starts the Activity Gateway: a gRPC service (client-facing) backed by a
   Unix-socket sidecar (worker-facing). Compiled-language worker processes
-  connect to the sidecar socket and register the actors they serve; the TS
-  orchestrator (asyncOperationWorkerlet.ts) is the intended gRPC client,
-  calling Invoke() once per claimed PGMQ message. The gateway holds zero DB
-  connections — see docs/specs/spec-001-compiled-lang-actor-workers.md.
+  connect to the sidecar socket and register the actors they serve.
+
+  Unless --disable-poll-loop is set, this process also owns its own Postgres
+  connection and drives promise-type async operations for its
+  currently-registered actors itself, on a 30-second poll (see
+  asyncOpPollLoop.ts / GOAL.md) -- a standalone alternative to
+  fsm-async-worker-ts's poll/claim/archive loop, not something that needs it
+  running alongside this process.
+
+  With --ensure-queue-on-register, every actor a worker registers also gets
+  a PGMQ queue ensured to exist (idempotent). fsmType is always shortened to
+  its first character; when fsmType is exactly "promise", fsmVersion is
+  dropped and fsmLanguage is also shortened to its first character:
+    fsmType "promise":  <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
+    otherwise:          <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
+  PGMQ enforces a 48-character limit on that name -- long identities can
+  still exceed it (more likely on the non-"promise" path) and will fail
+  this step (registration itself still succeeds; only the queue-ensure call
+  fails, logged as an error).
 `);
 }
 
@@ -59,6 +96,51 @@ if (invokeTimeoutArg && !Number.isInteger(defaultInvokeTimeoutMs)) {
   Deno.exit(1);
 }
 
+const pollLoopEnabled = !args["disable-poll-loop"];
+const ensureQueueOnRegisterEnabled = !!args["ensure-queue-on-register"];
+const needsDb = pollLoopEnabled || ensureQueueOnRegisterEnabled;
+
+let dbPool: Pool | undefined;
+let asyncOpPollLoopOption:
+  | { deps: DBDeps; intervalMs?: number; invokeTimeoutMs?: number }
+  | undefined;
+let ensureQueueOnRegisterOption: { deps: DBDeps } | undefined;
+
+if (needsDb) {
+  const resolvedDbUrl = args["db-url"] ?? Deno.env.get("DATABASE_URL") ?? "";
+  if (!resolvedDbUrl) {
+    logger.error(
+      "DATABASE_URL is required for the poll loop and/or --ensure-queue-on-register (set in .env or pass --db-url), or pass --disable-poll-loop (and omit --ensure-queue-on-register) to run the gateway/sidecar only",
+    );
+    Deno.exit(1);
+  }
+  dbPool = new Pool({ connectionString: resolvedDbUrl });
+  const deps: DBDeps = { db: dbPool, useSupabase: false };
+
+  if (pollLoopEnabled) {
+    const pollIntervalArg = args["poll-interval-ms"];
+    const pollIntervalMs = pollIntervalArg
+      ? Number(pollIntervalArg)
+      : undefined;
+    if (pollIntervalArg && !Number.isInteger(pollIntervalMs)) {
+      logger.error(
+        "--poll-interval-ms must be a positive integer, got: {value}",
+        { value: pollIntervalArg },
+      );
+      Deno.exit(1);
+    }
+    asyncOpPollLoopOption = {
+      deps,
+      intervalMs: pollIntervalMs,
+      invokeTimeoutMs: defaultInvokeTimeoutMs,
+    };
+  }
+
+  if (ensureQueueOnRegisterEnabled) {
+    ensureQueueOnRegisterOption = { deps };
+  }
+}
+
 const controller = new AbortController();
 let shutdownRequested = false;
 
@@ -79,18 +161,29 @@ Deno.addSignalListener("SIGTERM", onSignal);
 
 try {
   logger.info(
-    "Starting activity gateway: bind={bind}, sidecar-socket={socket}",
-    { bind: bindTarget, socket: sidecarSocketPath },
+    "Starting activity gateway: bind={bind}, sidecar-socket={socket}, pollLoop={pollLoop}, ensureQueueOnRegister={ensureQueueOnRegister}",
+    {
+      bind: bindTarget,
+      socket: sidecarSocketPath,
+      pollLoop: pollLoopEnabled,
+      ensureQueueOnRegister: ensureQueueOnRegisterEnabled,
+    },
   );
   await startActivityGatewayServer({
     bindTarget,
     sidecarSocketPath,
     defaultInvokeTimeoutMs,
     signal: controller.signal,
+    asyncOpPollLoop: asyncOpPollLoopOption,
+    ensureQueueOnRegister: ensureQueueOnRegisterOption,
   });
   logger.info("Activity gateway stopped.");
 } catch (err) {
   const msg = err instanceof Error ? (err.stack ?? err.message) : String(err);
   logger.error("Activity gateway failed: {error}", { error: msg });
   Deno.exit(1);
+} finally {
+  if (dbPool) {
+    await dbPool.end();
+  }
 }

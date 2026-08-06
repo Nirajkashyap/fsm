@@ -14,3 +14,5 @@ export type {
   ActivityInvokeInput,
   ActivityInvokeResult,
 } from "./sidecar/gateway.ts";
+export { startAsyncOpPollLoop } from "./asyncOpPollLoop.ts";
+export type { AsyncOpPollLoopOptions } from "./asyncOpPollLoop.ts";

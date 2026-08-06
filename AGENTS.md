@@ -33,11 +33,6 @@ reviewed spec, not code.
 
 1. Interrogate the design before writing anything. Cover, in order:
    - **Problem** — what breaks or is impossible today? Who is affected?
-   - **Constraints** — what is fixed? Check the standing architectural
-     constraints in `docs/kb/` and `docs/adr/` (e.g. ADR-002: bounded worker
-     fleet and dispatch strategy; ADR-003: connection minimization, polyglot via
-     queue) — a spec that violates an accepted ADR must say so explicitly and
-     propose superseding it.
    - **Options** — at least two, with trade-offs. Propose options the user
      didn't mention.
    - **Decision drivers** — why the chosen option wins.
