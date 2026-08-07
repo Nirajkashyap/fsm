@@ -1,4 +1,19 @@
-
+-- Fixes archive_event_from_fsm_promise_type_worker_v2's step 2 (send promise
+-- result back to parent FSM queue): only actually sends when
+-- input_send_to_parent_queue_id is a real parent FSM instance id -- not
+-- NULL, and not one of the two "no real parent" sentinel uuids
+-- (fsm_core.pg_system_queue_uuid() / fsm_core.api_system_queue_uuid()).
+--
+-- Before this fix, step 2 called send_event_to_fsm_queue_with_event_logs_v2
+-- unconditionally with input_fsm_instance_id := input_send_to_parent_queue_id.
+-- That function raises an exception on a NULL fsm_instance_id (see its own
+-- "IF input_fsm_instance_id IS NULL THEN RAISE EXCEPTION" guard), and a
+-- sentinel uuid isn't a real fsm_instance row either -- so a promise-actor
+-- invocation with no real waiting parent (e.g. triggered directly via the
+-- API, using api_system_queue_uuid(), or some other system-internal path
+-- using pg_system_queue_uuid()) would fail archival entirely instead of
+-- just skipping the parent-notification step, which is the only part that
+-- actually needs a real parent.
 CREATE OR REPLACE FUNCTION fsm_core.archive_event_from_fsm_promise_type_worker_v2(
     input_promise_queue_name text,
     input_promise_queue_type text,
@@ -30,25 +45,33 @@ BEGIN
         msg_id := input_promise_queue_msg_id
     );
 
-    -- 2. Send promise result back to parent FSM queue
-    send_to_parent_result := fsm_core.send_event_to_fsm_queue_with_event_logs_v2(
-        input_fsm_instance_id := input_send_to_parent_queue_id,
-        input_fsm_instance_id_fsm_type := NULL,
-        input_fsm_instance_id_fsm_version := NULL,
-        input_send_to_parent_queue_id := fsm_core.pg_system_queue_uuid(),
-        input_send_to_parent_queue_type := fsm_core.pg_system_queue_type(),
-        input_send_to_parent_queue_id_event_name := fsm_core.pg_system_event_name(),
-        input_event_name := input_event_name,
-        input_event_action_type := 'promise_completed',
-        input_event_data := input_event_output,
-        input_event_delay := 0,
-        input_event_status := input_event_status,
-        input_event_output := input_event_output,
-        input_error_message := input_error_message,
-        input_execution_started_at := input_execution_started_at,
-        input_execution_duration := input_execution_duration,
-        input_execution_finished_at := input_execution_finished_at
-    );
+    -- 2. Send promise result back to parent FSM queue -- only when there is
+    -- a real parent to notify.
+    IF input_send_to_parent_queue_id IS NOT NULL
+        AND input_send_to_parent_queue_id <> fsm_core.pg_system_queue_uuid()
+        AND input_send_to_parent_queue_id <> fsm_core.api_system_queue_uuid()
+    THEN
+        send_to_parent_result := fsm_core.send_event_to_fsm_queue_with_event_logs_v2(
+            input_fsm_instance_id := input_send_to_parent_queue_id,
+            input_fsm_instance_id_fsm_type := NULL,
+            input_fsm_instance_id_fsm_version := NULL,
+            input_send_to_parent_queue_id := fsm_core.pg_system_queue_uuid(),
+            input_send_to_parent_queue_type := fsm_core.pg_system_queue_type(),
+            input_send_to_parent_queue_id_event_name := fsm_core.pg_system_event_name(),
+            input_event_name := input_event_name,
+            input_event_action_type := 'promise_completed',
+            input_event_data := input_event_output,
+            input_event_delay := 0,
+            input_event_status := input_event_status,
+            input_event_output := input_event_output,
+            input_error_message := input_error_message,
+            input_execution_started_at := input_execution_started_at,
+            input_execution_duration := input_execution_duration,
+            input_execution_finished_at := input_execution_finished_at
+        );
+    ELSE
+        send_to_parent_result := jsonb_build_object('skipped', true, 'reason', 'no real parent to notify');
+    END IF;
 
     -- 3. Log archive event in promise queue event logs
     INSERT INTO fsm_core.fsm_promise_queue_event_logs (

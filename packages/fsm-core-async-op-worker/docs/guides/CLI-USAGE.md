@@ -235,6 +235,55 @@ SELECT pgmq.send('creditCheck_v01_p_checkBureau_t', jsonb_build_object(
 ), 0);
 ```
 
+#### Sample: no real parent (API sentinel)
+
+A promise actor invoked with no real FSM instance waiting on the result (e.g.
+triggered directly via the API) uses `fsm_core.api_system_queue_uuid()`
+(`00000000-0000-0000-0000-000000000001`) as `sendToParentQueueId` instead of a
+real `fsm_instance` id:
+
+```json
+{
+  "eventData": {
+    "eventType": "checkBureau",
+    "eventPayload": { "ssn": "123-45-6789", "applicantName": "Jane Doe" },
+    "actionType": "invoke"
+  },
+  "queueId": "creditCheck_v01_p_checkBureau_t",
+  "queueFnName": "checkBureau",
+  "queueType": "promise",
+  "queueVersion": "v01",
+  "sendToParentQueueId": "00000000-0000-0000-0000-000000000001",
+  "sendToParentQueueType": "fsm",
+  "sendToParentQueueIdEventName": "xstate.done.actor.checkBureau",
+  "queueMsgId": 1,
+  "queueMsgDelay": 0
+}
+```
+
+`archive_event_from_fsm_promise_type_worker_v2` recognizes `NULL` and both
+sentinel uuids — `fsm_core.pg_system_queue_uuid()` (`...0000`) and
+`fsm_core.api_system_queue_uuid()` (`...0001`) — as "no real parent to notify"
+and skips the parent-notify send, returning
+`send_to_parent_result:
+{"skipped": true, "reason": "no real parent to notify"}`
+instead of raising. Any other uuid is treated as a real parent FSM instance id
+and the send is attempted as normal.
+
+To enqueue it directly for testing:
+
+```sql
+SELECT pgmq.send('creditCheck_v01_p_checkBureau_t', jsonb_build_object(
+    'eventData', jsonb_build_object(
+        'eventType', 'checkBureau',
+        'eventPayload', jsonb_build_object('ssn', '123-45-6789', 'applicantName', 'Jane Doe'),
+        'actionType', 'invoke'
+    ),
+    'sendToParentQueueId', fsm_core.api_system_queue_uuid()::text,
+    'sendToParentQueueIdEventName', 'xstate.done.actor.checkBureau'
+), 0);
+```
+
 ### Graceful shutdown
 
 | Signal                             | Behaviour                                                                                                                       |

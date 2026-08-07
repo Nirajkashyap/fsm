@@ -161,6 +161,16 @@ export async function dispatchAndArchive(
 
   const executionFinishedAt = new Date();
 
+  logger.info(
+    "Dispatch result for actor {actorKey}, event {eventName}: status={status}, output={output}, error={error}",
+    {
+      actorKey: actorKeyOf(event),
+      eventName: event.eventName,
+      status: eventStatus,
+      output: eventOutput,
+      error: errorMessage,
+    },
+  );
   try {
     await archiveEventFromFsmPromiseTypeWorker(
       deps,
@@ -197,6 +207,7 @@ async function pollOnce(
   const workers: PromiseWorkerIdentity[] = sidecar
     .listRegisteredActorIdentities();
   if (workers.length === 0) {
+    logger.info("No registered workers; skipping poll tick");
     return;
   }
 
@@ -209,11 +220,14 @@ async function pollOnce(
     });
     return;
   }
-
+  logger.info("Claimed {count} pending events for {workerCount} workers", {
+    count: claimed.length,
+    workerCount: workers.length,
+  });
   for (const row of claimed) {
     const event = parseClaimedPromiseEvent(row);
     if (!event) {
-      logger.warning("Skipping unparseable claimed event row: {row}", {
+      logger.error("Skipping unparseable claimed event row: {row}", {
         row,
       });
       continue;
