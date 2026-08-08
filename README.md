@@ -15,7 +15,7 @@ This document is the lifecycle spec for an FSM — **design/generate** →
 ```mermaid
 flowchart LR
     A["<b>1. design / generate</b><br/>fsm.json"] --> B["<b>2. scaffold</b><br/>operation logic"]
-    B --> C["<b>3. run Workers</b><br>3.a Sync Operation Worker <br>( ctl  + scheduler + fsmlet ) <br>3.b Async Operation Worker <br> ( ctl  + scheduler + Asynclet )"]
+    B --> C["<b>3. run Workers</b><br>3.a Sync Operation Worker <br>[ package : fsm-sync-worker-ts ]<br>( ctl  + scheduler + fsmlet ) <br>3.b Async Operation Worker <br>[ package : fsm-core-async-op-worker ]<br> ( ctl  + startActivityGatewayServer + Different lang ipc workers )"]
 ```
 
 _Every step reads and writes through PostgreSQL as the source of truth._
@@ -131,86 +131,65 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
 
 ---
 
-## 3. Validate operation logic
+## 3. Start the workers
 
-Once the stubs from section 2 are filled in, validate that each async
-operation-logic module and each sync `action` / `guard` / `delay` actually
-export what the machine expects. Validation and the PostgreSQL load are separate
-steps: each workflow type has its own validate-only command, and a single shared
-`load` command then loads `fsm.json` into PostgreSQL — this is the DB-side half
-of the seam the `asyncOperationWorkerlet` and `fsmlet` (section 4) consume.
+The FSM side runs as a **node agent** (kubelet equivalent) — it validates, loads
+its modules, and registers itself, then waits for its companion **scheduler**
+(kube-scheduler equivalent, a separate control-plane process — see
+[section 4](#4-start-the-schedulers)) to route claimed work to it via
+`pg_notify`.
 
-| Info                  | Async Operation                                                                                                                 | Sync Operation                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| PRD                   | [PRD-004](./packages/fsm-compiler-ts/docs/prd/prd-004-validate-async-operation-logic.md)                                        | [PRD-005](./packages/fsm-compiler-ts/docs/prd/prd-005-validate-sync-operation-logic.md)    |
-| What it validates     | Each async operation-logic module actually exports its named function                                                           | Every `action`, `guard`, `delay` referenced in `fsm.json` is exported with the right shape |
-| Validate-only command | `validate-async-operation`                                                                                                      | `validate-sync-operation`                                                                  |
-| Language scope        | `--lang` (comma-separated) restricts to a language subset; omitted = all actor languages are checked                            | Validates whatever `--lang` languages were scaffolded in section 2                         |
-| Per-language check    | Each language's runtime is invoked to confirm the function is defined — not just that the file exists (see runtime table below) | Validated via `validateSyncOperationFromFolder`                                            |
+The async-operation side does **not** follow that kube-style node-agent /
+scheduler split. It runs as a single long-running
+**`startActivityGatewayServer`** process (`fsm-core-async-op-worker`) that
+starts a sidecar Unix socket for the per-language **lang ipc workers** to
+register their actors against, then polls Postgres directly on its own interval
+to claim and dispatch work — no separate scheduler process, no `pg_notify`.
 
-### Async operation logic — runtime called per language
-
-| Language     | Runtime called                                         |
-| ------------ | ------------------------------------------------------ |
-| `typescript` | `deno run src/checkers/check_fn.ts <file> <fn>`        |
-| `python`     | `python3 src/checkers/check_fn.py <file> <fn>`         |
-| `go`         | `go build -o binary src/checkers/check_fn.go` → binary |
-| `rust`       | `rustc src/checkers/check_fn.rs` → binary, then binary |
-
-```bash
-# Validate all languages (calls each language's runtime)
-deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
-  -c validate-async-operation \
-  -f apps/fsm-core-example/sharedFSM \
-  -w sharedPromise
-
-# Validate a specific language only
-deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
-  -c validate-async-operation \
-  -f apps/fsm-core-example/sharedFSM \
-  -w sharedPromise \
-  --lang typescript
-```
-
-### Sync operation logic — validate
-
-```bash
-deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
-  -c validate-sync-operation \
-  -f apps/fsm-core-example/fsm \
-  -w fsm
-```
-
----
-
-## 4. Start the workers
-
-The async-operation side and the FSM side each run as a **node agent** (kubelet
-equivalent) — it validates, loads its modules, and registers itself, then waits
-for its companion **scheduler** (kube-scheduler equivalent, a separate
-control-plane process — see [section 5](#5-start-the-schedulers)) to route
-claimed work to it via `pg_notify`. The two node agents are structurally
-identical; only the tables and per-language execution differ.
-
-| Info                        | FSM Async-Operation Worker                                                                                                                                                                                                                                             | FSM Sync-Operation Worker                                                                                                                                                                                                                                |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Drives                      | Async operation logic (`actors`) — one long-running promise-worker per actor queue                                                                                                                                                                                     | State machines — sync operation logic, transitions, and dispatching invokes                                                                                                                                                                              |
-| Runtime language            | Polyglot (multi-language) — driven by `fsmLanguage` (`typescript`/`python`/`go`/`rust`)                                                                                                                                                                                | TypeScript only                                                                                                                                                                                                                                          |
-| Behaviour                   | Compile-time — Go and Rust don't support dynamic import, so actor modules are resolved ahead of time rather than loaded dynamically                                                                                                                                    | Runtime — TypeScript only, and TypeScript supports dynamic import                                                                                                                                                                                        |
-| Worker Arch components      | `lang ipc workers`, `ipc worker gateway multi queue poller`                                                                                                                                                                                                            | `fsmlet` (kubelet), `fsm Scheduler` (kube Scheduler), `fsmctl` (kubectl)                                                                                                                                                                                 |
-| Worker Arch ADR             | [ADR-003](./docs/adr/adr-003-fsm-async-operation-polyglot-actor-execution-model.md)                                                                                                                                                                                    | [ADR-002](./docs/adr/adr-002-fsm-sync-operation-worker-execution-model.md)                                                                                                                                                                               |
-| Node-agent CLI              | `packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts`                                                                                                                                                                                                    | `packages/fsm-sync-worker-ts/src/cli/fsmlet.ts`                                                                                                                                                                                                          |
-| On startup, validates       | None — compile-time model follows a different approach: each lang IPC worker starts and registers its fns with the IPC lang worker gateway, which updates PostgreSQL                                                                                                   | `validateSyncOperationFromFolders` — TypeScript only, workflow type hardcoded to `"fsm"`                                                                                                                                                                 |
-| Cross-checks the other side | Not required — doesn't follow `validateAsyncOperationFromFolders`, follows the lang IPC worker path instead                                                                                                                                                            | `validateSyncOperationFromFolders` using the parameter passed from `fsmlet` via the `asyncOperationVerificationMode` argument (`checkRegistry` / `checkRegistryAndWorking`, via `checkRegistryForAsyncActors` / `checkRegistryAndWorkingForAsyncActors`) |
-| On startup, loads           | Each verified actor into `async_operation_meta` via `load_async_operation_meta_v2` (Note: this may change)                                                                                                                                                             | `fsm.json` into PostgreSQL via `loadFsmFromJson` → `load_fsm_from_json_v2`                                                                                                                                                                               |
-| Registers itself in         | `async_operation_workerlet` table (`supported_async_operations`, `max_pid_number`) (Note: this may change)                                                                                                                                                             | `fsm_workerlet` table (`fsm_modules`, `max_concurrency`)                                                                                                                                                                                                 |
-| Listens on                  | `async_op_workerlet_work_<id>` (Note: this may change)                                                                                                                                                                                                                 | `fsm_fsmlet_work_<id>` and `fsm_worker_stop` (per-instance abort)                                                                                                                                                                                        |
-| Claims work via             | `claim_scheduled_for_async_operation_workerlet()` (Note: this may change)                                                                                                                                                                                              | `claim_scheduled_for_fsmlet()`                                                                                                                                                                                                                           |
-| Concurrency model           | One long-running worker per unique actor queue, bounded by `--max-concurrency` semaphore. TypeScript runs in-process (`startFSMPromiseWorker`); Python spawns a subprocess; Go/Rust actors validate but log a warning and are not yet runnable (Note: this may change) | One FSM worker per claimed instance, bounded by `--max-concurrency` semaphore                                                                                                                                                                            |
-| Heartbeat                   | `asyncOperationWorkerletHeartbeat` every 5s (tracks `active_pid_number`), 30s fallback poll                                                                                                                                                                            | `fsmletHeartbeat` every 5s (tracks `active_workers`), 30s fallback poll                                                                                                                                                                                  |
-| Graceful shutdown           | `SIGINT`/`SIGTERM` aborts active queue-workers, drains, deregisters from `async_operation_workerlet`                                                                                                                                                                   | `SIGINT`/`SIGTERM` aborts active workers, drains, deregisters from `fsm_workerlet`                                                                                                                                                                       |
+| Info                        | FSM Async-Operation Worker — `fsm-core-async-op-worker` (current)                                                                                                                                                                                                                                                               | FSM Async-Operation Worker — `fsm-async-worker-ts` (old)                                                                                                                                                                                                               | FSM Sync-Operation Worker                                                                                                                                                                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architecture diagram        | <img src="./.github/assets/async-op-worker-arch.excalidraw.svg" alt="fsm-core-async-op-worker architecture: worker-sdk processes register over a sidecar Unix socket; a 30s poll loop claims PGMQ work, dispatches, and archives back to PostgreSQL" width="480"><br>drag into [excalidraw.com](https://excalidraw.com) to edit | —                                                                                                                                                                                                                                                                      | —                                                                                                                                                                                                                                                        |
+| Drives                      | Async operation logic (`actors`) — dispatches to already-running per-language worker-sdk processes over the sidecar socket, one fire-and-forget dispatch per claimed event (no long-running in-process worker per queue)                                                                                                        | Async operation logic (`actors`) — one long-running promise-worker per actor queue                                                                                                                                                                                     | State machines — sync operation logic, transitions, and dispatching invokes                                                                                                                                                                              |
+| Runtime language            | Polyglot (multi-language) — driven by `fsmLanguage` (`typescript`/`python`/`go`/`rust`), always dispatched over the sidecar socket, never in-process                                                                                                                                                                            | Polyglot (multi-language) — driven by `fsmLanguage` (`typescript`/`python`/`go`/`rust`)                                                                                                                                                                                | TypeScript only                                                                                                                                                                                                                                          |
+| Behaviour                   | Runtime dispatch only — the gateway never imports or loads actor code itself; each language's worker-sdk process (run separately) owns its own module loading                                                                                                                                                                   | Runtime + Compile-time — Go and Rust don't support dynamic import, so actor modules are resolved ahead of time rather than loaded dynamically                                                                                                                          | Runtime — TypeScript only, and TypeScript supports dynamic import                                                                                                                                                                                        |
+| Worker Arch components      | `SidecarGateway` (registration + dispatch), per-language **lang ipc workers** (worker-sdk processes)                                                                                                                                                                                                                            | `lang ipc workers`, `ipc worker gateway multi queue poller`                                                                                                                                                                                                            | `fsmlet` (kubelet), `fsm Scheduler` (kube Scheduler), `fsmctl` (kubectl)                                                                                                                                                                                 |
+| Worker Arch ADR             | [ADR-003](./docs/adr/adr-003-fsm-async-operation-polyglot-actor-execution-model.md)                                                                                                                                                                                                                                             | [ADR-003](./docs/adr/adr-003-fsm-async-operation-polyglot-actor-execution-model.md)                                                                                                                                                                                    | [ADR-002](./docs/adr/adr-002-fsm-sync-operation-worker-execution-model.md)                                                                                                                                                                               |
+| CLI entry point             | `packages/fsm-core-async-op-worker/src/cli/async-operation-worker-gateway.ts`                                                                                                                                                                                                                                                   | `packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts`                                                                                                                                                                                                    | `packages/fsm-sync-worker-ts/src/cli/fsmlet.ts`                                                                                                                                                                                                          |
+| On startup, validates       | None — the gateway itself validates nothing; each per-language worker-sdk process starts, loads/validates its own actor modules, and self-registers over the sidecar socket                                                                                                                                                     | None — compile-time model follows a different approach: each lang IPC worker starts and registers its fns with the IPC lang worker gateway, which updates PostgreSQL                                                                                                   | `validateSyncOperationFromFolders` — TypeScript only, workflow type hardcoded to `"fsm"`                                                                                                                                                                 |
+| Cross-checks the other side | Not required — doesn't follow `validateAsyncOperationFromFolders`, follows the lang IPC worker path instead                                                                                                                                                                                                                     | Not required — doesn't follow `validateAsyncOperationFromFolders`, follows the lang IPC worker path instead                                                                                                                                                            | `validateSyncOperationFromFolders` using the parameter passed from `fsmlet` via the `asyncOperationVerificationMode` argument (`checkRegistry` / `checkRegistryAndWorking`, via `checkRegistryForAsyncActors` / `checkRegistryAndWorkingForAsyncActors`) |
+| On startup, loads           | Nothing from folders — the gateway itself just starts the sidecar (and, unless `--disable-poll-loop`, the poll loop) and waits; each per-language worker-sdk process loads/validates its own actor modules and self-registers over the sidecar socket                                                                           | Each verified actor into `async_operation_meta` via `load_async_operation_meta_v2` (Note: this may change)                                                                                                                                                             | `fsm.json` into PostgreSQL via `loadFsmFromJson` → `load_fsm_from_json_v2`                                                                                                                                                                               |
+| Registers itself in         | In-memory only, no DB table — `SidecarGateway.actorRoutes` (per-worker `register` `WireEnvelope` over `--sidecar-socket`). Optional `--ensure-queue-on-register` also ensures a PGMQ queue per registered actor via `ensure_promise_queue_for_worker_v2`                                                                        | `async_operation_workerlet` table (`supported_async_operations`, `max_pid_number`) (Note: this may change)                                                                                                                                                             | `fsm_workerlet` table (`fsm_modules`, `max_concurrency`)                                                                                                                                                                                                 |
+| Listens on                  | `--sidecar-socket` (Unix socket, worker register/invoke_result/invoke_error frames) — no `pg_notify` channel; the poll loop pulls from Postgres itself every `--poll-interval-ms` (default 30s)                                                                                                                                 | `async_op_workerlet_work_<id>` (Note: this may change)                                                                                                                                                                                                                 | `fsm_fsmlet_work_<id>` and `fsm_worker_stop` (per-instance abort)                                                                                                                                                                                        |
+| Claims work via             | `claimPendingPromiseEventsForWorkers` → `claim_pending_promise_events_for_workers_v2()`, called proactively by the poll loop every `--poll-interval-ms` (default 30s) — not triggered by `pg_notify`                                                                                                                            | `claim_scheduled_for_async_operation_workerlet()` (Note: this may change)                                                                                                                                                                                              | `claim_scheduled_for_fsmlet()`                                                                                                                                                                                                                           |
+| Concurrency model           | Fire-and-forget per claimed event — no semaphore/`--max-concurrency` in this package. Each event dispatches via `sidecar.invoke()` over the socket to the already-running worker-sdk process for that actor, which owns its own concurrency                                                                                     | One long-running worker per unique actor queue, bounded by `--max-concurrency` semaphore. TypeScript runs in-process (`startFSMPromiseWorker`); Python spawns a subprocess; Go/Rust actors validate but log a warning and are not yet runnable (Note: this may change) | One FSM worker per claimed instance, bounded by `--max-concurrency` semaphore                                                                                                                                                                            |
+| Heartbeat                   | Not implemented — `heartbeat` is a reserved `WireType` in the sidecar protocol, but nothing sends or tracks one yet                                                                                                                                                                                                             | `asyncOperationWorkerletHeartbeat` every 5s (tracks `active_pid_number`), 30s fallback poll                                                                                                                                                                            | `fsmletHeartbeat` every 5s (tracks `active_workers`), 30s fallback poll                                                                                                                                                                                  |
+| Graceful shutdown           | `SIGINT`/`SIGTERM` aborts the poll loop (`AbortSignal`), stops accepting new gRPC connections, closes the sidecar/Unix socket, closes the DB pool if it was opened; no DB deregistration (nothing was registered in a DB table to begin with); Ctrl+C twice force-exits                                                         | `SIGINT`/`SIGTERM` aborts active queue-workers, drains, deregisters from `async_operation_workerlet`                                                                                                                                                                   | `SIGINT`/`SIGTERM` aborts active workers, drains, deregisters from `fsm_workerlet`                                                                                                                                                                       |
 
 ### Start the async-operation worker
+
+#### `fsm-core-async-op-worker` (current)
+
+```bash
+# Sidecar (worker registration) + gRPC/Connect gateway + 30s poll loop —
+# standalone: no companion scheduler process, no pg_notify
+deno run --allow-all packages/fsm-core-async-op-worker/src/cli/async-operation-worker-gateway.ts \
+  --bind unix:/tmp/pgfsm-activity-gateway.sock \
+  --sidecar-socket /tmp/pgfsm-activity-gateway-workers.sock \
+  --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+  --poll-interval-ms 30000
+  # --disable-poll-loop        # gateway/sidecar only, no DB connection needed
+  # --ensure-queue-on-register # auto-create a PGMQ queue for every newly registered actor
+```
+
+Needs at least one per-language worker-sdk process to connect to
+`--sidecar-socket` and register its actors — see
+[`CLI-USAGE.md`](./packages/fsm-core-async-op-worker/docs/guides/CLI-USAGE.md)
+for the full flag reference, startup sequence, and PGMQ message payload shape.
+
+#### `fsm-async-worker-ts` (old)
+
+~~superseded by `fsm-core-async-op-worker` above~~ — kept runnable for now, but
+new work should target `fsm-core-async-op-worker` instead.
 
 ```bash
 # Node agent — validates, loads actor metadata, registers, then waits for work
@@ -223,6 +202,12 @@ deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-worker
   # -d <db-url>             # overrides DATABASE_URL
 ```
 
+Unlike `fsm-core-async-op-worker` above, this node agent needs its companion
+**async-operation scheduler** running somewhere in the cluster to ever receive
+claimed work — see [section 4](#4-start-the-schedulers). See
+[`CLI-USAGE.md`](./packages/fsm-async-worker-ts/docs/guides/CLI-USAGE.md) for
+the full flag reference and startup sequence.
+
 ### Start the FSM worker
 
 ```bash
@@ -234,16 +219,14 @@ deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmlet.ts \
   # -d <db-url>            # overrides DATABASE_URL
 ```
 
-Both node agents need their companion scheduler running somewhere in the cluster
-to ever receive claimed work — see [section 5](#5-start-the-schedulers). See
-[`CLI-USAGE.md`](./packages/fsm-async-worker-ts/docs/guides/CLI-USAGE.md)
-(async-operation-workerlet) and
-[`CLI-USAGE.md`](./packages/fsm-sync-worker-ts/docs/guides/CLI-USAGE.md)
+This node agent needs its companion **FSM scheduler** running somewhere in the
+cluster to ever receive claimed work — see [section 4](#4-start-the-schedulers).
+See [`CLI-USAGE.md`](./packages/fsm-sync-worker-ts/docs/guides/CLI-USAGE.md)
 (fsmlet) for the full flag reference and startup sequence.
 
 ---
 
-## 5. Start the schedulers
+## 4. Start the schedulers
 
 Each node-agent type has a companion **scheduler** — a control-plane routing
 process (kube-scheduler equivalent) run once per cluster, never on a worker
@@ -260,7 +243,7 @@ after a `LISTEN` connection drop.
 | Listens on              | `async_operation_scheduler_work`                                                       | `fsm_scheduler_work`                                                         |
 | Dispatch table          | `async_operation_instance_and_async_operation_workerlet`                               | `fsm_dispatch_queue`                                                         |
 | Scheduling function     | `async_operation_schedule_next_pending()`                                              | `schedule_next_pending()`                                                    |
-| Notifies the winner via | `async_op_workerlet_work_<id>` (channel the workerlet is listening on — see section 4) | `fsm_fsmlet_work_<id>` (channel the fsmlet is listening on — see section 4)  |
+| Notifies the winner via | `async_op_workerlet_work_<id>` (channel the workerlet is listening on — see section 3) | `fsm_fsmlet_work_<id>` (channel the fsmlet is listening on — see section 3)  |
 | `--stale-threshold`     | Seconds before a workerlet with no heartbeat is treated as dead (default `30`)         | Seconds before a fsmlet with no heartbeat is treated as dead (default `30`)  |
 | `--poll-interval`       | Fallback poll interval in ms, catches missed notifications (default `30000`)           | Fallback poll interval in ms, catches missed notifications (default `30000`) |
 | Deployment              | Control plane, alongside the API server — **not** on worker nodes                      | Control plane, alongside the API server — **not** on worker nodes            |
@@ -285,7 +268,7 @@ deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts
 
 ---
 
-## 6. Control the cluster (`ctl`)
+## 5. Control the cluster (`ctl`)
 
 Each dispatch model has a one-shot **control CLI** (kubectl equivalent) — unlike
 the node agents and schedulers in sections 4–5, these issue a single command
