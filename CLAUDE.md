@@ -48,6 +48,7 @@ packages/
   fsm-sync-worker-ts/     # Worker fleet: fsmlet/fsmscheduler dispatch-queue CLIs — see CLAUDE.md
   fsm-async-worker-ts/    # Worker fleet: async-operation-workerlet/scheduler dispatch-queue CLIs — see CLAUDE.md
   fsm-logging-ts/         # Shared LogTape logging config, @pgfsm/logging — see CLAUDE.md
+  fsm-proto-codegen/      # Buf-driven multi-language proto stub generation — see CLAUDE.md
 ```
 
 Each linked subdirectory has its own `CLAUDE.md` with commands, file structure,
