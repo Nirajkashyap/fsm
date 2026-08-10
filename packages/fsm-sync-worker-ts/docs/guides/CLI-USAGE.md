@@ -331,6 +331,7 @@ their worker directly inside the API process — see `fsmpromise.handlers.ts`).
 | HTTP route                          | Model      | CLI equivalent                       | Body                                                                                            |
 | ----------------------------------- | ---------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | `GET /fsm`                          | —          | —                                    | —                                                                                               |
+| `POST /fsm`                         | dispatch   | `fsmctl -c create`                   | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + enqueues to `fsm_dispatch_queue` |
 | `POST /fsm/stop`                    | dispatch   | `fsmctl -c stop`                     | `{ queue }`                                                                                     |
 | `POST /fsm/send`                    | dispatch   | `fsmctl -c send`                     | `{ fsm_instance_id, event_data }`                                                               |
 | `POST /fsm/dispatch`                | dispatch   | `fsmctl -c create`                   | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + enqueues to `fsm_dispatch_queue` |
@@ -340,11 +341,13 @@ their worker directly inside the API process — see `fsmpromise.handlers.ts`).
 | `POST /fsmpromise/stop`             | in-process | Ctrl+C (graceful) / `fsmctl -c stop` | `{ queue }`                                                                                     |
 | `POST /fsmpromise/create-and-start` | in-process | —                                    | `{ queue_name, fsm_name, promise_type, fsm_version }`                                           |
 
-`POST /fsm/dispatch` and `POST /fsm/resume-dispatch` enqueue to
-`fsm_dispatch_queue`, the same path `fsmctl create`/`resume` use, requiring a
-running `fsmscheduler` + `fsmlet` to pick the work up. The in-process `/fsm`
-routes (`POST /fsm`, `POST /fsm/resume`, `GET /fsm/currentActive`) were removed
-— see ADR-002. `fsmpromise` has no dispatch-model route yet —
+`POST /fsm` (in `fsm.handlers.ts`) and `POST /fsm/dispatch` (in
+`fsm.handlers.dispatch.ts`) both create an instance and enqueue it to
+`fsm_dispatch_queue` — same dispatch-model creation, two route paths.
+`POST /fsm/resume-dispatch` does the equivalent for resume. All three require a
+running `fsmscheduler` + `fsmlet` to pick the work up. `POST /fsm/resume` and
+`GET /fsm/currentActive`, the remaining in-process `/fsm` routes, were removed —
+see ADR-002. `fsmpromise` has no dispatch-model route yet —
 `async-operation-workerlet` is driven only via its own CLI, not through the HTTP
 API.
 

@@ -60,6 +60,34 @@ export const getOne = createRoute({
   },
 });
 
+export const create = createRoute({
+  path: "/fsm",
+  method: "post",
+  request: {
+    body: jsonContentRequired(
+      z.object({
+        fsm_name: z.string().describe("The FSM definition name"),
+        fsm_version: z.string().describe("The FSM version"),
+        fsm_context: z.record(z.unknown()).optional().describe(
+          "Initial FSM context (defaults to {})",
+        ),
+      }),
+      "The fsm configuration",
+    ),
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({ data: z.object({ fsm_instance: z.unknown() }) }),
+      "FSM instance created and enqueued to fsm_dispatch_queue",
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      "Error",
+    ),
+  },
+});
+
 export const send = createRoute({
   path: "/fsm/send",
   method: "post",
@@ -175,6 +203,7 @@ export const resumeViaDispatch = createRoute({
 
 export type ListRoute = typeof list;
 export type GetOneRoute = typeof getOne;
+export type CreateRoute = typeof create;
 export type SendRoute = typeof send;
 export type StopRoute = typeof stop;
 export type CreateAndDispatchRoute = typeof createAndDispatch;
