@@ -709,6 +709,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      claim_pending_promise_events_for_workers_v2: {
+        Args: { input_workers: Json };
+        Returns: Json[];
+      };
       claim_scheduled_for_async_operation_workerlet: {
         Args: { input_workerlet_id: string };
         Returns: Json;
@@ -781,6 +785,17 @@ export type Database = {
         };
         Returns: string[];
       };
+      compute_promise_queue_name_v2: {
+        Args: {
+          input_fsm_language: string;
+          input_fsm_name: string;
+          input_fsm_type: string;
+          input_fsm_version: string;
+          input_parent_fsm_name: string;
+          input_parent_fsm_version: string;
+        };
+        Returns: string;
+      };
       create_async_operation_instance_and_notify_async_operation_sche: {
         Args: {
           input_async_operation_instance_id: string;
@@ -851,6 +866,17 @@ export type Database = {
           input_instance_id: string;
         };
         Returns: undefined;
+      };
+      ensure_promise_queue_for_worker_v2: {
+        Args: {
+          input_fsm_language: string;
+          input_fsm_name: string;
+          input_fsm_type: string;
+          input_fsm_version: string;
+          input_parent_fsm_name: string;
+          input_parent_fsm_version: string;
+        };
+        Returns: Json;
       };
       fsm_get_all_state_nodes_v1: {
         Args: {
@@ -1433,6 +1459,654 @@ export type Database = {
   };
   pgmq: {
     Tables: {
+      "a_0ddc201e-738b-4388-b9e8-d7cd57a1874d": {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "a_1007235d-f111-48a5-9a89-6ab2e86ef209": {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "a_3f3460b3-4412-47be-898b-8e86a146c0c9": {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "a_94401ac9-e463-48a2-9f0d-5b0f65568d77": {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "a_aaff9520-8a83-4928-934a-0b859faa837b": {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v01_checkreportstable: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v01_p_checkbureau_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v01_p_checkbureaurust_v01_rust: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v01_p_checkreportstable_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v01_p_determinemiddlescore_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v01_p_generateinterestrates_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v01_p_verifycredentials_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v01_verifycredentials: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v02_p_checkbureau_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v02_p_checkreportstable_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v02_p_determinemiddlescore_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v02_p_fetchinterestrateoptions_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v02_p_generateinterestrates_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_creditcheck_v02_p_verifycredentials_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "a_d5d4760e-4c18-450c-821c-d671712b6562": {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_taskmachineconfig_v01_p_fetchtasks_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_taskmachineconfig_v01_p_updatetask_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_taskmachineconfig_v02_p_fetchtasks_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      a_taskmachineconfig_v02_p_updatetask_t: {
+        Row: {
+          archived_at: string;
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id: number;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          archived_at?: string;
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: number;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
       meta: {
         Row: {
           created_at: string;
@@ -1451,6 +2125,582 @@ export type Database = {
           is_partitioned?: boolean;
           is_unlogged?: boolean;
           queue_name?: string;
+        };
+        Relationships: [];
+      };
+      "q_0ddc201e-738b-4388-b9e8-d7cd57a1874d": {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "q_1007235d-f111-48a5-9a89-6ab2e86ef209": {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "q_3f3460b3-4412-47be-898b-8e86a146c0c9": {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "q_94401ac9-e463-48a2-9f0d-5b0f65568d77": {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "q_aaff9520-8a83-4928-934a-0b859faa837b": {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v01_checkreportstable: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v01_p_checkbureau_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v01_p_checkbureaurust_v01_rust: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v01_p_checkreportstable_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v01_p_determinemiddlescore_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v01_p_generateinterestrates_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v01_p_verifycredentials_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v01_verifycredentials: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v02_p_checkbureau_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v02_p_checkreportstable_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v02_p_determinemiddlescore_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v02_p_fetchinterestrateoptions_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v02_p_generateinterestrates_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_creditcheck_v02_p_verifycredentials_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      "q_d5d4760e-4c18-450c-821c-d671712b6562": {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_taskmachineconfig_v01_p_fetchtasks_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_taskmachineconfig_v01_p_updatetask_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_taskmachineconfig_v02_p_fetchtasks_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
+        };
+        Relationships: [];
+      };
+      q_taskmachineconfig_v02_p_updatetask_t: {
+        Row: {
+          enqueued_at: string;
+          message: Json | null;
+          msg_id: number;
+          read_ct: number;
+          vt: string;
+        };
+        Insert: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt: string;
+        };
+        Update: {
+          enqueued_at?: string;
+          message?: Json | null;
+          msg_id?: never;
+          read_ct?: number;
+          vt?: string;
         };
         Relationships: [];
       };

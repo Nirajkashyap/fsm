@@ -1,5 +1,6 @@
 // <%~ it.label %>: <%~ it.name %>
-export function <%~ it.fnName %>(context: any, event: any) {
+export function <%~ it.fnName %>(input: unknown): unknown {
   // <%~ it.todo %>
+  return {};
 }
 

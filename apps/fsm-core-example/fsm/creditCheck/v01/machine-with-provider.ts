@@ -62,7 +62,28 @@ export const machineWithProvider = machine.provide({
       async ({ input }: { input: { ssn: string; bureauName: string } }) =>
         await checkReportsTable(input),
     ),
+    // gavUnionDBActor's invoke src was renamed to "CheckReportsTable" in
+    // machine.ts (the go-language variant of this same actor, exported so
+    // worker-sdk/go can link it — see
+    // apps/fsm-core-example/fsm/creditCheck/v01/go/actors/CheckReportsTable/CheckReportsTable.go).
+    // This harness only ever runs the typescript implementation regardless
+    // of fsmLanguage, so it still resolves to the same checkReportsTable.ts
+    // function under the new key.
+    CheckReportsTable: fromPromise(
+      async ({ input }: { input: { ssn: string; bureauName: string } }) =>
+        await checkReportsTable(input),
+    ),
     checkBureau: fromPromise(
+      async ({ input }: { input: { ssn: string; bureauName: string } }) =>
+        await checkBureau(input),
+    ),
+    // equiGavinFetchActor's invoke src was renamed to "checkBureauRust" in
+    // machine.ts (the rust-language variant of this same actor — see
+    // apps/fsm-core-example/fsm/creditCheck/v01/rust/actors/checkBureauRust/checkBureauRust.rs).
+    // This harness only ever runs the typescript implementation regardless
+    // of fsmLanguage, so it still resolves to the same checkBureau.ts
+    // function under the new key.
+    checkBureauRust: fromPromise(
       async ({ input }: { input: { ssn: string; bureauName: string } }) =>
         await checkBureau(input),
     ),

@@ -1,4 +1,5 @@
 // Actor: fetchTasks
-export function fetchTasks(context: any, event: any) {
+export function fetchTasks(input: unknown): unknown {
   // TODO: implement actor logic
+  return {};
 }

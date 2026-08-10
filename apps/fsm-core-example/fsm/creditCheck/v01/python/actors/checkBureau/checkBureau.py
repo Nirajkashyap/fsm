@@ -1,4 +1,4 @@
 # Actor: checkBureau
-def checkBureau(context, event):
+def checkBureau(input):
     # TODO: implement actor logic
-    pass
+    return {}

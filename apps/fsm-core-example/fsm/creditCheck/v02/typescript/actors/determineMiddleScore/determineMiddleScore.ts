@@ -1,4 +1,5 @@
 // Actor: determineMiddleScore
-export function determineMiddleScore(context: any, event: any) {
+export function determineMiddleScore(input: unknown): unknown {
   // TODO: implement actor logic
+  return {};
 }

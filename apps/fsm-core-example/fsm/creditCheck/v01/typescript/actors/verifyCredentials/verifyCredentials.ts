@@ -1,4 +1,5 @@
 // Actor: verifyCredentials
-export function verifyCredentials(context: any, event: any) {
+export function verifyCredentials(input: unknown): unknown {
   // TODO: implement actor logic
+  return {};
 }

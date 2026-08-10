@@ -15,14 +15,19 @@ for await (const langEntry of Deno.readDir(ETA_DIR)) {
     const outPath = new URL(`${kind}.generated.ts`, langDir);
 
     const source = await Deno.readTextFile(etaPath);
+    // Generic `unknown` input rather than the stub-specific `TemplateInput`:
+    // this same script also generates whole-file/list-based templates
+    // (registries, go.mod) whose input shape TemplateInput doesn't fit.
+    // `(input: unknown) => string` is still assignable to `TemplateFn`
+    // (contravariance), so existing per-stub consumers are unaffected.
     const out = `// AUTO-GENERATED from ${kind}.eta — do not edit directly.
 // Run \`deno task generate:templates\` after editing the .eta source.
 import { eta } from "../eta-instance.ts";
-import type { TemplateFn } from "../../types.ts";
 
 const compiled = eta.compile(${JSON.stringify(source)});
 
-export const render: TemplateFn = (input) => compiled.call(eta, input);
+export const render: (input: unknown) => string = (input) =>
+  compiled.call(eta, input as object);
 `;
     await Deno.writeTextFile(outPath, out);
     console.log(`Wrote ${outPath.pathname}`);

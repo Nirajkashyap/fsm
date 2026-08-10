@@ -1,0 +1,18 @@
+{
+  "tasks": {
+    "generate": "PATH=\"$PWD/node_modules/.bin:$PATH\" buf generate"
+  },
+  "imports": {
+    "@bufbuild/protobuf": "npm:@bufbuild/protobuf@^1.10.1"
+  },
+  "fmt": {
+    "exclude": [
+      "gen/"
+    ]
+  },
+  "lint": {
+    "exclude": [
+      "gen/"
+    ]
+  }
+}

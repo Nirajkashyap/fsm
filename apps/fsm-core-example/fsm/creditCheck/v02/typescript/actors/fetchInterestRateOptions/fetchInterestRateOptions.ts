@@ -1,4 +1,5 @@
 // Actor: fetchInterestRateOptions
-export function fetchInterestRateOptions(context: any, event: any) {
+export function fetchInterestRateOptions(input: unknown): unknown {
   // TODO: implement actor logic
+  return {};
 }

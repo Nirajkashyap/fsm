@@ -2,11 +2,17 @@ import { assertEquals, assertExists } from "@std/assert";
 import {
   type OperationKind,
   type OperationLang,
+  type RegisteredActor,
   renderOperationModule,
+  toRegisteredActor,
   toWrittenActor,
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
+  writeActorsRegistry,
+  writeAggregateActorsRegistry,
+  writeAggregateGoRegistry,
+  writeWorkerSdk,
   type WrittenActor,
 } from "../src/operation-logic-scaffold.ts";
 import type { ActorReference } from "../src/util.ts";
@@ -50,7 +56,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\nexport function creditCheck(context: any, event: any) {\n  // TODO: implement actor logic\n}\n",
+      "// Actor: creditCheck\nexport function creditCheck(input: unknown): unknown {\n  // TODO: implement actor logic\n  return {};\n}\n",
   },
   // python
   {
@@ -79,7 +85,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "# Actor: creditCheck\ndef creditCheck(context, event):\n    # TODO: implement actor logic\n    pass\n",
+      "# Actor: creditCheck\ndef creditCheck(input):\n    # TODO: implement actor logic\n    return {}\n",
   },
   // rust
   {
@@ -108,7 +114,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\n#[allow(non_snake_case)]\npub fn creditCheck(context: &serde_json::Value, event: &serde_json::Value) {\n    // TODO: implement actor logic\n}\n",
+      "// Actor: creditCheck\n#[allow(non_snake_case)]\npub fn creditCheck(input: serde_json::Value) -> serde_json::Value {\n    // TODO: implement actor logic\n    serde_json::json!({})\n}\n",
   },
   // go (renderOperationModule prefixes the `package <kind>` header — accounted
   // for separately below, these cases cover the per-name stub only)
@@ -138,7 +144,9 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\nfunc creditCheck(context map[string]any, event map[string]any) {\n\t// TODO: implement actor logic\n}\n",
+      // Go exports (capitalizes) actor function names for cross-package
+      // access — see toGoExportedName / #83. Other kinds/languages don't.
+      "// Actor: creditCheck\nfunc CreditCheck(input any) (any, error) {\n\t// TODO: implement actor logic\n\treturn map[string]any{}, nil\n}\n",
   },
 ];
 
@@ -165,7 +173,7 @@ Deno.test("renderOperationModule - multiple stubs keep a blank-line separator be
   );
 });
 
-Deno.test("writeActorFile - go actor gets a package header and its own subfolder", async () => {
+Deno.test("writeActorFile - go actor gets a package header, exported (capitalized) function, and its own subfolder", async () => {
   const dir = await Deno.makeTempDir();
   try {
     const actor: ActorReference = { src: "creditCheck" };
@@ -174,7 +182,26 @@ Deno.test("writeActorFile - go actor gets a package header and its own subfolder
     const content = await Deno.readTextFile(file);
     assertEquals(
       content,
-      "package actors\n\n// Actor: creditCheck\nfunc creditCheck(context map[string]any, event map[string]any) {\n\t// TODO: implement actor logic\n}\n",
+      "package actors\n\n// Actor: creditCheck\nfunc CreditCheck(input any) (any, error) {\n\t// TODO: implement actor logic\n\treturn map[string]any{}, nil\n}\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorFile - go actor also writes its own go.mod, module path derived from the FSM/version/actor folder names", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const absFolderPath = `${dir}/apps/fsm-core-example/fsm/creditCheck/v01`;
+    await Deno.mkdir(absFolderPath, { recursive: true });
+    const actor: ActorReference = { src: "checkBureau" };
+    await writeActorFile(absFolderPath, "go", actor);
+    const goModContent = await Deno.readTextFile(
+      `${absFolderPath}/go/actors/checkBureau/go.mod`,
+    );
+    assertEquals(
+      goModContent,
+      "module fsm-core-example/creditcheck/v01/go/actors/checkbureau\n\ngo 1.19\n",
     );
   } finally {
     await Deno.remove(dir, { recursive: true });
@@ -190,7 +217,7 @@ Deno.test("writeActorFile - typescript actor has no package header", async () =>
     const content = await Deno.readTextFile(file);
     assertEquals(
       content,
-      "// Actor: creditCheck\nexport function creditCheck(context: any, event: any) {\n  // TODO: implement actor logic\n}\n",
+      "// Actor: creditCheck\nexport function creditCheck(input: unknown): unknown {\n  // TODO: implement actor logic\n  return {};\n}\n",
     );
   } finally {
     await Deno.remove(dir, { recursive: true });
@@ -204,6 +231,18 @@ Deno.test("toWrittenActor - builds record matching writeActorFile's path convent
     fileBaseName: "checkBureau",
     fsmLanguage: "typescript",
     filePath: "typescript/actors/checkBureau/checkBureau.ts",
+    exportedName: "checkBureau",
+  });
+});
+
+Deno.test("toWrittenActor - go capitalizes exportedName for cross-package export, src is untouched", () => {
+  const actor: ActorReference = { src: "checkBureau" };
+  assertEquals(toWrittenActor("go", actor), {
+    src: "checkBureau",
+    fileBaseName: "checkBureau",
+    fsmLanguage: "go",
+    filePath: "go/actors/checkBureau/checkBureau.go",
+    exportedName: "CheckBureau",
   });
 });
 
@@ -213,6 +252,7 @@ Deno.test("writeActorsManifest - writes all actors across all languages", async 
     const actors: WrittenActor[] = [
       toWrittenActor("typescript", { src: "checkBureau" }),
       toWrittenActor("python", { src: "checkBureauPython" }),
+      toWrittenActor("go", { src: "checkBureauGo" }),
     ];
     const file = await writeActorsManifest(dir, actors);
     assertEquals(file, `${dir}/actors-manifest.json`);
@@ -223,11 +263,19 @@ Deno.test("writeActorsManifest - writes all actors across all languages", async 
           src: "checkBureau",
           fsmLanguage: "typescript",
           filePath: "typescript/actors/checkBureau/checkBureau.ts",
+          exportedName: "checkBureau",
         },
         {
           src: "checkBureauPython",
           fsmLanguage: "python",
           filePath: "python/actors/checkBureauPython/checkBureauPython.py",
+          exportedName: "checkBureauPython",
+        },
+        {
+          src: "checkBureauGo",
+          fsmLanguage: "go",
+          filePath: "go/actors/checkBureauGo/checkBureauGo.go",
+          exportedName: "CheckBureauGo",
         },
       ],
     });
@@ -247,11 +295,17 @@ Deno.test("writeActorsManifest - writes an empty manifest when there are no acto
   }
 });
 
-const actorsForBarrelTests: WrittenActor[] = [
-  toWrittenActor("typescript", { src: "checkBureau" }),
-  toWrittenActor("typescript", { src: "determineMiddleScore" }),
-  toWrittenActor("python", { src: "checkBureauPython" }),
-  toWrittenActor("rust", { src: "checkBureau" }),
+// A version-folder path matching the `<pluginRoot>/<fsmName>/<version>`
+// convention, so toRegisteredActor can derive parentFsmName/parentFsmVersion.
+const CREDIT_CHECK_V01 = "/repo/apps/fsm-core-example/fsm/creditCheck/v01";
+
+const actorsForBarrelTests: RegisteredActor[] = [
+  toRegisteredActor(CREDIT_CHECK_V01, "typescript", { src: "checkBureau" }),
+  toRegisteredActor(CREDIT_CHECK_V01, "typescript", {
+    src: "determineMiddleScore",
+  }),
+  toRegisteredActor(CREDIT_CHECK_V01, "python", { src: "checkBureauPython" }),
+  toRegisteredActor(CREDIT_CHECK_V01, "rust", { src: "checkBureau" }),
 ];
 
 Deno.test("writeActorsBarrel - typescript re-exports only typescript actors", async () => {
@@ -318,6 +372,561 @@ Deno.test("writeActorsBarrel - writes nothing when there are no actors for that 
     let existsErr: unknown;
     try {
       await Deno.stat(`${dir}/typescript`);
+    } catch (err) {
+      existsErr = err;
+    }
+    assertExists(existsErr);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorsRegistry - typescript carries the full activity-registration identity per actor", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeActorsRegistry(
+      dir,
+      actorsForBarrelTests,
+      "typescript",
+    );
+    assertEquals(file, `${dir}/typescript/actors/generated-registry.ts`);
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      "// AUTO-GENERATED by fsm-compiler-ts. Do not edit directly.\n" +
+        'import { checkBureau } from "./checkBureau/checkBureau.ts";\n' +
+        'import { determineMiddleScore } from "./determineMiddleScore/determineMiddleScore.ts";\n' +
+        "\n" +
+        "export type ActorRegistration = {\n" +
+        "  parentFsmName: string;\n" +
+        "  parentFsmVersion: string;\n" +
+        "  fsmType: string;\n" +
+        "  fsmName: string;\n" +
+        "  fsmVersion: string;\n" +
+        "  fsmLanguage: string;\n" +
+        "  handler: (input: unknown) => unknown;\n" +
+        "};\n" +
+        "\n" +
+        "export const ACTOR_REGISTRATIONS: ActorRegistration[] = [\n" +
+        "  {\n" +
+        '    parentFsmName: "creditCheck",\n' +
+        '    parentFsmVersion: "v01",\n' +
+        '    fsmType: "promise",\n' +
+        '    fsmName: "checkBureau",\n' +
+        '    fsmVersion: "v01",\n' +
+        '    fsmLanguage: "typescript",\n' +
+        "    handler: checkBureau,\n" +
+        "  },\n" +
+        "  {\n" +
+        '    parentFsmName: "creditCheck",\n' +
+        '    parentFsmVersion: "v01",\n' +
+        '    fsmType: "promise",\n' +
+        '    fsmName: "determineMiddleScore",\n' +
+        '    fsmVersion: "v01",\n' +
+        '    fsmLanguage: "typescript",\n' +
+        "    handler: determineMiddleScore,\n" +
+        "  },\n" +
+        "];\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorsRegistry - python carries the full activity-registration identity per actor", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeActorsRegistry(
+      dir,
+      actorsForBarrelTests,
+      "python",
+    );
+    assertEquals(file, `${dir}/python/actors/generated_registry.py`);
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      "# AUTO-GENERATED by fsm-compiler-ts. Do not edit directly.\n" +
+        "import importlib.util\n" +
+        "import os\n" +
+        "\n" +
+        "_BASE_DIR = os.path.dirname(os.path.abspath(__file__))\n" +
+        "\n" +
+        "\n" +
+        "def _load_actor(rel_path, fn_name):\n" +
+        "    spec = importlib.util.spec_from_file_location(\n" +
+        "        fn_name, os.path.join(_BASE_DIR, rel_path)\n" +
+        "    )\n" +
+        "    module = importlib.util.module_from_spec(spec)\n" +
+        "    spec.loader.exec_module(module)\n" +
+        "    return getattr(module, fn_name)\n" +
+        "\n" +
+        "\n" +
+        'checkBureauPython = _load_actor("checkBureauPython/checkBureauPython.py", "checkBureauPython")\n' +
+        "\n" +
+        "ACTOR_REGISTRATIONS = [\n" +
+        "    {\n" +
+        '        "parent_fsm_name": "creditCheck",\n' +
+        '        "parent_fsm_version": "v01",\n' +
+        '        "fsm_type": "promise",\n' +
+        '        "fsm_name": "checkBureauPython",\n' +
+        '        "fsm_version": "v01",\n' +
+        '        "fsm_language": "python",\n' +
+        '        "handler": checkBureauPython,\n' +
+        "    },\n" +
+        "]\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorsRegistry - rust reuses the barrel's #[path] module instead of redeclaring it", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeActorsRegistry(dir, actorsForBarrelTests, "rust");
+    assertEquals(file, `${dir}/rust/actors/generated_registry.rs`);
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      "// AUTO-GENERATED by fsm-compiler-ts. Do not edit directly.\n" +
+        '#[path = "mod.rs"]\n' +
+        "mod actors;\n" +
+        "\n" +
+        "pub struct ActorRegistration {\n" +
+        "    pub parent_fsm_name: &'static str,\n" +
+        "    pub parent_fsm_version: &'static str,\n" +
+        "    pub fsm_type: &'static str,\n" +
+        "    pub fsm_name: &'static str,\n" +
+        "    pub fsm_version: &'static str,\n" +
+        "    pub fsm_language: &'static str,\n" +
+        "    pub handler: fn(serde_json::Value) -> serde_json::Value,\n" +
+        "}\n" +
+        "\n" +
+        "pub fn actor_registrations() -> Vec<ActorRegistration> {\n" +
+        "    vec![\n" +
+        "        ActorRegistration {\n" +
+        '            parent_fsm_name: "creditCheck",\n' +
+        '            parent_fsm_version: "v01",\n' +
+        '            fsm_type: "promise",\n' +
+        '            fsm_name: "checkBureau",\n' +
+        '            fsm_version: "v01",\n' +
+        '            fsm_language: "rust",\n' +
+        "            handler: actors::checkBureau,\n" +
+        "        },\n" +
+        "    ]\n" +
+        "}\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeActorsRegistry - writes nothing when there are no actors for that language", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const actors: RegisteredActor[] = [
+      toRegisteredActor(CREDIT_CHECK_V01, "python", {
+        src: "checkBureauPython",
+      }),
+    ];
+    const file = await writeActorsRegistry(dir, actors, "typescript");
+    assertEquals(file, undefined);
+    let existsErr: unknown;
+    try {
+      await Deno.stat(`${dir}/typescript`);
+    } catch (err) {
+      existsErr = err;
+    }
+    assertExists(existsErr);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+const OTHER_FSM_V02 = "/repo/apps/fsm-core-example/fsm/otherFsm/v02";
+
+const actorsForAggregateTests: RegisteredActor[] = [
+  ...actorsForBarrelTests,
+  toRegisteredActor(OTHER_FSM_V02, "typescript", { src: "someActor" }),
+  toRegisteredActor(OTHER_FSM_V02, "python", { src: "someActorPy" }),
+  toRegisteredActor(OTHER_FSM_V02, "rust", { src: "someActorRs" }),
+];
+
+Deno.test("writeAggregateActorsRegistry - typescript re-imports and flattens each FSM-version's registry", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeAggregateActorsRegistry(
+      dir,
+      "fsm",
+      actorsForAggregateTests,
+      "typescript",
+    );
+    assertEquals(
+      file,
+      `${dir}/worker-sdk-generated/typescript/typescript-actors-registry.generated.ts`,
+    );
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      "// AUTO-GENERATED by fsm-compiler-ts. Do not edit directly.\n" +
+        'import { ACTOR_REGISTRATIONS as creditcheck_v01 } from "../../fsm/creditCheck/v01/typescript/actors/generated-registry.ts";\n' +
+        'import { ACTOR_REGISTRATIONS as otherfsm_v02 } from "../../fsm/otherFsm/v02/typescript/actors/generated-registry.ts";\n' +
+        "\n" +
+        "export const ACTOR_REGISTRATIONS = [\n" +
+        "  ...creditcheck_v01,\n" +
+        "  ...otherfsm_v02,\n" +
+        "];\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeAggregateActorsRegistry - python loads each FSM-version's registry from a fixed path", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeAggregateActorsRegistry(
+      dir,
+      "fsm",
+      actorsForAggregateTests,
+      "python",
+    );
+    assertEquals(
+      file,
+      `${dir}/worker-sdk-generated/python/python_actors_registry_generated.py`,
+    );
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      "# AUTO-GENERATED by fsm-compiler-ts. Do not edit directly.\n" +
+        "# Each FSM-version's registry is loaded from a fixed, compiler-generated\n" +
+        "# path -- not a runtime scan -- since Python has no static-import syntax that\n" +
+        "# reaches an arbitrarily-nested sibling directory the way TS/Rust do.\n" +
+        "import importlib.util\n" +
+        "import os\n" +
+        "\n" +
+        "_BASE_DIR = os.path.dirname(os.path.abspath(__file__))\n" +
+        "\n" +
+        "\n" +
+        "def _load_registrations(rel_path):\n" +
+        "    spec = importlib.util.spec_from_file_location(\n" +
+        '        "generated_registry", os.path.join(_BASE_DIR, rel_path)\n' +
+        "    )\n" +
+        "    module = importlib.util.module_from_spec(spec)\n" +
+        "    spec.loader.exec_module(module)\n" +
+        "    return module.ACTOR_REGISTRATIONS\n" +
+        "\n" +
+        "\n" +
+        'creditcheck_v01 = _load_registrations("../../fsm/creditCheck/v01/python/actors/generated_registry.py")\n' +
+        'otherfsm_v02 = _load_registrations("../../fsm/otherFsm/v02/python/actors/generated_registry.py")\n' +
+        "\n" +
+        "ACTOR_REGISTRATIONS = [\n" +
+        "    *creditcheck_v01,\n" +
+        "    *otherfsm_v02,\n" +
+        "]\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeAggregateActorsRegistry - rust #[path]-includes each FSM-version's actor barrel under a unique alias", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const file = await writeAggregateActorsRegistry(
+      dir,
+      "fsm",
+      actorsForAggregateTests,
+      "rust",
+    );
+    assertEquals(
+      file,
+      `${dir}/worker-sdk-generated/rust/rust-actors-registry.generated.rs`,
+    );
+    const content = await Deno.readTextFile(file!);
+    assertEquals(
+      content,
+      "// AUTO-GENERATED by fsm-compiler-ts. Do not edit directly.\n" +
+        '#[path = "../../fsm/creditCheck/v01/rust/actors/mod.rs"]\n' +
+        "mod creditcheck_v01;\n" +
+        "\n" +
+        '#[path = "../../fsm/otherFsm/v02/rust/actors/mod.rs"]\n' +
+        "mod otherfsm_v02;\n" +
+        "\n" +
+        "pub struct ActorRegistration {\n" +
+        "    pub parent_fsm_name: &'static str,\n" +
+        "    pub parent_fsm_version: &'static str,\n" +
+        "    pub fsm_type: &'static str,\n" +
+        "    pub fsm_name: &'static str,\n" +
+        "    pub fsm_version: &'static str,\n" +
+        "    pub fsm_language: &'static str,\n" +
+        "    pub handler: fn(serde_json::Value) -> serde_json::Value,\n" +
+        "}\n" +
+        "\n" +
+        "pub fn actor_registrations() -> Vec<ActorRegistration> {\n" +
+        "    vec![\n" +
+        "        ActorRegistration {\n" +
+        '            parent_fsm_name: "creditCheck",\n' +
+        '            parent_fsm_version: "v01",\n' +
+        '            fsm_type: "promise",\n' +
+        '            fsm_name: "checkBureau",\n' +
+        '            fsm_version: "v01",\n' +
+        '            fsm_language: "rust",\n' +
+        "            handler: creditcheck_v01::checkBureau,\n" +
+        "        },\n" +
+        "        ActorRegistration {\n" +
+        '            parent_fsm_name: "otherFsm",\n' +
+        '            parent_fsm_version: "v02",\n' +
+        '            fsm_type: "promise",\n' +
+        '            fsm_name: "someActorRs",\n' +
+        '            fsm_version: "v02",\n' +
+        '            fsm_language: "rust",\n' +
+        "            handler: otherfsm_v02::someActorRs,\n" +
+        "        },\n" +
+        "    ]\n" +
+        "}\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeAggregateActorsRegistry - writes nothing when there are no actors for that language", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const actors: RegisteredActor[] = [
+      toRegisteredActor(CREDIT_CHECK_V01, "python", {
+        src: "checkBureauPython",
+      }),
+    ];
+    const file = await writeAggregateActorsRegistry(
+      dir,
+      "fsm",
+      actors,
+      "typescript",
+    );
+    assertEquals(file, undefined);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+const actorsForGoAggregateTests: RegisteredActor[] = [
+  toRegisteredActor(CREDIT_CHECK_V01, "go", { src: "checkBureau" }),
+  toRegisteredActor(OTHER_FSM_V02, "go", { src: "someActor" }),
+];
+
+Deno.test("writeAggregateGoRegistry - writes a standalone Go module with one require+replace and import per actor", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const appRootAbsPath = `${dir}/apps/fsm-core-example`;
+    const file = await writeAggregateGoRegistry(
+      appRootAbsPath,
+      "fsm",
+      actorsForGoAggregateTests,
+    );
+    assertEquals(
+      file,
+      `${appRootAbsPath}/worker-sdk-generated/go/go-actors-registry-generated/registry.go`,
+    );
+    const registryContent = await Deno.readTextFile(file!);
+    assertEquals(
+      registryContent,
+      "// AUTO-GENERATED by fsm-compiler-ts. Do not edit directly.\n" +
+        "package generatedregistry\n" +
+        "\n" +
+        "import (\n" +
+        '\tcreditcheck_v01_checkbureau "fsm-core-example/creditcheck/v01/go/actors/checkbureau"\n' +
+        '\totherfsm_v02_someactor "fsm-core-example/otherfsm/v02/go/actors/someactor"\n' +
+        ")\n" +
+        "\n" +
+        "type ActorRegistration struct {\n" +
+        "\tParentFsmName    string\n" +
+        "\tParentFsmVersion string\n" +
+        "\tFsmType          string\n" +
+        "\tFsmName          string\n" +
+        "\tFsmVersion       string\n" +
+        "\tFsmLanguage      string\n" +
+        "\tHandler          func(input any) (any, error)\n" +
+        "}\n" +
+        "\n" +
+        "func ActorRegistrations() []ActorRegistration {\n" +
+        "\treturn []ActorRegistration{\n" +
+        "\t\t{\n" +
+        '\t\t\tParentFsmName:    "creditCheck",\n' +
+        '\t\t\tParentFsmVersion: "v01",\n' +
+        '\t\t\tFsmType:          "promise",\n' +
+        '\t\t\tFsmName:          "checkBureau",\n' +
+        '\t\t\tFsmVersion:       "v01",\n' +
+        '\t\t\tFsmLanguage:      "go",\n' +
+        "\t\t\tHandler:          creditcheck_v01_checkbureau.CheckBureau,\n" +
+        "\t\t},\n" +
+        "\t\t{\n" +
+        '\t\t\tParentFsmName:    "otherFsm",\n' +
+        '\t\t\tParentFsmVersion: "v02",\n' +
+        '\t\t\tFsmType:          "promise",\n' +
+        '\t\t\tFsmName:          "someActor",\n' +
+        '\t\t\tFsmVersion:       "v02",\n' +
+        '\t\t\tFsmLanguage:      "go",\n' +
+        "\t\t\tHandler:          otherfsm_v02_someactor.SomeActor,\n" +
+        "\t\t},\n" +
+        "\t}\n" +
+        "}\n",
+    );
+    const goModContent = await Deno.readTextFile(
+      `${appRootAbsPath}/worker-sdk-generated/go/go-actors-registry-generated/go.mod`,
+    );
+    assertEquals(
+      goModContent,
+      "module fsm-core-example/go-actors-registry-generated\n" +
+        "\n" +
+        "go 1.19\n" +
+        "\n" +
+        "require fsm-core-example/creditcheck/v01/go/actors/checkbureau v0.0.0\n" +
+        "require fsm-core-example/otherfsm/v02/go/actors/someactor v0.0.0\n" +
+        "\n" +
+        "replace fsm-core-example/creditcheck/v01/go/actors/checkbureau => ../../../fsm/creditCheck/v01/go/actors/checkBureau\n" +
+        "replace fsm-core-example/otherfsm/v02/go/actors/someactor => ../../../fsm/otherFsm/v02/go/actors/someActor\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeAggregateGoRegistry - writes nothing when there are no go actors", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const actors: RegisteredActor[] = [
+      toRegisteredActor(CREDIT_CHECK_V01, "typescript", { src: "checkBureau" }),
+    ];
+    const file = await writeAggregateGoRegistry(dir, "fsm", actors);
+    assertEquals(file, undefined);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, only for languages with actors", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const appRootAbsPath = `${dir}/apps/fsm-core-example`;
+    const actors = [
+      ...actorsForBarrelTests, // typescript, python, rust
+      ...actorsForGoAggregateTests, // go
+    ];
+    const wrote = await writeWorkerSdk(appRootAbsPath, "fsm", actors);
+    assertEquals(wrote, {
+      typescript: true,
+      python: true,
+      rust: true,
+      go: true,
+    });
+
+    const base = `${appRootAbsPath}/worker-sdk-generated`;
+    assertExists(await Deno.stat(`${base}/typescript/cli.ts`));
+    assertExists(await Deno.stat(`${base}/typescript/sdk.ts`));
+    assertExists(await Deno.stat(`${base}/python/cli.py`));
+    assertExists(await Deno.stat(`${base}/python/sdk.py`));
+    assertExists(await Deno.stat(`${base}/python/protocol.py`));
+    assertExists(await Deno.stat(`${base}/python/requirements.txt`));
+    assertExists(await Deno.stat(`${base}/rust/src/main.rs`));
+    assertExists(await Deno.stat(`${base}/rust/src/sdk.rs`));
+    assertExists(await Deno.stat(`${base}/rust/src/protocol.rs`));
+    assertExists(await Deno.stat(`${base}/rust/Cargo.toml`));
+    assertExists(await Deno.stat(`${base}/rust/.gitignore`));
+    assertExists(await Deno.stat(`${base}/go/main.go`));
+    assertExists(await Deno.stat(`${base}/go/sdk.go`));
+    assertExists(await Deno.stat(`${base}/go/protocol.go`));
+    assertExists(await Deno.stat(`${base}/go/go.mod`));
+    assertExists(await Deno.stat(`${base}/go/.gitignore`));
+
+    const tsCli = await Deno.readTextFile(`${base}/typescript/cli.ts`);
+    assertEquals(
+      tsCli.includes(
+        'import { ACTOR_REGISTRATIONS } from "./typescript-actors-registry.generated.ts";',
+      ),
+      true,
+    );
+
+    const tsSdk = await Deno.readTextFile(`${base}/typescript/sdk.ts`);
+    assertEquals(
+      tsSdk.includes(
+        'from "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";',
+      ),
+      true,
+    );
+
+    const pyCli = await Deno.readTextFile(`${base}/python/cli.py`);
+    assertEquals(
+      pyCli.includes('"./python_actors_registry_generated.py"'),
+      true,
+    );
+
+    const rustMain = await Deno.readTextFile(`${base}/rust/src/main.rs`);
+    assertEquals(
+      rustMain.includes(
+        '#[path = "../rust-actors-registry.generated.rs"]',
+      ),
+      true,
+    );
+
+    const goMod = await Deno.readTextFile(`${base}/go/go.mod`);
+    assertEquals(
+      goMod,
+      "module pgfsm/async-op-worker-sdk\n\ngo 1.19\n\n" +
+        "require fsm-core-example/go-actors-registry-generated v0.0.0\n" +
+        "require fsm-core-example/creditcheck/v01/go/actors/checkbureau v0.0.0\n" +
+        "require fsm-core-example/otherfsm/v02/go/actors/someactor v0.0.0\n\n" +
+        "replace fsm-core-example/go-actors-registry-generated => ./go-actors-registry-generated\n" +
+        "replace fsm-core-example/creditcheck/v01/go/actors/checkbureau => ../../fsm/creditCheck/v01/go/actors/checkBureau\n" +
+        "replace fsm-core-example/otherfsm/v02/go/actors/someactor => ../../fsm/otherFsm/v02/go/actors/someActor\n",
+    );
+
+    for (
+      const [file, header] of [
+        [`${base}/typescript/cli.ts`, "// AUTO-GENERATED"],
+        [`${base}/typescript/sdk.ts`, "// AUTO-GENERATED"],
+        // cli.py's shebang must stay on line 1 to remain executable -- the
+        // header is the second line there, not the first.
+        [`${base}/python/cli.py`, "#!/usr/bin/env python3\n# AUTO-GENERATED"],
+        [`${base}/python/sdk.py`, "# AUTO-GENERATED"],
+        [`${base}/python/protocol.py`, "# AUTO-GENERATED"],
+        [`${base}/rust/src/main.rs`, "// AUTO-GENERATED"],
+        [`${base}/rust/src/sdk.rs`, "// AUTO-GENERATED"],
+        [`${base}/go/main.go`, "// AUTO-GENERATED"],
+        [`${base}/go/sdk.go`, "// AUTO-GENERATED"],
+      ] as const
+    ) {
+      const content = await Deno.readTextFile(file);
+      assertEquals(
+        content.startsWith(header),
+        true,
+        `${file} should start with ${header}`,
+      );
+    }
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("writeWorkerSdk - writes nothing for a language with no actors", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const appRootAbsPath = `${dir}/apps/fsm-core-example`;
+    const actors = [
+      toRegisteredActor(CREDIT_CHECK_V01, "typescript", { src: "checkBureau" }),
+    ];
+    const wrote = await writeWorkerSdk(appRootAbsPath, "fsm", actors);
+    assertEquals(wrote, {
+      typescript: true,
+      python: false,
+      rust: false,
+      go: false,
+    });
+
+    let existsErr: unknown;
+    try {
+      await Deno.stat(`${appRootAbsPath}/worker-sdk-generated/python`);
     } catch (err) {
       existsErr = err;
     }

@@ -20,7 +20,8 @@ create table fsm_core.fsm_promise_queue_event_logs (
     -- event_source_queue_event_name text, -- e.g., if event_source_type is 'fsm', this is the event_name to source queue
 
     -- 2. sent_to_parent
-    send_to_parent_queue_id uuid references fsm_core.fsm_instance,
+    -- send_to_parent_queue_id uuid references fsm_core.fsm_instance,
+    send_to_parent_queue_id uuid, -- remove strict foreign key constraint to allow for system queues (e.g., pg_system_queue_uuid() and api_system_queue_uuid())
     send_to_parent_queue_id_event_name text,
 
     execution_started_at timestamp with time zone default now(),

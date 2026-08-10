@@ -5,11 +5,16 @@ import {
   type ActorsBarrelLang,
   eachVersionedFsmFolder,
   isOperationLang,
-  toWrittenActor,
+  type RegisteredActor,
+  resolvePluginRootAbsPath,
+  toRegisteredActor,
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
-  type WrittenActor,
+  writeActorsRegistry,
+  writeAggregateActorsRegistry,
+  writeAggregateGoRegistry,
+  writeWorkerSdk,
 } from "./operation-logic-scaffold.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "async-logic"]);
@@ -23,16 +28,28 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  * Each invoke object gets its **own file** at
  * `<lang>/actors/<fsmType>_<fsmVersion>_<src>.<ext>`, where `<lang>` is the
  * actor's `fsmLanguage` (defaulting to typescript). The file exports one
- * function named after the actor `src`. Invokes that resolve to the same
- * `<fsmType>_<fsmVersion>_<src>` within a language are written once.
+ * function named after the actor `src` (Go: exported/capitalized, plus its
+ * own `go.mod` — see {@linkcode writeActorFile}). Invokes that resolve to the
+ * same `<fsmType>_<fsmVersion>_<src>` within a language are written once.
  *
- * Two kinds of additional files are written per version folder:
- * `actors-manifest.json` (every actor across all languages — `{ src,
- * fsmLanguage, filePath }`), and a per-language barrel
- * (`typescript/actors/index.ts`, `python/actors/__init__.py`,
- * `rust/actors/mod.rs`) re-exporting each actor for that language, written
- * only when at least one actor exists in it. Go has no barrel — see
- * {@linkcode ActorsBarrelLang}'s doc comment.
+ * Per version folder: `actors-manifest.json` (every actor across all
+ * languages — `{ src, fsmLanguage, filePath, exportedName }`), a per-language
+ * barrel (`typescript/actors/index.ts`, `python/actors/__init__.py`,
+ * `rust/actors/mod.rs`) re-exporting each actor by name, and a per-language
+ * generated registry (`generated-registry.ts`/`generated_registry.py`/
+ * `generated_registry.rs`) carrying each actor's full activity-registration
+ * identity + handler — written only when at least one actor exists for that
+ * language. Go has neither — see {@linkcode ActorsBarrelLang}'s doc comment.
+ *
+ * Once, at `<appRoot>/worker-sdk-generated/<lang>/` (alongside that
+ * language's compiler-generated worker SDK — see {@linkcode writeWorkerSdk}):
+ * a per-language **aggregate** registry
+ * (`typescript-actors-registry.generated.ts`/
+ * `python_actors_registry_generated.py`/`rust-actors-registry.generated.rs`/
+ * `go-actors-registry-generated/`) combining every FSM-version's registry —
+ * what a worker SDK build imports, since a single worker process serves its
+ * language's actors across every FSM, not just one (see
+ * {@linkcode writeAggregateActorsRegistry}, {@linkcode writeAggregateGoRegistry}).
  */
 export async function generateAsyncOperationLogicFromFolders(
   folderPath: string,
@@ -42,6 +59,8 @@ export async function generateAsyncOperationLogicFromFolders(
   logger.info("Scaffolding async operation logic from {path}", {
     path: folderPath,
   });
+
+  const allRegisteredActors: RegisteredActor[] = [];
 
   await eachVersionedFsmFolder(
     folderPath,
@@ -53,7 +72,7 @@ export async function generateAsyncOperationLogicFromFolders(
       // are written once, while actors that differ in type/version/src get
       // their own files.
       const seen = new Set<string>();
-      const writtenActors: WrittenActor[] = [];
+      const writtenActors: RegisteredActor[] = [];
       for (const actor of actors) {
         const fsmType = actor.fsmType ?? "promise";
         if (fsmType !== "promise") {
@@ -79,7 +98,7 @@ export async function generateAsyncOperationLogicFromFolders(
         seen.add(key);
 
         const file = await writeActorFile(absFolderPath, lang, actor);
-        writtenActors.push(toWrittenActor(lang, actor));
+        writtenActors.push(toRegisteredActor(absFolderPath, lang, actor));
         logger.info("Wrote actor file {file}", { file });
       }
 
@@ -106,7 +125,64 @@ export async function generateAsyncOperationLogicFromFolders(
             file: barrelFile,
           });
         }
+
+        const registryFile = await writeActorsRegistry(
+          absFolderPath,
+          writtenActors,
+          lang,
+        );
+        if (registryFile) {
+          logger.info("Wrote {lang} actors registry {file}", {
+            lang,
+            file: registryFile,
+          });
+        }
       }
+
+      allRegisteredActors.push(...writtenActors);
     },
+  );
+
+  // One level above the plugin root (e.g. apps/fsm-core-example/fsm ->
+  // apps/fsm-core-example) -- a sibling of every FSM name folder this run
+  // processed, not nested inside any one of them.
+  const pluginRootAbsPath = resolvePluginRootAbsPath(folderPath);
+  const pluginRootDirName = pluginRootAbsPath.split("/").at(-1)!;
+  const appRootAbsPath = pluginRootAbsPath.split("/").slice(0, -1).join("/");
+
+  for (const lang of BARREL_LANGS) {
+    const aggregateFile = await writeAggregateActorsRegistry(
+      appRootAbsPath,
+      pluginRootDirName,
+      allRegisteredActors,
+      lang,
+    );
+    if (aggregateFile) {
+      logger.info("Wrote {lang} aggregate actors registry {file}", {
+        lang,
+        file: aggregateFile,
+      });
+    }
+  }
+
+  const goRegistryFile = await writeAggregateGoRegistry(
+    appRootAbsPath,
+    pluginRootDirName,
+    allRegisteredActors,
+  );
+  if (goRegistryFile) {
+    logger.info("Wrote go aggregate actors registry {file}", {
+      file: goRegistryFile,
+    });
+  }
+
+  const wrote = await writeWorkerSdk(
+    appRootAbsPath,
+    pluginRootDirName,
+    allRegisteredActors,
+  );
+  logger.info(
+    "Wrote worker-sdk-generated/ (typescript={ts}, python={py}, rust={rust}, go={go})",
+    { ts: wrote.typescript, py: wrote.python, rust: wrote.rust, go: wrote.go },
   );
 }

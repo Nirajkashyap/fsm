@@ -1,8 +1,36 @@
 import { getLogger } from "@logtape/logtape";
-import { type ActorReference, isVersionFolderName } from "./util.ts";
+import {
+  type ActorReference,
+  isVersionFolderName,
+  toGoExportedName,
+} from "./util.ts";
 import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
 import { deriveTemplateInput } from "./scaffold-templates/derive-template-input.ts";
 import { getPreamble, getTemplate } from "./scaffold-templates/registry.ts";
+import { render as renderTsActorsRegistry } from "./scaffold-templates/eta/typescript/actors-registry.generated.ts";
+import { render as renderTsActorsRegistryAggregate } from "./scaffold-templates/eta/typescript/actors-registry-aggregate.generated.ts";
+import { render as renderPyActorsRegistry } from "./scaffold-templates/eta/python/actors-registry.generated.ts";
+import { render as renderPyActorsRegistryAggregate } from "./scaffold-templates/eta/python/actors-registry-aggregate.generated.ts";
+import { render as renderRustActorsRegistry } from "./scaffold-templates/eta/rust/actors-registry.generated.ts";
+import { render as renderRustActorsRegistryAggregate } from "./scaffold-templates/eta/rust/actors-registry-aggregate.generated.ts";
+import { render as renderGoActorsRegistryAggregate } from "./scaffold-templates/eta/go/actors-registry-aggregate.generated.ts";
+import { render as renderGoModActor } from "./scaffold-templates/eta/go/go-mod-actor.generated.ts";
+import { render as renderGoModAggregate } from "./scaffold-templates/eta/go/go-mod-aggregate.generated.ts";
+import { render as renderTsWorkerSdkCli } from "./scaffold-templates/eta/typescript/worker-sdk-cli.generated.ts";
+import { render as renderTsWorkerSdkSdk } from "./scaffold-templates/eta/typescript/worker-sdk-sdk.generated.ts";
+import { render as renderPyWorkerSdkCli } from "./scaffold-templates/eta/python/worker-sdk-cli.generated.ts";
+import { render as renderPyWorkerSdkSdk } from "./scaffold-templates/eta/python/worker-sdk-sdk.generated.ts";
+import { render as renderPyWorkerSdkProtocol } from "./scaffold-templates/eta/python/worker-sdk-protocol.generated.ts";
+import { render as renderPyWorkerSdkRequirements } from "./scaffold-templates/eta/python/worker-sdk-requirements.generated.ts";
+import { render as renderRustWorkerSdkMain } from "./scaffold-templates/eta/rust/worker-sdk-main.generated.ts";
+import { render as renderRustWorkerSdkSdk } from "./scaffold-templates/eta/rust/worker-sdk-sdk.generated.ts";
+import { render as renderRustWorkerSdkProtocol } from "./scaffold-templates/eta/rust/worker-sdk-protocol.generated.ts";
+import { render as renderRustWorkerSdkCargoToml } from "./scaffold-templates/eta/rust/worker-sdk-cargo-toml.generated.ts";
+import { render as renderRustWorkerSdkGitignore } from "./scaffold-templates/eta/rust/worker-sdk-gitignore.generated.ts";
+import { render as renderGoWorkerSdkMain } from "./scaffold-templates/eta/go/worker-sdk-main.generated.ts";
+import { render as renderGoWorkerSdkSdk } from "./scaffold-templates/eta/go/worker-sdk-sdk.generated.ts";
+import { render as renderGoWorkerSdkProtocol } from "./scaffold-templates/eta/go/worker-sdk-protocol.generated.ts";
+import { render as renderGoWorkerSdkGitignore } from "./scaffold-templates/eta/go/worker-sdk-gitignore.generated.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "scaffold"]);
 
@@ -65,7 +93,7 @@ function renderStub(
   kind: OperationKind,
   name: string,
 ): string {
-  return getTemplate(lang, kind)(deriveTemplateInput(kind, name));
+  return getTemplate(lang, kind)(deriveTemplateInput(kind, name, lang));
 }
 
 /**
@@ -120,9 +148,62 @@ export function actorFileBaseName(actor: ActorReference): string {
 }
 
 /**
+ * Derives the Go module path for a single actor's own `go.mod`, matching the
+ * convention already established by hand for `apps/fsm-core-example`'s Go
+ * actors (see `CheckReportsTable/go.mod`):
+ * `<appRoot>/<fsmName>/<version>/go/actors/<actorDir>`, lowercased.
+ * `<appRoot>` is the directory name two levels above the FSM's plugin root
+ * (e.g. `apps/fsm-core-example/fsm/creditCheck/v01` -> appRoot
+ * `fsm-core-example`). Each Go actor is its own Go module so a consumer in a
+ * different module (e.g. a worker-sdk/go build) can pull it in via a
+ * `require`/`replace` directive — Go has no dynamic-loading equivalent to
+ * TS/Python's `import()`/`importlib`.
+ */
+function goActorModulePath(
+  absFolderPath: string,
+  actorDirName: string,
+): string {
+  const { fsmName, fsmVersion } = fsmIdentityFromVersionFolderPath(
+    absFolderPath,
+  );
+  const appRoot = absFolderPath.split("/").at(-4)!; // .../<appRoot>/fsm/<fsmName>/<version>
+  return `${appRoot}/${fsmName.toLowerCase()}/${fsmVersion}/go/actors/${actorDirName.toLowerCase()}`;
+}
+
+/**
+ * Extracts `{ fsmName, fsmVersion }` from a version-folder absolute path
+ * (e.g. `.../apps/fsm-core-example/fsm/creditCheck/v01` ->
+ * `{ fsmName: "creditCheck", fsmVersion: "v01" }`), matching the
+ * `<pluginRoot>/<fsmName>/<version>` convention {@linkcode eachVersionedFsmFolder}
+ * walks.
+ */
+function fsmIdentityFromVersionFolderPath(
+  absFolderPath: string,
+): { fsmName: string; fsmVersion: string } {
+  const parts = absFolderPath.split("/");
+  return { fsmVersion: parts.at(-1)!, fsmName: parts.at(-2)! };
+}
+
+/** Writes the `go.mod` for a single Go actor's own module (see {@linkcode goActorModulePath}). */
+async function writeGoActorModule(
+  absFolderPath: string,
+  actorDirName: string,
+): Promise<void> {
+  const modulePath = goActorModulePath(absFolderPath, actorDirName);
+  const dir = `${absFolderPath}/go/actors/${actorDirName}`;
+  await Deno.writeTextFile(
+    `${dir}/go.mod`,
+    renderGoModActor({ modulePath }),
+  );
+}
+
+/**
  * Writes a single actor to its own file at
  * `<absFolderPath>/<lang>/actors/<src>/<src>.<ext>`.
- * The file exports one function named after the actor `src`.
+ * The file exports one function named after the actor `src` — except Go,
+ * whose function is exported (capitalized) instead, and which also gets its
+ * own `go.mod` (see {@linkcode writeGoActorModule}), since Go enforces
+ * exports and module boundaries at compile time.
  * Returns the absolute path written.
  */
 export async function writeActorFile(
@@ -139,18 +220,23 @@ export async function writeActorFile(
     file,
     withSingleTrailingNewline(header + renderStub(lang, "actors", actor.src)),
   );
+  if (lang === "go") {
+    await writeGoActorModule(absFolderPath, name);
+  }
   return file;
 }
 
 /** One actor file written by {@linkcode writeActorFile}, recorded for the manifest/barrel. */
 export type WrittenActor = {
-  /** The actor's original `src` — also the exported function name. */
+  /** The actor's original `src` — its identity (invoke id), independent of language. */
   src: string;
   /** Sanitized filename component (see {@linkcode actorFileBaseName}) — the folder/file name on disk. */
   fileBaseName: string;
   fsmLanguage: OperationLang;
   /** Path relative to the version-folder root, e.g. `typescript/actors/checkBureau/checkBureau.ts`. */
   filePath: string;
+  /** The callable/importable symbol name in `fsmLanguage` — equals `src` except for Go (see {@linkcode toGoExportedName}). */
+  exportedName: string;
 };
 
 /** Builds the {@linkcode WrittenActor} record for the file a {@linkcode writeActorFile} call for this actor produces. */
@@ -166,6 +252,51 @@ export function toWrittenActor(
     filePath: `${lang}/actors/${fileBaseName}/${fileBaseName}.${
       operationFileExtension(lang)
     }`,
+    exportedName: lang === "go" ? toGoExportedName(actor.src) : actor.src,
+  };
+}
+
+/**
+ * A {@linkcode WrittenActor} plus the activity-registration identity a
+ * worker SDK needs to register with the Activity Gateway (see
+ * `actorKey()`/`RegisteredActor` in
+ * `packages/fsm-core-async-op-worker/src/sidecar/protocol.ts`) — everything
+ * {@linkcode writeActorsRegistry}/{@linkcode writeAggregateActorsRegistry}
+ * need to emit a self-describing registration, not just a name -> callable
+ * map. Matches the flattened identity model `fsm-compiler-ts`'s own
+ * `validateAsyncOperationFromFolders` already used: `fsmName` is the actor's
+ * own `src` (not a separate sub-FSM reference), `fsmVersion` is the parent
+ * FSM's version, and `fsmType` is always `"promise"` (the only kind this
+ * scaffolds).
+ */
+export type RegisteredActor = WrittenActor & {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: "promise";
+  fsmName: string;
+  fsmVersion: string;
+};
+
+/**
+ * Builds the {@linkcode RegisteredActor} record for the file a
+ * {@linkcode writeActorFile} call for this actor produces, given the
+ * version-folder path it was written under.
+ */
+export function toRegisteredActor(
+  absFolderPath: string,
+  lang: OperationLang,
+  actor: ActorReference,
+): RegisteredActor {
+  const written = toWrittenActor(lang, actor);
+  const { fsmName: parentFsmName, fsmVersion: parentFsmVersion } =
+    fsmIdentityFromVersionFolderPath(absFolderPath);
+  return {
+    ...written,
+    parentFsmName,
+    parentFsmVersion,
+    fsmType: "promise",
+    fsmName: written.src,
+    fsmVersion: parentFsmVersion,
   };
 }
 
@@ -180,10 +311,11 @@ export async function writeActorsManifest(
 ): Promise<string> {
   const file = `${absFolderPath}/actors-manifest.json`;
   const manifest = {
-    actors: actors.map(({ src, fsmLanguage, filePath }) => ({
+    actors: actors.map(({ src, fsmLanguage, filePath, exportedName }) => ({
       src,
       fsmLanguage,
       filePath,
+      exportedName,
     })),
   };
   await Deno.writeTextFile(file, JSON.stringify(manifest, null, 2) + "\n");
@@ -248,16 +380,476 @@ export async function writeActorsBarrel(
   return file;
 }
 
+const ACTORS_REGISTRY_FILE_NAME: Record<ActorsBarrelLang, string> = {
+  typescript: "generated-registry.ts",
+  python: "generated_registry.py",
+  rust: "generated_registry.rs",
+};
+
 /**
- * Walks a plugin-root folder, finds every versioned FSM subdirectory (e.g.
- * `creditCheck/v01/`) that contains an `fsm.json`, and invokes `handler` with
- * the absolute version-folder path and the parsed fsm.json.
+ * Renders one FSM-version's registry file content via the language's Eta
+ * template (`scaffold-templates/eta/<lang>/actors-registry.eta`): actors
+ * here are always siblings of the file being written (same `<lang>/actors/`
+ * directory), so imports/`#[path]`s never need to reach outside it. Used by
+ * {@linkcode writeActorsRegistry} only — the aggregate
+ * ({@linkcode writeAggregateActorsRegistry}) re-uses these per-version files
+ * rather than re-deriving entries itself (see its own doc comment for why).
  */
-export async function eachVersionedFsmFolder(
-  folderPath: string,
-  skipDirs: string[],
-  handler: (absFolderPath: string, fsmData: FsmMachineJson) => Promise<void>,
-): Promise<void> {
+function buildActorsRegistryContent(
+  langActors: RegisteredActor[],
+  lang: ActorsBarrelLang,
+): string {
+  switch (lang) {
+    case "typescript":
+      return renderTsActorsRegistry({ actors: langActors });
+    case "python":
+      return renderPyActorsRegistry({ actors: langActors });
+    case "rust":
+      return renderRustActorsRegistry({ actors: langActors });
+  }
+}
+
+/**
+ * Writes a registration registry re-exporting every actor for one language,
+ * at `<absFolderPath>/<lang>/actors/<registry filename>`. Unlike
+ * {@linkcode writeActorsBarrel} (named exports, for consumers who know the
+ * actor name at compile time), this is for runtime dispatch — what a worker
+ * SDK needs to register with the Activity Gateway and route an invocation to
+ * the right function, without a folder scan or dynamic
+ * `import()`/`importlib`. Returns `undefined` (writes nothing) when there are
+ * no actors for that language.
+ */
+export async function writeActorsRegistry(
+  absFolderPath: string,
+  actors: RegisteredActor[],
+  lang: ActorsBarrelLang,
+): Promise<string | undefined> {
+  const langActors = actors.filter((a) => a.fsmLanguage === lang);
+  if (langActors.length === 0) return undefined;
+
+  const dir = `${absFolderPath}/${lang}/actors`;
+  await Deno.mkdir(dir, { recursive: true });
+  const file = `${dir}/${ACTORS_REGISTRY_FILE_NAME[lang]}`;
+  await Deno.writeTextFile(file, buildActorsRegistryContent(langActors, lang));
+  if (lang === "rust") await formatRustFileBestEffort(file);
+  return file;
+}
+
+/**
+ * Runs `rustfmt` on a generated `.rs` file so it matches what `cargo fmt
+ * --check` expects — needed once a generated registry is actually
+ * `#[path]`-included into a real crate (e.g. worker-sdk/rust), since our own
+ * codegen doesn't hand-replicate rustfmt's line-wrapping rules. Best-effort:
+ * silently does nothing if `rustfmt` isn't on `PATH`, matching this file's
+ * existing tolerance for missing toolchains elsewhere (see
+ * `validate-async-operation-logic.ts`'s checker compilation).
+ */
+async function formatRustFileBestEffort(path: string): Promise<void> {
+  try {
+    // --edition / --style-edition 2021: two separate rustfmt settings, both
+    // needed. `--edition` alone (which `cargo fmt` derives from Cargo.toml)
+    // is NOT enough on standalone `rustfmt` -- `--style-edition` (RFC 3338,
+    // default 2015 even with --edition 2021 set) is what actually governs
+    // formatting decisions like macro/println! call wrapping, and `cargo
+    // fmt` sets it implicitly from the crate's edition in a way the bare
+    // rustfmt binary doesn't. Without both flags, output here wouldn't match
+    // what `cargo fmt --check` expects.
+    await new Deno.Command("rustfmt", {
+      args: ["--edition", "2021", "--style-edition", "2021", path],
+      stderr: "null",
+    }).output();
+  } catch {
+    // rustfmt not installed — leave the file as generated.
+  }
+}
+
+/**
+ * Directory (relative to `appRootAbsPath`) every worker-sdk artifact lives
+ * under, generated registries included — one fixed root so the whole worker
+ * SDK for a language (registry + cli/main + sdk + protocol + build manifest)
+ * ships from a single self-contained directory, e.g.
+ * `apps/fsm-core-example/worker-sdk-generated/typescript/`.
+ */
+const WORKER_SDK_DIR_NAME = "worker-sdk-generated";
+
+const AGGREGATE_ACTORS_REGISTRY_FILE_NAME: Record<ActorsBarrelLang, string> = {
+  typescript: "typescript-actors-registry.generated.ts",
+  // Must be a valid Python module identifier (no dashes).
+  python: "python_actors_registry_generated.py",
+  rust: "rust-actors-registry.generated.rs",
+};
+
+/** Groups actors by their parent `<fsmName>/<fsmVersion>`, preserving first-seen order. */
+function groupByParentFsm(
+  actors: RegisteredActor[],
+): Map<string, RegisteredActor[]> {
+  const groups = new Map<string, RegisteredActor[]>();
+  for (const a of actors) {
+    const key = `${a.parentFsmName}/${a.parentFsmVersion}`;
+    const group = groups.get(key);
+    if (group) {
+      group.push(a);
+    } else {
+      groups.set(key, [a]);
+    }
+  }
+  return groups;
+}
+
+/** A `<fsmName>/<fsmVersion>` group key turned into a valid TS/Python/Rust identifier. */
+function groupKeyToIdentifier(key: string): string {
+  return key.replace(/[^A-Za-z0-9]+/g, "_").toLowerCase();
+}
+
+/**
+ * Renders the aggregate registry content for one language, combining every
+ * FSM-version group's actors, via the language's Eta template
+ * (`scaffold-templates/eta/<lang>/actors-registry-aggregate.eta`). TS/Python
+ * re-import each FSM-version's already-generated
+ * {@linkcode writeActorsRegistry} output and flatten it — simpler and avoids
+ * re-deriving every entry, since both languages can statically import an
+ * arbitrarily-nested sibling file. Rust can't do the equivalent (each
+ * per-version `generated_registry.rs` defines its own nominally distinct
+ * `ActorRegistration` type, so `Vec`s of them can't be concatenated) —
+ * instead it `#[path]`-includes each FSM-version's actor barrel (`mod.rs`,
+ * functions only, no competing type) under a unique per-group module alias,
+ * and re-derives entries against one `ActorRegistration` type defined once
+ * in the template.
+ */
+function buildAggregateRegistryContent(
+  langActors: RegisteredActor[],
+  lang: ActorsBarrelLang,
+  pluginRootDirName: string,
+): string {
+  const groups = groupByParentFsm(langActors);
+  const groupList = [...groups.keys()].map((key) => ({
+    key,
+    alias: groupKeyToIdentifier(key),
+  }));
+
+  switch (lang) {
+    case "typescript":
+      return renderTsActorsRegistryAggregate({
+        groups: groupList,
+        pluginRootDirName,
+      });
+    case "python":
+      return renderPyActorsRegistryAggregate({
+        groups: groupList,
+        pluginRootDirName,
+      });
+    case "rust": {
+      const actorsWithAlias = langActors.map((a) => ({
+        ...a,
+        alias: groupKeyToIdentifier(`${a.parentFsmName}/${a.parentFsmVersion}`),
+      }));
+      return renderRustActorsRegistryAggregate({
+        groups: groupList,
+        actors: actorsWithAlias,
+        pluginRootDirName,
+      });
+    }
+  }
+}
+
+/**
+ * Writes ONE aggregate registration registry per language at
+ * `<appRootAbsPath>/worker-sdk-generated/<lang>/<aggregate filename>` —
+ * alongside that language's `cli`/`main` entrypoint (see
+ * {@linkcode writeWorkerSdk}), combining actors across every FSM/version
+ * processed in a single run (see `generateAsyncOperationLogicFromFolders`).
+ * This is the fixed, known file a worker SDK build imports — a worker
+ * process serves every actor for its language across the whole plugin root,
+ * so its build has exactly one thing to import, not a per-FSM-version file
+ * it would have to discover. Returns `undefined` (writes nothing) when there
+ * are no actors for that language across the whole run.
+ *
+ * `pluginRootDirName` is the plugin root's own directory name (e.g. `"fsm"`)
+ * — every generated import/`#[path]` re-descends into it by name, two levels
+ * up from `worker-sdk-generated/<lang>/` back to the app root.
+ */
+export async function writeAggregateActorsRegistry(
+  appRootAbsPath: string,
+  pluginRootDirName: string,
+  actors: RegisteredActor[],
+  lang: ActorsBarrelLang,
+): Promise<string | undefined> {
+  const langActors = actors.filter((a) => a.fsmLanguage === lang);
+  if (langActors.length === 0) return undefined;
+
+  const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/${lang}`;
+  await Deno.mkdir(dir, { recursive: true });
+  const file = `${dir}/${AGGREGATE_ACTORS_REGISTRY_FILE_NAME[lang]}`;
+  await Deno.writeTextFile(
+    file,
+    buildAggregateRegistryContent(langActors, lang, pluginRootDirName),
+  );
+  if (lang === "rust") await formatRustFileBestEffort(file);
+  return file;
+}
+
+/** Go module path for one actor, given the aggregate's app-root name (see {@linkcode goActorModulePath}, which this mirrors for a `RegisteredActor` rather than a version-folder path). */
+function goActorModulePathFromRegisteredActor(
+  appRoot: string,
+  a: RegisteredActor,
+): string {
+  return `${appRoot}/${a.parentFsmName.toLowerCase()}/${a.parentFsmVersion}/go/actors/${a.fileBaseName.toLowerCase()}`;
+}
+
+/** A valid Go import alias derived from an actor's identity — unique per actor, since (unlike TS/Python/Rust barrels) each Go actor is its own separate module/import. */
+function goImportAlias(a: RegisteredActor): string {
+  return `${a.parentFsmName}_${a.parentFsmVersion}_${a.fileBaseName}`
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .toLowerCase();
+}
+
+const GO_AGGREGATE_DIR_NAME = "go-actors-registry-generated";
+
+/** Runs `gofmt -w` on a generated `.go` file. Best-effort, mirrors {@linkcode formatRustFileBestEffort}. */
+async function formatGoFileBestEffort(path: string): Promise<void> {
+  try {
+    await new Deno.Command("gofmt", { args: ["-w", path], stderr: "null" })
+      .output();
+  } catch {
+    // gofmt not installed — leave the file as generated.
+  }
+}
+
+/**
+ * Writes a standalone Go module aggregating every Go actor across the whole
+ * run into one `ActorRegistrations()` function, at
+ * `<appRootAbsPath>/worker-sdk-generated/go/go-actors-registry-generated/`
+ * (`go.mod` + `registry.go`) — nested inside the `go/` worker-sdk directory
+ * (see {@linkcode writeWorkerSdk}), alongside `main.go`. Returns `undefined`
+ * (writes nothing) when there are no Go actors.
+ *
+ * Go actors are each their own module (see {@linkcode writeGoActorModule}) —
+ * pulling one into a consumer requires a `require`/`replace` directive per
+ * actor, which can't live in a single flat file the way TS/Python/Rust's
+ * aggregate does (they need no module-boundary bookkeeping). Generating that
+ * wiring here means a *consumer's* `go.mod` (worker-sdk/go, one directory up)
+ * only ever needs ONE `require`/`replace`, pointing at this module, instead
+ * of being hand-edited every time a Go actor is added or removed. The
+ * module's own logical name (`<appRoot>/go-actors-registry-generated`) is
+ * unrelated to its on-disk nesting — Go resolves it via this module's
+ * `require`+`replace`, so it doesn't need to change even though the
+ * directory now sits three levels below the app root instead of one.
+ */
+export async function writeAggregateGoRegistry(
+  appRootAbsPath: string,
+  pluginRootDirName: string,
+  actors: RegisteredActor[],
+): Promise<string | undefined> {
+  const goActors = actors.filter((a) => a.fsmLanguage === "go");
+  if (goActors.length === 0) return undefined;
+
+  const appRoot = appRootAbsPath.split("/").at(-1)!;
+  const dir =
+    `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/go/${GO_AGGREGATE_DIR_NAME}`;
+  await Deno.mkdir(dir, { recursive: true });
+
+  const withMeta = goActors.map((a) => ({
+    ...a,
+    modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
+    alias: goImportAlias(a),
+  }));
+
+  const goModContent = renderGoModAggregate({
+    moduleName: `${appRoot}/${GO_AGGREGATE_DIR_NAME}`,
+    requires: withMeta.map((a) => ({ modulePath: a.modulePath })),
+    replaces: withMeta.map((a) => ({
+      modulePath: a.modulePath,
+      target:
+        `../../../${pluginRootDirName}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
+    })),
+  });
+  await Deno.writeTextFile(`${dir}/go.mod`, goModContent);
+
+  const registryContent = renderGoActorsRegistryAggregate({
+    imports: withMeta.map((a) => ({
+      alias: a.alias,
+      modulePath: a.modulePath,
+    })),
+    actors: withMeta,
+  });
+  const registryFile = `${dir}/registry.go`;
+  await Deno.writeTextFile(registryFile, registryContent);
+  await formatGoFileBestEffort(registryFile);
+  return registryFile;
+}
+
+/**
+ * Fixed relative path from `<appRoot>/worker-sdk-generated/typescript/` to
+ * the Activity Gateway's own sidecar wire protocol
+ * (`packages/fsm-core-async-op-worker/src/sidecar/protocol.ts`) — the one
+ * piece of worker-sdk that's genuinely gateway-owned and never duplicated
+ * per language, so generated `sdk.ts` imports it directly instead of
+ * getting its own copy (unlike Python/Rust/Go, whose `protocol.*` are full
+ * ports since they can't import a `.ts` file). A hardcoded, consumer-aware
+ * path by design — see `writeAggregateGoRegistry`'s doc comment for the
+ * same tradeoff elsewhere in this file.
+ */
+const GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH =
+  "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";
+
+/**
+ * Writes the cli/main entrypoint + sdk protocol implementation + build
+ * manifest for one language, at `<appRootAbsPath>/worker-sdk-generated/<lang>/`
+ * — the same directory {@linkcode writeAggregateActorsRegistry} (TS/Python/
+ * Rust) and {@linkcode writeAggregateGoRegistry} (Go) write that language's
+ * aggregate registry into, so the entire worker SDK for a language — registry
+ * included — ships from one self-contained directory a build can point at.
+ * Returns `false` (writes nothing) when there are no actors for that language
+ * across the whole run — matches every other aggregate writer in this file.
+ *
+ * Unlike the registries, `sdk.{ts,py,rs,go}`/`protocol.{py,rs,go}` don't vary
+ * per project at all — every project using this gateway gets byte-identical
+ * content. They're still rendered through Eta (a static template, no `<% %>`
+ * tags) rather than written as plain strings, for the same reason every
+ * other generated file in this package is: consistency, and so the
+ * "AUTO-GENERATED, do not edit" header is never forgotten.
+ */
+export async function writeWorkerSdk(
+  appRootAbsPath: string,
+  pluginRootDirName: string,
+  actors: RegisteredActor[],
+): Promise<
+  { typescript: boolean; python: boolean; rust: boolean; go: boolean }
+> {
+  const appRoot = appRootAbsPath.split("/").at(-1)!;
+  const hasLang = (lang: OperationLang) =>
+    actors.some((a) => a.fsmLanguage === lang);
+
+  const wroteTypescript = hasLang("typescript");
+  if (wroteTypescript) {
+    const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/typescript`;
+    await Deno.mkdir(dir, { recursive: true });
+    await Deno.writeTextFile(
+      `${dir}/cli.ts`,
+      renderTsWorkerSdkCli({
+        registryImportPath: "./typescript-actors-registry.generated.ts",
+      }),
+    );
+    await Deno.writeTextFile(
+      `${dir}/sdk.ts`,
+      renderTsWorkerSdkSdk({
+        protocolImportPath: GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH,
+      }),
+    );
+  }
+
+  const wrotePython = hasLang("python");
+  if (wrotePython) {
+    const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/python`;
+    await Deno.mkdir(dir, { recursive: true });
+    await Deno.writeTextFile(
+      `${dir}/cli.py`,
+      renderPyWorkerSdkCli({
+        registryRelativePath: "./python_actors_registry_generated.py",
+      }),
+    );
+    await Deno.writeTextFile(`${dir}/sdk.py`, renderPyWorkerSdkSdk({}));
+    await Deno.writeTextFile(
+      `${dir}/protocol.py`,
+      renderPyWorkerSdkProtocol({}),
+    );
+    await Deno.writeTextFile(
+      `${dir}/requirements.txt`,
+      renderPyWorkerSdkRequirements({}),
+    );
+  }
+
+  const wroteRust = hasLang("rust");
+  if (wroteRust) {
+    const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/rust`;
+    await Deno.mkdir(`${dir}/src`, { recursive: true });
+    const mainFile = `${dir}/src/main.rs`;
+    await Deno.writeTextFile(
+      mainFile,
+      renderRustWorkerSdkMain({
+        registryRelativePath: "../rust-actors-registry.generated.rs",
+      }),
+    );
+    await formatRustFileBestEffort(mainFile);
+    await Deno.writeTextFile(`${dir}/src/sdk.rs`, renderRustWorkerSdkSdk({}));
+    await Deno.writeTextFile(
+      `${dir}/src/protocol.rs`,
+      renderRustWorkerSdkProtocol({}),
+    );
+    await Deno.writeTextFile(
+      `${dir}/Cargo.toml`,
+      renderRustWorkerSdkCargoToml({}),
+    );
+    await Deno.writeTextFile(
+      `${dir}/.gitignore`,
+      renderRustWorkerSdkGitignore({}),
+    );
+  }
+
+  const wroteGo = hasLang("go");
+  if (wroteGo) {
+    const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/go`;
+    await Deno.mkdir(dir, { recursive: true });
+    const mainFile = `${dir}/main.go`;
+    await Deno.writeTextFile(mainFile, renderGoWorkerSdkMain({}));
+    await Deno.writeTextFile(`${dir}/sdk.go`, renderGoWorkerSdkSdk({}));
+    await Deno.writeTextFile(
+      `${dir}/protocol.go`,
+      renderGoWorkerSdkProtocol({}),
+    );
+    await Deno.writeTextFile(
+      `${dir}/.gitignore`,
+      renderGoWorkerSdkGitignore({}),
+    );
+
+    // Go's `replace` directives are only honored in the module actually
+    // being built, not in a dependency's own `go.mod` — they don't
+    // propagate transitively. So even though the aggregate module (below)
+    // is what logically imports each actor module, THIS go.mod (the thing
+    // actually being built) still needs its own require+replace for every
+    // individual actor module the aggregate pulls in, on top of the
+    // aggregate's own require+replace, or the build can't resolve them.
+    const goActors = actors.filter((a) => a.fsmLanguage === "go");
+    const aggregateModulePath = `${appRoot}/${GO_AGGREGATE_DIR_NAME}`;
+    const goModContent = renderGoModAggregate({
+      moduleName: "pgfsm/async-op-worker-sdk",
+      requires: [
+        { modulePath: aggregateModulePath },
+        ...goActors.map((a) => ({
+          modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
+        })),
+      ],
+      replaces: [
+        {
+          modulePath: aggregateModulePath,
+          target: `./${GO_AGGREGATE_DIR_NAME}`,
+        },
+        ...goActors.map((a) => ({
+          modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
+          target:
+            `../../${pluginRootDirName}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
+        })),
+      ],
+    });
+    await Deno.writeTextFile(`${dir}/go.mod`, goModContent);
+  }
+
+  return {
+    typescript: wroteTypescript,
+    python: wrotePython,
+    rust: wroteRust,
+    go: wroteGo,
+  };
+}
+
+/**
+ * Resolves a plugin-root folder path (relative to `Deno.cwd()`, or already
+ * absolute) to an absolute path, and validates it's neither dot-relative nor
+ * trailing-slashed. Shared by {@linkcode eachVersionedFsmFolder} and callers
+ * that need the plugin root itself (e.g. `generateAsyncOperationLogicFromFolders`'s
+ * aggregate registry, written one level above every FSM/version it processes).
+ */
+export function resolvePluginRootAbsPath(folderPath: string): string {
   if (folderPath.startsWith(".")) {
     throw new Error(
       `Invalid folder path: ${folderPath}. Folder paths cannot start with '.'`,
@@ -268,10 +860,22 @@ export async function eachVersionedFsmFolder(
       `Invalid folder path: ${folderPath}. Folder paths cannot end with '/'`,
     );
   }
-
-  const absFolderPath = folderPath.startsWith("/")
+  return folderPath.startsWith("/")
     ? folderPath
     : `${Deno.cwd()}/${folderPath}`;
+}
+
+/**
+ * Walks a plugin-root folder, finds every versioned FSM subdirectory (e.g.
+ * `creditCheck/v01/`) that contains an `fsm.json`, and invokes `handler` with
+ * the absolute version-folder path and the parsed fsm.json.
+ */
+export async function eachVersionedFsmFolder(
+  folderPath: string,
+  skipDirs: string[],
+  handler: (absFolderPath: string, fsmData: FsmMachineJson) => Promise<void>,
+): Promise<void> {
+  const absFolderPath = resolvePluginRootAbsPath(folderPath);
 
   for await (const dirEntry of Deno.readDir(absFolderPath)) {
     if (!dirEntry.isDirectory || skipDirs.includes(dirEntry.name)) continue;

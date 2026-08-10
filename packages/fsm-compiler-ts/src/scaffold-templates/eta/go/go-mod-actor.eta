@@ -1,0 +1,3 @@
+module <%~ it.modulePath %>
+
+go 1.19

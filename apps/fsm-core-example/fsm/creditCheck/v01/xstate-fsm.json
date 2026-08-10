@@ -379,7 +379,7 @@
                   "order": 8,
                   "invoke": [
                     {
-                      "src": "checkBureau",
+                      "src": "checkBureauRust",
                       "id": "equiGavinFetchActor",
                       "type": "xstate.invoke"
                     }
@@ -518,7 +518,7 @@
                   "order": 11,
                   "invoke": [
                     {
-                      "src": "checkReportsTable",
+                      "src": "CheckReportsTable",
                       "id": "gavUnionDBActor",
                       "type": "xstate.invoke"
                     }

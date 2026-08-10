@@ -1,0 +1,49 @@
+version: v2
+managed:
+  enabled: true
+inputs:
+  - directory: ../fsm-core-async-op-worker/src/proto
+plugins:
+  # TypeScript — protobuf-es (message types) + Connect (client/server RPC
+  # stubs). Replaces the current runtime-only @grpc/proto-loader reflection
+  # with real generated types. Local, not remote: BSR's connect-es plugin
+  # (both under bufbuild/ and connectrpc/) is stuck on old releases (v0.13,
+  # v1.6.1) built against protobuf-es v1's output shape -- paired with the
+  # remote protobuf-es v2 message plugin, the generated connect stub imports
+  # names (Empty, InvokeRequest, ...) as values that the v2 message file only
+  # exports as types, which is a real runtime failure (TS hides it -- type
+  # imports get erased -- but Deno/Node crash on the unresolved import).
+  # protoc-gen-es and protoc-gen-connect-es haven't published a matching v2
+  # pair yet, so both plugins are pinned here to the last mutually-compatible
+  # v1 line (`npm ls` in this package) instead.
+  - local: protoc-gen-es
+    out: gen/typescript
+  - local: protoc-gen-connect-es
+    out: gen/typescript
+
+  # Python — base message classes, .pyi type stubs, gRPC service stubs.
+  - remote: buf.build/protocolbuffers/python
+    out: gen/python
+  - remote: buf.build/protocolbuffers/pyi
+    out: gen/python
+  - remote: buf.build/grpc/python
+    out: gen/python
+
+  # Rust — prost (message types) + tonic (gRPC client/server stubs).
+  - remote: buf.build/community/neoeinstein-prost
+    out: gen/rust
+  - remote: buf.build/community/neoeinstein-tonic
+    out: gen/rust
+
+  # Go — base message types + gRPC service stubs. `module=` (rather than
+  # paths=source_relative) places output at a path derived from each file's
+  # `go_package` option relative to that module prefix, so e.g.
+  # activity-gateway.proto's go_package (.../gen/go/activitygateway) lands at
+  # gen/go/activitygateway/ -- one directory per Go package, the idiomatic
+  # layout, and what keeps working once a second .proto file/package is added.
+  - remote: buf.build/protocolbuffers/go
+    out: gen/go
+    opt: module=github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go
+  - remote: buf.build/grpc/go
+    out: gen/go
+    opt: module=github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go

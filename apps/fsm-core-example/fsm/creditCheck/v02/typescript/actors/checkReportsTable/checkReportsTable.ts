@@ -1,4 +1,5 @@
 // Actor: checkReportsTable
-export function checkReportsTable(context: any, event: any) {
+export function checkReportsTable(input: unknown): unknown {
   // TODO: implement actor logic
+  return {};
 }

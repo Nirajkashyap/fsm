@@ -66,6 +66,17 @@ export const RAISE_CANCEL: Set<string> = new Set([
   "xstate.cancel",
 ]);
 
+/**
+ * Capitalizes a name's first letter. Go enforces exports at compile time for
+ * cross-package access (unlike TS/Python/Rust's dynamic-import or
+ * same-crate-`pub` access) — a Go actor function invoked from a separate
+ * consuming package must be exported, so its generated name is capitalized
+ * (see #83). `src` itself (the actor's identity/invoke id) is left untouched.
+ */
+export function toGoExportedName(name: string): string {
+  return name.length === 0 ? name : name[0].toUpperCase() + name.slice(1);
+}
+
 type FsmStateOrMachine =
   | FsmMachineJson
   | AtomicStateNode
