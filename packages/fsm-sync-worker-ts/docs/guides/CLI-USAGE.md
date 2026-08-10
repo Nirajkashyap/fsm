@@ -13,13 +13,6 @@ This package provides three CLIs:
 > package — see
 > [`fsm-async-worker-ts/docs/guides/CLI-USAGE.md`](../../../fsm-async-worker-ts/docs/guides/CLI-USAGE.md).
 
-> **Also present, not covered here:**
-> `src/deprecated-inprocess-approach/deprecated_inprocess_worker.ts` — the
-> legacy pre-scheduler CLI (`resume-worker`, `start-promise-worker`,
-> `create-and-start-worker`, `create-and-start-promise-worker`, `stop-worker`).
-> Superseded by the `fsmlet` / `fsmscheduler` dispatch model above; still
-> present in the tree but not the recommended path for new work.
-
 ---
 
 ## Prerequisites
@@ -186,12 +179,6 @@ still has to pick the work up.
 deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmctl.ts -c <command> [options]
 ```
 
-> **`deno task cli` / `deno task dev` are currently broken.** `deno.json` points
-> them at `src/cli/index.ts`, which no longer exists — it was renamed to
-> `src/deprecated-inprocess-approach/deprecated_inprocess_worker.ts` when
-> `fsmctl` was introduced. Invoke `fsmctl.ts` directly as shown above until
-> `deno.json` is updated (see [`deno.json` tasks](#denojson-tasks)).
-
 ### Commands
 
 | Command  | Required flags                         | Description                                                                               |
@@ -335,32 +322,29 @@ before any database connection is made.
 
 ## HTTP API reference
 
-The API server (`apps/fsm-core-ts-hono-deno`) exposes both the legacy in-process
-routes and the newer dispatch-queue routes side by side. `verifiedModule`
-(actor/action folder) is resolved server-side from `verifiedFsmModules` context
-using `fsm_name` + `fsm_version`.
+The API server (`apps/fsm-core-ts-hono-deno`) exposes the dispatch-queue routes
+for `/fsm` alongside in-process routes for `/fsmpromise` (the latter still run
+their worker directly inside the API process — see `fsmpromise.handlers.ts`).
+`verifiedModule` (actor/action folder) is resolved server-side from
+`verifiedFsmModules` context using `fsm_name` + `fsm_version`.
 
-| HTTP route                          | Model      | CLI equivalent                                                      | Body                                                                                            |
-| ----------------------------------- | ---------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `GET /fsm`                          | —          | —                                                                   | —                                                                                               |
-| `POST /fsm`                         | in-process | `deprecated_inprocess_worker.ts -c create-and-start-worker`         | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + starts worker directly           |
-| `POST /fsm/resume`                  | in-process | `deprecated_inprocess_worker.ts -c resume-worker`                   | `{ queue }`                                                                                     |
-| `POST /fsm/stop`                    | either     | `fsmctl -c stop`                                                    | `{ queue }`                                                                                     |
-| `GET /fsm/currentActive`            | in-process | —                                                                   | —                                                                                               |
-| `POST /fsm/send`                    | either     | `fsmctl -c send`                                                    | `{ fsm_instance_id, event_data }`                                                               |
-| `POST /fsm/dispatch`                | dispatch   | `fsmctl -c create`                                                  | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + enqueues to `fsm_dispatch_queue` |
-| `POST /fsm/resume-dispatch`         | dispatch   | `fsmctl -c resume`                                                  | `{ queue }`                                                                                     |
-| `GET /fsmpromise`                   | in-process | —                                                                   | —                                                                                               |
-| `POST /fsmpromise/resume`           | in-process | `deprecated_inprocess_worker.ts -c start-promise-worker`            | `{ promise_name, promise_type, promise_version, fsm_name, fsm_version }`                        |
-| `POST /fsmpromise/stop`             | in-process | Ctrl+C (graceful) / `fsmctl -c stop`                                | `{ queue }`                                                                                     |
-| `POST /fsmpromise/create-and-start` | in-process | `deprecated_inprocess_worker.ts -c create-and-start-promise-worker` | `{ queue_name, fsm_name, promise_type, fsm_version }`                                           |
+| HTTP route                          | Model      | CLI equivalent                       | Body                                                                                            |
+| ----------------------------------- | ---------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `GET /fsm`                          | —          | —                                    | —                                                                                               |
+| `POST /fsm/stop`                    | dispatch   | `fsmctl -c stop`                     | `{ queue }`                                                                                     |
+| `POST /fsm/send`                    | dispatch   | `fsmctl -c send`                     | `{ fsm_instance_id, event_data }`                                                               |
+| `POST /fsm/dispatch`                | dispatch   | `fsmctl -c create`                   | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + enqueues to `fsm_dispatch_queue` |
+| `POST /fsm/resume-dispatch`         | dispatch   | `fsmctl -c resume`                   | `{ queue }`                                                                                     |
+| `GET /fsmpromise`                   | in-process | —                                    | —                                                                                               |
+| `POST /fsmpromise/resume`           | in-process | —                                    | `{ promise_name, promise_type, promise_version, fsm_name, fsm_version }`                        |
+| `POST /fsmpromise/stop`             | in-process | Ctrl+C (graceful) / `fsmctl -c stop` | `{ queue }`                                                                                     |
+| `POST /fsmpromise/create-and-start` | in-process | —                                    | `{ queue_name, fsm_name, promise_type, fsm_version }`                                           |
 
-`POST /fsm` and `POST /fsm/resume` start (or resume) a worker directly inside
-the API server process — the same in-process model as
-`deprecated_inprocess_worker.ts`. `POST /fsm/dispatch` and
-`POST /fsm/resume-dispatch` instead enqueue to `fsm_dispatch_queue`, the same
-path `fsmctl create`/`resume` use, requiring a running `fsmscheduler` + `fsmlet`
-to pick the work up. `fsmpromise` has no dispatch-model route yet —
+`POST /fsm/dispatch` and `POST /fsm/resume-dispatch` enqueue to
+`fsm_dispatch_queue`, the same path `fsmctl create`/`resume` use, requiring a
+running `fsmscheduler` + `fsmlet` to pick the work up. The in-process `/fsm`
+routes (`POST /fsm`, `POST /fsm/resume`, `GET /fsm/currentActive`) were removed
+— see ADR-002. `fsmpromise` has no dispatch-model route yet —
 `async-operation-workerlet` is driven only via its own CLI, not through the HTTP
 API.
 

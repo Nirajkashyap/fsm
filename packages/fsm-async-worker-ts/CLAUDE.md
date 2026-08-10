@@ -33,8 +33,3 @@ deno task check                     # deno check src/index.ts
   `fsmpromiseworker.py` (a polyglot example actor, not leftover Python tooling)
 - `asyncOperationScheduler/` — control-plane routing implementation
 - `logger.ts` — composition-root LogTape config for this process
-
-`packages/fsm-sync-worker-ts/src/deprecated-inprocess-approach/create-and-start-promise-worker.ts`
-imports `startFSMPromiseWorker` from this package's `@pgfsm/async-worker` export
-— the one remaining cross-package dependency from the legacy in-process CLI onto
-the current dispatch-model async worker.

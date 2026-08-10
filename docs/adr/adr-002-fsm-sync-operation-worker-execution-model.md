@@ -38,7 +38,7 @@ would:
 The API server was also the worker runtime. There was no separation between
 request-handling and long-running FSM execution.
 
-**Key files (still present as the in-process route handlers):**
+**Key files (removed 2026-08-10, #96 — see [Decision](#decision)):**
 
 - `fsm.handlers.inprocess.ts` — `createAndStart`, `resumeWithWorker`,
   `currentActive`
@@ -512,9 +512,13 @@ If it exceeds that, the PostgreSQL 18 async path is the right direction.
 
 ## Decision
 
-Stage 3 is the active model. Stages 1 and 2 code is retained as the in-process
-route handlers (`fsm.handlers.inprocess.ts`) for development/debugging use but
-is not the production dispatch path.
+Stage 3 is the active model. Stages 1 and 2 code was originally retained as the
+in-process route handlers (`fsm.handlers.inprocess.ts`) for development/
+debugging use. That retained code (plus the worker package's
+`deprecated-inprocess-approach/` folder it depended on) was removed 2026-08-10
+(#96) — the dev/debugging use case it served is now covered by running the
+dispatch path locally, and keeping two execution models live in the API process
+was no longer worth the maintenance cost.
 
 The production dispatch path is:
 

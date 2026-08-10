@@ -60,34 +60,6 @@ export const getOne = createRoute({
   },
 });
 
-export const create = createRoute({
-  path: "/fsm",
-  method: "post",
-  request: {
-    body: jsonContentRequired(
-      z.object({
-        fsm_name: z.string().describe("The FSM definition name"),
-        fsm_version: z.string().describe("The FSM version"),
-        fsm_context: z.record(z.unknown()).optional().describe(
-          "Initial FSM context (defaults to {})",
-        ),
-      }),
-      "The fsm configuration",
-    ),
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.object({}),
-      "The fsm started successfully",
-    ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({}),
-      "The validation error(s)",
-    ),
-  },
-});
-
 export const send = createRoute({
   path: "/fsm/send",
   method: "post",
@@ -115,48 +87,6 @@ export const send = createRoute({
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({}),
       "The validation error(s)",
-    ),
-  },
-});
-
-export const currentActive = createRoute({
-  path: "/fsm/currentActive",
-  method: "get",
-  tags,
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.object({ data: z.record(z.boolean()) }),
-      "Active FSM worker locks",
-    ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({ error: z.string() }),
-      "Error",
-    ),
-  },
-});
-
-export const resume = createRoute({
-  path: "/fsm/resume",
-  method: "post",
-  request: {
-    body: jsonContentRequired(
-      z.object({
-        queue: z.string().describe(
-          "The FSM instance ID (queue name) to resume the worker for",
-        ),
-      }),
-      "The fsmworker configuration",
-    ),
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.object({}),
-      "Worker resumed successfully",
-    ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({ error: z.string() }),
-      "Error",
     ),
   },
 });
@@ -245,10 +175,7 @@ export const resumeViaDispatch = createRoute({
 
 export type ListRoute = typeof list;
 export type GetOneRoute = typeof getOne;
-export type CreateRoute = typeof create;
 export type SendRoute = typeof send;
-export type CurrentActiveRoute = typeof currentActive;
-export type ResumeRoute = typeof resume;
 export type StopRoute = typeof stop;
 export type CreateAndDispatchRoute = typeof createAndDispatch;
 export type ResumeViaDispatchRoute = typeof resumeViaDispatch;
