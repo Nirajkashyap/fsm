@@ -3,6 +3,7 @@ import { getLogger } from "@logtape/logtape";
 
 import type { AppRouteHandler } from "../../lib/types.ts";
 import type {
+  CreateRoute,
   GetOneRoute,
   ListRoute,
   SendRoute,
@@ -13,6 +14,7 @@ import {
   API_SYSTEM_EVENT_NAME,
   API_SYSTEM_QUEUE_TYPE,
   API_SYSTEM_QUEUE_UUID,
+  createFsmInstanceFromName,
   getFSMData,
   getFsmDataResolveStateValue,
   type Json,
@@ -56,6 +58,55 @@ export const getOne: AppRouteHandler<GetOneRoute> = async (c) => {
     return c.json({ data: result }, HttpStatusCodes.OK);
   } catch (_err) {
     logger.error("Error in getOne handler: {error}", { error: _err });
+    return c.json(
+      { error: "Unexpected error" },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR,
+    );
+  }
+};
+
+// create: creates FSM instance and enqueues it to fsm_dispatch_queue for the
+// fsmscheduler/fsmlet to pick up — the in-process worker model was removed
+// (see ADR-002), so this is the same dispatch-model creation as
+// fsm.handlers.dispatch.ts's createAndDispatch, exposed at the plain path.
+export const create: AppRouteHandler<CreateRoute> = async (c) => {
+  const db = c.get("db");
+  const deps = { db, useSupabase: false };
+  const body = c.req.valid("json");
+  const input_fsm_name = body.fsm_name;
+  const input_fsm_version = body.fsm_version;
+  const input_fsm_context = body.fsm_context ?? {};
+
+  try {
+    if (!input_fsm_name) {
+      return c.json(
+        { error: "Missing fsm_name" },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    // true = also create the instance's pgmq queue and send
+    // initialTransition_event; the fsm_dispatch_queue enqueue alone only gets
+    // a worker started for this instance — the worker then reads from the
+    // per-instance pgmq queue, so that queue must exist and have a message.
+    const fsm_instance = await createFsmInstanceFromName(
+      deps,
+      input_fsm_name,
+      input_fsm_version,
+      input_fsm_context as Json,
+      true,
+    ) as Record<string, string> | null;
+
+    if (!fsm_instance?.fsm_instance_id) {
+      return c.json(
+        { error: "FSM instance creation failed" },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return c.json({ data: { fsm_instance } }, HttpStatusCodes.OK);
+  } catch (_err) {
+    logger.error("Error in create handler: {error}", { error: _err });
     return c.json(
       { error: "Unexpected error" },
       HttpStatusCodes.INTERNAL_SERVER_ERROR,
