@@ -818,7 +818,6 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
     assertExists(await Deno.stat(`${base}/rust/.gitignore`));
     assertExists(await Deno.stat(`${base}/go/main.go`));
     assertExists(await Deno.stat(`${base}/go/sdk.go`));
-    assertExists(await Deno.stat(`${base}/go/protocol.go`));
     assertExists(await Deno.stat(`${base}/go/go.mod`));
     assertExists(await Deno.stat(`${base}/go/.gitignore`));
 
@@ -866,10 +865,12 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
       "module pgfsm/async-op-worker-sdk\n\ngo 1.19\n\n" +
         "require fsm-core-example/go-actors-registry-generated v0.0.0\n" +
         "require fsm-core-example/creditcheck/v01/go/actors/checkbureau v0.0.0\n" +
-        "require fsm-core-example/otherfsm/v02/go/actors/someactor v0.0.0\n\n" +
+        "require fsm-core-example/otherfsm/v02/go/actors/someactor v0.0.0\n" +
+        "require github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go v0.0.0\n\n" +
         "replace fsm-core-example/go-actors-registry-generated => ./go-actors-registry-generated\n" +
         "replace fsm-core-example/creditcheck/v01/go/actors/checkbureau => ../../fsm/creditCheck/v01/go/actors/checkBureau\n" +
-        "replace fsm-core-example/otherfsm/v02/go/actors/someactor => ../../fsm/otherFsm/v02/go/actors/someActor\n",
+        "replace fsm-core-example/otherfsm/v02/go/actors/someactor => ../../fsm/otherFsm/v02/go/actors/someActor\n" +
+        "replace github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go => ../../../../packages/fsm-proto-codegen/gen/go\n",
     );
 
     for (

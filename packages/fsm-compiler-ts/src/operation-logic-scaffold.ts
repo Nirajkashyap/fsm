@@ -28,7 +28,6 @@ import { render as renderRustWorkerSdkCargoToml } from "./scaffold-templates/eta
 import { render as renderRustWorkerSdkGitignore } from "./scaffold-templates/eta/rust/worker-sdk-gitignore.generated.ts";
 import { render as renderGoWorkerSdkMain } from "./scaffold-templates/eta/go/worker-sdk-main.generated.ts";
 import { render as renderGoWorkerSdkSdk } from "./scaffold-templates/eta/go/worker-sdk-sdk.generated.ts";
-import { render as renderGoWorkerSdkProtocol } from "./scaffold-templates/eta/go/worker-sdk-protocol.generated.ts";
 import { render as renderGoWorkerSdkGitignore } from "./scaffold-templates/eta/go/worker-sdk-gitignore.generated.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "scaffold"]);
@@ -742,6 +741,18 @@ const GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH =
  */
 const GATEWAY_SIDECAR_PROTO_GEN_RUST_REL_PATH =
   "../../../../../packages/fsm-proto-codegen/gen/rust/pgfsm/sidecargateway/v1/pgfsm.sidecargateway.v1.rs";
+/**
+ * Go module path (matching sidecar_gateway.proto's `go_package` option) and
+ * relative `replace` target for the generated grpc-go stub
+ * (`packages/fsm-proto-codegen/gen/go/`) — required+replaced in
+ * worker-sdk/go's own go.mod the same way each compiled-in actor module is
+ * (see the `replace` comment in {@linkcode writeWorkerSdk} below), since Go
+ * `replace` directives don't propagate transitively through a dependency.
+ */
+const GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH =
+  "github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go";
+const GATEWAY_SIDECAR_PROTO_GEN_GO_REL_PATH =
+  "../../../../packages/fsm-proto-codegen/gen/go";
 
 /**
  * Writes the cli/main entrypoint + sdk protocol implementation + build
@@ -847,11 +858,15 @@ export async function writeWorkerSdk(
     await Deno.mkdir(dir, { recursive: true });
     const mainFile = `${dir}/main.go`;
     await Deno.writeTextFile(mainFile, renderGoWorkerSdkMain({}));
-    await Deno.writeTextFile(`${dir}/sdk.go`, renderGoWorkerSdkSdk({}));
+    const sdkFile = `${dir}/sdk.go`;
     await Deno.writeTextFile(
-      `${dir}/protocol.go`,
-      renderGoWorkerSdkProtocol({}),
+      sdkFile,
+      renderGoWorkerSdkSdk({
+        protoGenGoImportPath:
+          `${GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH}/sidecargateway/v1`,
+      }),
     );
+    await formatGoFileBestEffort(sdkFile);
     await Deno.writeTextFile(
       `${dir}/.gitignore`,
       renderGoWorkerSdkGitignore({}),
@@ -873,6 +888,7 @@ export async function writeWorkerSdk(
         ...goActors.map((a) => ({
           modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
         })),
+        { modulePath: GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH },
       ],
       replaces: [
         {
@@ -884,6 +900,10 @@ export async function writeWorkerSdk(
           target:
             `../../${pluginRootDirName}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
         })),
+        {
+          modulePath: GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH,
+          target: GATEWAY_SIDECAR_PROTO_GEN_GO_REL_PATH,
+        },
       ],
     });
     await Deno.writeTextFile(`${dir}/go.mod`, goModContent);
