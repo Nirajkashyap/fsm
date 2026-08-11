@@ -811,7 +811,6 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
     assertExists(await Deno.stat(`${base}/typescript/sdk.ts`));
     assertExists(await Deno.stat(`${base}/python/cli.py`));
     assertExists(await Deno.stat(`${base}/python/sdk.py`));
-    assertExists(await Deno.stat(`${base}/python/protocol.py`));
     assertExists(await Deno.stat(`${base}/python/requirements.txt`));
     assertExists(await Deno.stat(`${base}/rust/src/main.rs`));
     assertExists(await Deno.stat(`${base}/rust/src/sdk.rs`));
@@ -882,7 +881,6 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
         // header is the second line there, not the first.
         [`${base}/python/cli.py`, "#!/usr/bin/env python3\n# AUTO-GENERATED"],
         [`${base}/python/sdk.py`, "# AUTO-GENERATED"],
-        [`${base}/python/protocol.py`, "# AUTO-GENERATED"],
         [`${base}/rust/src/main.rs`, "// AUTO-GENERATED"],
         [`${base}/rust/src/sdk.rs`, "// AUTO-GENERATED"],
         [`${base}/go/main.go`, "// AUTO-GENERATED"],

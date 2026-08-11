@@ -21,7 +21,6 @@ import { render as renderTsWorkerSdkCli } from "./scaffold-templates/eta/typescr
 import { render as renderTsWorkerSdkSdk } from "./scaffold-templates/eta/typescript/worker-sdk-sdk.generated.ts";
 import { render as renderPyWorkerSdkCli } from "./scaffold-templates/eta/python/worker-sdk-cli.generated.ts";
 import { render as renderPyWorkerSdkSdk } from "./scaffold-templates/eta/python/worker-sdk-sdk.generated.ts";
-import { render as renderPyWorkerSdkProtocol } from "./scaffold-templates/eta/python/worker-sdk-protocol.generated.ts";
 import { render as renderPyWorkerSdkRequirements } from "./scaffold-templates/eta/python/worker-sdk-requirements.generated.ts";
 import { render as renderRustWorkerSdkMain } from "./scaffold-templates/eta/rust/worker-sdk-main.generated.ts";
 import { render as renderRustWorkerSdkSdk } from "./scaffold-templates/eta/rust/worker-sdk-sdk.generated.ts";
@@ -716,13 +715,13 @@ export async function writeAggregateGoRegistry(
 }
 
 /**
- * Fixed relative paths from `<appRoot>/worker-sdk-generated/typescript/` to
- * the generated `pgfsm.sidecargateway.v1.SidecarGatewayService` stub
- * (`packages/fsm-proto-codegen/gen/typescript/`, from
+ * Fixed relative paths from `<appRoot>/worker-sdk-generated/<lang>/` to the
+ * generated `pgfsm.sidecargateway.v1.SidecarGatewayService` stub
+ * (`packages/fsm-proto-codegen/gen/<lang>/`, from
  * `proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto` — see #100) — the
  * one piece of worker-sdk that's genuinely gateway-owned and never
- * duplicated per language, so generated `sdk.ts` imports it directly instead
- * of getting its own copy (unlike Python/Rust/Go, which still speak
+ * duplicated per language, so generated `sdk.{ts,py}` imports it directly
+ * instead of getting its own copy (unlike Rust/Go, which still speak
  * sidecar/protocol.ts's hand-ported envelope until they migrate too).
  * Hardcoded, consumer-aware paths by design — see
  * `writeAggregateGoRegistry`'s doc comment for the same tradeoff elsewhere
@@ -732,6 +731,9 @@ const GATEWAY_SIDECAR_PROTO_CONNECT_IMPORT_PATH =
   "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";
 const GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH =
   "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";
+/** Directory (not a single file — Python imports a package, not a module by path) holding the generated grpc stub for Python. */
+const GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH =
+  "../../../../packages/fsm-proto-codegen/gen/python";
 
 /**
  * Writes the cli/main entrypoint + sdk protocol implementation + build
@@ -743,7 +745,7 @@ const GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH =
  * Returns `false` (writes nothing) when there are no actors for that language
  * across the whole run — matches every other aggregate writer in this file.
  *
- * Unlike the registries, `sdk.{ts,py,rs,go}`/`protocol.{py,rs,go}` don't vary
+ * Unlike the registries, `sdk.{ts,py,rs,go}`/`protocol.{rs,go}` don't vary
  * per project at all — every project using this gateway gets byte-identical
  * content. They're still rendered through Eta (a static template, no `<% %>`
  * tags) rather than written as plain strings, for the same reason every
@@ -793,10 +795,11 @@ export async function writeWorkerSdk(
         ),
       }),
     );
-    await Deno.writeTextFile(`${dir}/sdk.py`, renderPyWorkerSdkSdk({}));
     await Deno.writeTextFile(
-      `${dir}/protocol.py`,
-      renderPyWorkerSdkProtocol({}),
+      `${dir}/sdk.py`,
+      renderPyWorkerSdkSdk({
+        protoGenPythonRelPath: GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH,
+      }),
     );
     await Deno.writeTextFile(
       `${dir}/requirements.txt`,
