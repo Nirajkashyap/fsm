@@ -17,37 +17,23 @@ EXAMPLE
 from __future__ import annotations
 
 import argparse
-import importlib.util
-import os
 import signal
 import sys
 import uuid
 
 from sdk import ActorWorker
 
-DEFAULT_GATEWAY_SOCKET = "/tmp/pgfsm-activity-gateway-workers.sock"
-DEFAULT_HEARTBEAT_MS = 5000
-
 # Fixed, compiler-generated registry -- see fsm-compiler-ts's
 # writeAggregateActorsRegistry. Regenerate with
 # `deno task cli -c generate-async-logic -f <plugin-root>` after actors
-# change; this path is a build-time coupling to that one app's FSM
-# definitions by design (see #84 for why).
-_REGISTRY_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "./python_actors_registry_generated.py",
-)
+# change; this import is a build-time coupling to that one app's FSM
+# definitions by design (see #84 for why). A plain static import works
+# because this module is always a sibling of cli.py, which Python puts on
+# sys.path automatically for the running script.
+from python_actors_registry_generated import ACTOR_REGISTRATIONS
 
-
-def _load_registrations() -> list[dict]:
-    spec = importlib.util.spec_from_file_location(
-        "python_actors_registry_generated", _REGISTRY_PATH
-    )
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Cannot load registry from {_REGISTRY_PATH}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.ACTOR_REGISTRATIONS
+DEFAULT_GATEWAY_SOCKET = "/tmp/pgfsm-activity-gateway-workers.sock"
+DEFAULT_HEARTBEAT_MS = 5000
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -80,7 +66,7 @@ def main(argv: list[str]) -> int:
     args = build_parser().parse_args(argv)
 
     worker_id = args.worker_id or f"python-{uuid.uuid4().hex[:8]}"
-    registrations = _load_registrations()
+    registrations = ACTOR_REGISTRATIONS
 
     print(f"{len(registrations)} actor(s) compiled into this registry")
     for reg in registrations:
