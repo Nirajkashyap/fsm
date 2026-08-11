@@ -24,7 +24,6 @@ import { render as renderPyWorkerSdkSdk } from "./scaffold-templates/eta/python/
 import { render as renderPyWorkerSdkRequirements } from "./scaffold-templates/eta/python/worker-sdk-requirements.generated.ts";
 import { render as renderRustWorkerSdkMain } from "./scaffold-templates/eta/rust/worker-sdk-main.generated.ts";
 import { render as renderRustWorkerSdkSdk } from "./scaffold-templates/eta/rust/worker-sdk-sdk.generated.ts";
-import { render as renderRustWorkerSdkProtocol } from "./scaffold-templates/eta/rust/worker-sdk-protocol.generated.ts";
 import { render as renderRustWorkerSdkCargoToml } from "./scaffold-templates/eta/rust/worker-sdk-cargo-toml.generated.ts";
 import { render as renderRustWorkerSdkGitignore } from "./scaffold-templates/eta/rust/worker-sdk-gitignore.generated.ts";
 import { render as renderGoWorkerSdkMain } from "./scaffold-templates/eta/go/worker-sdk-main.generated.ts";
@@ -734,6 +733,15 @@ const GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH =
 /** Directory (not a single file — Python imports a package, not a module by path) holding the generated grpc stub for Python. */
 const GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH =
   "../../../../packages/fsm-proto-codegen/gen/python";
+/**
+ * One level deeper than the other three languages' paths (an extra `src/`
+ * between `worker-sdk-generated/rust/` and the crate root) — this is the
+ * file worker-sdk-main.eta's `#[path]` attribute points at directly, since
+ * Rust has no package-relative import mechanism the way Python's sys.path
+ * append does.
+ */
+const GATEWAY_SIDECAR_PROTO_GEN_RUST_REL_PATH =
+  "../../../../../packages/fsm-proto-codegen/gen/rust/pgfsm/sidecargateway/v1/pgfsm.sidecargateway.v1.rs";
 
 /**
  * Writes the cli/main entrypoint + sdk protocol implementation + build
@@ -816,14 +824,13 @@ export async function writeWorkerSdk(
       mainFile,
       renderRustWorkerSdkMain({
         registryRelativePath: "../rust-actors-registry.generated.rs",
+        protoGenRustRelPath: GATEWAY_SIDECAR_PROTO_GEN_RUST_REL_PATH,
       }),
     );
     await formatRustFileBestEffort(mainFile);
-    await Deno.writeTextFile(`${dir}/src/sdk.rs`, renderRustWorkerSdkSdk({}));
-    await Deno.writeTextFile(
-      `${dir}/src/protocol.rs`,
-      renderRustWorkerSdkProtocol({}),
-    );
+    const sdkFile = `${dir}/src/sdk.rs`;
+    await Deno.writeTextFile(sdkFile, renderRustWorkerSdkSdk({}));
+    await formatRustFileBestEffort(sdkFile);
     await Deno.writeTextFile(
       `${dir}/Cargo.toml`,
       renderRustWorkerSdkCargoToml({}),

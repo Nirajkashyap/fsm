@@ -814,7 +814,6 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
     assertExists(await Deno.stat(`${base}/python/requirements.txt`));
     assertExists(await Deno.stat(`${base}/rust/src/main.rs`));
     assertExists(await Deno.stat(`${base}/rust/src/sdk.rs`));
-    assertExists(await Deno.stat(`${base}/rust/src/protocol.rs`));
     assertExists(await Deno.stat(`${base}/rust/Cargo.toml`));
     assertExists(await Deno.stat(`${base}/rust/.gitignore`));
     assertExists(await Deno.stat(`${base}/go/main.go`));

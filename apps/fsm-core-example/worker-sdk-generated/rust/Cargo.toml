@@ -12,3 +12,11 @@ path = "src/main.rs"
 ctrlc = "3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# tonic/prost/tonic-prost back the generated pgfsm.sidecargateway.v1 client
+# (packages/fsm-proto-codegen/gen/rust/) sdk.rs #[path]-includes -- see #100.
+# All three must share a major version (see fsm-proto-codegen's README).
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
+tokio-stream = "0.1"
+tonic = { version = "0.14", features = ["transport"] }
+tonic-prost = "0.14"
+prost = "0.14"
