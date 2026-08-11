@@ -103,7 +103,7 @@ class ActorWorker:
 
         self._handlers: Dict[str, ActorHandler] = {}
         self._stopped = False
-        self._outbox: "queue.Queue[Optional[pb.ConnectRequest]]" = queue.Queue()
+        self._outbox: "queue.Queue[Optional[pb.SessionRequest]]" = queue.Queue()
         self._channel: Optional[grpc.Channel] = None
 
     def run(self) -> None:
@@ -145,7 +145,7 @@ class ActorWorker:
         stub = pb_grpc.SidecarGatewayServiceStub(self._channel)
 
         self._outbox.put(
-            pb.ConnectRequest(
+            pb.SessionRequest(
                 register=pb.Register(
                     worker_id=self.worker_id,
                     language=self.language,
@@ -155,7 +155,7 @@ class ActorWorker:
             )
         )
 
-        response_iter = iter(stub.Connect(self._request_iterator()))
+        response_iter = iter(stub.Session(self._request_iterator()))
 
         try:
             first = next(response_iter)
@@ -181,7 +181,7 @@ class ActorWorker:
         finally:
             self._stopped = True
             self._outbox.put(
-                pb.ConnectRequest(unregister=pb.Unregister(worker_id=self.worker_id))
+                pb.SessionRequest(unregister=pb.Unregister(worker_id=self.worker_id))
             )
             self._outbox.put(None)
 
@@ -190,11 +190,11 @@ class ActorWorker:
             return
         self._stopped = True
         self._outbox.put(
-            pb.ConnectRequest(unregister=pb.Unregister(worker_id=self.worker_id))
+            pb.SessionRequest(unregister=pb.Unregister(worker_id=self.worker_id))
         )
         self._outbox.put(None)
 
-    def _request_iterator(self) -> Iterator[pb.ConnectRequest]:
+    def _request_iterator(self) -> Iterator[pb.SessionRequest]:
         while True:
             item = self._outbox.get()
             if item is None:
@@ -207,10 +207,10 @@ class ActorWorker:
             if self._stopped:
                 break
             self._outbox.put(
-                pb.ConnectRequest(heartbeat=pb.Heartbeat(worker_id=self.worker_id))
+                pb.SessionRequest(heartbeat=pb.Heartbeat(worker_id=self.worker_id))
             )
 
-    def _serve_loop(self, response_iter: Iterator[pb.ConnectResponse]) -> None:
+    def _serve_loop(self, response_iter: Iterator[pb.SessionResponse]) -> None:
         for response in response_iter:
             if self._stopped:
                 break
@@ -245,7 +245,7 @@ class ActorWorker:
                 output = handler(input_value)
             duration_ms = max(0, round((time.perf_counter() - started) * 1000))
             self._outbox.put(
-                pb.ConnectRequest(
+                pb.SessionRequest(
                     invoke_result=pb.InvokeResult(
                         invoke_id=body.invoke_id,
                         output_json=json.dumps(output),
@@ -258,7 +258,7 @@ class ActorWorker:
 
     def _send_error(self, invoke_id: str, code: str, message: str) -> None:
         self._outbox.put(
-            pb.ConnectRequest(
+            pb.SessionRequest(
                 invoke_error=pb.InvokeError(
                     invoke_id=invoke_id,
                     error=pb.InvokeErrorDetail(

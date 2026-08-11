@@ -30,7 +30,7 @@ export const RegisteredActor = /*@__PURE__*/ proto3.makeMessageType(
 );
 
 /**
- * First message a worker sends on a new Connect stream.
+ * First message a worker sends on a new Session stream.
  *
  * @generated from message pgfsm.sidecargateway.v1.Register
  */
@@ -45,7 +45,7 @@ export const Register = /*@__PURE__*/ proto3.makeMessageType(
 );
 
 /**
- * The gateway's reply to Register, sent once as the first ConnectResponse.
+ * The gateway's reply to Register, sent once as the first SessionResponse.
  *
  * @generated from message pgfsm.sidecargateway.v1.RegisterAck
  */
@@ -164,10 +164,10 @@ export const Unregister = /*@__PURE__*/ proto3.makeMessageType(
 );
 
 /**
- * @generated from message pgfsm.sidecargateway.v1.ConnectRequest
+ * @generated from message pgfsm.sidecargateway.v1.SessionRequest
  */
-export const ConnectRequest = /*@__PURE__*/ proto3.makeMessageType(
-  "pgfsm.sidecargateway.v1.ConnectRequest",
+export const SessionRequest = /*@__PURE__*/ proto3.makeMessageType(
+  "pgfsm.sidecargateway.v1.SessionRequest",
   () => [
     { no: 1, name: "register", kind: "message", T: Register, oneof: "payload" },
     { no: 2, name: "heartbeat", kind: "message", T: Heartbeat, oneof: "payload" },
@@ -178,10 +178,10 @@ export const ConnectRequest = /*@__PURE__*/ proto3.makeMessageType(
 );
 
 /**
- * @generated from message pgfsm.sidecargateway.v1.ConnectResponse
+ * @generated from message pgfsm.sidecargateway.v1.SessionResponse
  */
-export const ConnectResponse = /*@__PURE__*/ proto3.makeMessageType(
-  "pgfsm.sidecargateway.v1.ConnectResponse",
+export const SessionResponse = /*@__PURE__*/ proto3.makeMessageType(
+  "pgfsm.sidecargateway.v1.SessionResponse",
   () => [
     { no: 1, name: "register_ack", kind: "message", T: RegisterAck, oneof: "payload" },
     { no: 2, name: "invoke", kind: "message", T: Invoke, oneof: "payload" },

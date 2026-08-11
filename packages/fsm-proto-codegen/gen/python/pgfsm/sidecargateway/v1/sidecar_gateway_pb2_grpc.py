@@ -28,6 +28,14 @@ class SidecarGatewayServiceStub:
     history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
     PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
     the start.
+
+    Named `Session`, not the more obvious `Connect`: tonic-build always emits
+    an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
+    convenience constructor on the generated client, regardless of RPC names.
+    An RPC also named `Connect` collides with it on the same concretized type
+    (`error[E0592]: duplicate definitions with name 'connect'`) and simply
+    fails to compile — confirmed by building the generated Rust client in
+    isolation before picking this name.
     """
 
     def __init__(self, channel):
@@ -36,10 +44,10 @@ class SidecarGatewayServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.Connect = channel.stream_stream(
-                '/pgfsm.sidecargateway.v1.SidecarGatewayService/Connect',
-                request_serializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.ConnectRequest.SerializeToString,
-                response_deserializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.ConnectResponse.FromString,
+        self.Session = channel.stream_stream(
+                '/pgfsm.sidecargateway.v1.SidecarGatewayService/Session',
+                request_serializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionRequest.SerializeToString,
+                response_deserializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionResponse.FromString,
                 _registered_method=True)
 
 
@@ -66,9 +74,17 @@ class SidecarGatewayServiceServicer:
     history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
     PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
     the start.
+
+    Named `Session`, not the more obvious `Connect`: tonic-build always emits
+    an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
+    convenience constructor on the generated client, regardless of RPC names.
+    An RPC also named `Connect` collides with it on the same concretized type
+    (`error[E0592]: duplicate definitions with name 'connect'`) and simply
+    fails to compile — confirmed by building the generated Rust client in
+    isolation before picking this name.
     """
 
-    def Connect(self, request_iterator, context):
+    def Session(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -77,10 +93,10 @@ class SidecarGatewayServiceServicer:
 
 def add_SidecarGatewayServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Connect': grpc.stream_stream_rpc_method_handler(
-                    servicer.Connect,
-                    request_deserializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.ConnectRequest.FromString,
-                    response_serializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.ConnectResponse.SerializeToString,
+            'Session': grpc.stream_stream_rpc_method_handler(
+                    servicer.Session,
+                    request_deserializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionRequest.FromString,
+                    response_serializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -113,10 +129,18 @@ class SidecarGatewayService:
     history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
     PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
     the start.
+
+    Named `Session`, not the more obvious `Connect`: tonic-build always emits
+    an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
+    convenience constructor on the generated client, regardless of RPC names.
+    An RPC also named `Connect` collides with it on the same concretized type
+    (`error[E0592]: duplicate definitions with name 'connect'`) and simply
+    fails to compile — confirmed by building the generated Rust client in
+    isolation before picking this name.
     """
 
     @staticmethod
-    def Connect(request_iterator,
+    def Session(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -129,9 +153,9 @@ class SidecarGatewayService:
         return grpc.experimental.stream_stream(
             request_iterator,
             target,
-            '/pgfsm.sidecargateway.v1.SidecarGatewayService/Connect',
-            pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.ConnectRequest.SerializeToString,
-            pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.ConnectResponse.FromString,
+            '/pgfsm.sidecargateway.v1.SidecarGatewayService/Session',
+            pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionRequest.SerializeToString,
+            pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionResponse.FromString,
             options,
             channel_credentials,
             insecure,

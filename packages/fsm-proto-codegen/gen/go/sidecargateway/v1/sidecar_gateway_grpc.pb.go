@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SidecarGatewayService_Connect_FullMethodName = "/pgfsm.sidecargateway.v1.SidecarGatewayService/Connect"
+	SidecarGatewayService_Session_FullMethodName = "/pgfsm.sidecargateway.v1.SidecarGatewayService/Session"
 )
 
 // SidecarGatewayServiceClient is the client API for SidecarGatewayService service.
@@ -48,8 +48,16 @@ const (
 // history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
 // PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
 // the start.
+//
+// Named `Session`, not the more obvious `Connect`: tonic-build always emits
+// an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
+// convenience constructor on the generated client, regardless of RPC names.
+// An RPC also named `Connect` collides with it on the same concretized type
+// (`error[E0592]: duplicate definitions with name 'connect'`) and simply
+// fails to compile — confirmed by building the generated Rust client in
+// isolation before picking this name.
 type SidecarGatewayServiceClient interface {
-	Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ConnectRequest, ConnectResponse], error)
+	Session(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SessionRequest, SessionResponse], error)
 }
 
 type sidecarGatewayServiceClient struct {
@@ -60,18 +68,18 @@ func NewSidecarGatewayServiceClient(cc grpc.ClientConnInterface) SidecarGatewayS
 	return &sidecarGatewayServiceClient{cc}
 }
 
-func (c *sidecarGatewayServiceClient) Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ConnectRequest, ConnectResponse], error) {
+func (c *sidecarGatewayServiceClient) Session(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SessionRequest, SessionResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SidecarGatewayService_ServiceDesc.Streams[0], SidecarGatewayService_Connect_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &SidecarGatewayService_ServiceDesc.Streams[0], SidecarGatewayService_Session_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[ConnectRequest, ConnectResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[SessionRequest, SessionResponse]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SidecarGatewayService_ConnectClient = grpc.BidiStreamingClient[ConnectRequest, ConnectResponse]
+type SidecarGatewayService_SessionClient = grpc.BidiStreamingClient[SessionRequest, SessionResponse]
 
 // SidecarGatewayServiceServer is the server API for SidecarGatewayService service.
 // All implementations must embed UnimplementedSidecarGatewayServiceServer
@@ -99,8 +107,16 @@ type SidecarGatewayService_ConnectClient = grpc.BidiStreamingClient[ConnectReque
 // history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
 // PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
 // the start.
+//
+// Named `Session`, not the more obvious `Connect`: tonic-build always emits
+// an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
+// convenience constructor on the generated client, regardless of RPC names.
+// An RPC also named `Connect` collides with it on the same concretized type
+// (`error[E0592]: duplicate definitions with name 'connect'`) and simply
+// fails to compile — confirmed by building the generated Rust client in
+// isolation before picking this name.
 type SidecarGatewayServiceServer interface {
-	Connect(grpc.BidiStreamingServer[ConnectRequest, ConnectResponse]) error
+	Session(grpc.BidiStreamingServer[SessionRequest, SessionResponse]) error
 	mustEmbedUnimplementedSidecarGatewayServiceServer()
 }
 
@@ -111,8 +127,8 @@ type SidecarGatewayServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSidecarGatewayServiceServer struct{}
 
-func (UnimplementedSidecarGatewayServiceServer) Connect(grpc.BidiStreamingServer[ConnectRequest, ConnectResponse]) error {
-	return status.Error(codes.Unimplemented, "method Connect not implemented")
+func (UnimplementedSidecarGatewayServiceServer) Session(grpc.BidiStreamingServer[SessionRequest, SessionResponse]) error {
+	return status.Error(codes.Unimplemented, "method Session not implemented")
 }
 func (UnimplementedSidecarGatewayServiceServer) mustEmbedUnimplementedSidecarGatewayServiceServer() {}
 func (UnimplementedSidecarGatewayServiceServer) testEmbeddedByValue()                               {}
@@ -135,12 +151,12 @@ func RegisterSidecarGatewayServiceServer(s grpc.ServiceRegistrar, srv SidecarGat
 	s.RegisterService(&SidecarGatewayService_ServiceDesc, srv)
 }
 
-func _SidecarGatewayService_Connect_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(SidecarGatewayServiceServer).Connect(&grpc.GenericServerStream[ConnectRequest, ConnectResponse]{ServerStream: stream})
+func _SidecarGatewayService_Session_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SidecarGatewayServiceServer).Session(&grpc.GenericServerStream[SessionRequest, SessionResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SidecarGatewayService_ConnectServer = grpc.BidiStreamingServer[ConnectRequest, ConnectResponse]
+type SidecarGatewayService_SessionServer = grpc.BidiStreamingServer[SessionRequest, SessionResponse]
 
 // SidecarGatewayService_ServiceDesc is the grpc.ServiceDesc for SidecarGatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -151,8 +167,8 @@ var SidecarGatewayService_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Connect",
-			Handler:       _SidecarGatewayService_Connect_Handler,
+			StreamName:    "Session",
+			Handler:       _SidecarGatewayService_Session_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

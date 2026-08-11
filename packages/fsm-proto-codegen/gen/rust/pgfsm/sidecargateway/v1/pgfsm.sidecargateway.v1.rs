@@ -25,7 +25,7 @@ pub struct RegisteredActor {
     #[prost(string, tag="8")]
     pub description: ::prost::alloc::string::String,
 }
-/// First message a worker sends on a new Connect stream.
+/// First message a worker sends on a new Session stream.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Register {
     #[prost(string, tag="1")]
@@ -37,7 +37,7 @@ pub struct Register {
     #[prost(message, repeated, tag="4")]
     pub actors: ::prost::alloc::vec::Vec<RegisteredActor>,
 }
-/// The gateway's reply to Register, sent once as the first ConnectResponse.
+/// The gateway's reply to Register, sent once as the first SessionResponse.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct RegisterAck {
     #[prost(bool, tag="1")]
@@ -135,12 +135,12 @@ pub struct Unregister {
     pub worker_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConnectRequest {
-    #[prost(oneof="connect_request::Payload", tags="1, 2, 3, 4, 5")]
-    pub payload: ::core::option::Option<connect_request::Payload>,
+pub struct SessionRequest {
+    #[prost(oneof="session_request::Payload", tags="1, 2, 3, 4, 5")]
+    pub payload: ::core::option::Option<session_request::Payload>,
 }
-/// Nested message and enum types in `ConnectRequest`.
-pub mod connect_request {
+/// Nested message and enum types in `SessionRequest`.
+pub mod session_request {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Payload {
         #[prost(message, tag="1")]
@@ -156,12 +156,12 @@ pub mod connect_request {
     }
 }
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
-pub struct ConnectResponse {
-    #[prost(oneof="connect_response::Payload", tags="1, 2, 3")]
-    pub payload: ::core::option::Option<connect_response::Payload>,
+pub struct SessionResponse {
+    #[prost(oneof="session_response::Payload", tags="1, 2, 3")]
+    pub payload: ::core::option::Option<session_response::Payload>,
 }
-/// Nested message and enum types in `ConnectResponse`.
-pub mod connect_response {
+/// Nested message and enum types in `SessionResponse`.
+pub mod session_response {
     #[derive(Clone, PartialEq, Eq, Hash, ::prost::Oneof)]
     pub enum Payload {
         #[prost(message, tag="1")]

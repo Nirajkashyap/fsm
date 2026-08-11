@@ -1,4 +1,4 @@
-// Sidecar gateway: accepts one worker-initiated bidi-streaming Connect call
+// Sidecar gateway: accepts one worker-initiated bidi-streaming Session call
 // per worker process, tracks which actors each worker has registered, and
 // routes invocations to the right worker's stream. Bound to a Unix socket via
 // node:http2 + connectNodeAdapter, the same mechanism gatewayServer.ts uses
@@ -32,11 +32,11 @@ import {
 import * as http2 from "node:http2";
 import { SidecarGatewayService } from "../../../fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";
 import {
-  type ConnectRequest,
-  ConnectResponse,
   Invoke,
   type Register,
   RegisterAck,
+  type SessionRequest,
+  SessionResponse,
 } from "../../../fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";
 
 const logger = getLogger([
@@ -52,8 +52,8 @@ const logger = getLogger([
 // and still tracks the generated shape exactly (no hand-duplicated fields).
 type RegisterMessage = InstanceType<typeof Register>;
 type RegisterAckMessage = InstanceType<typeof RegisterAck>;
-type ConnectRequestMessage = InstanceType<typeof ConnectRequest>;
-type ConnectResponseMessage = InstanceType<typeof ConnectResponse>;
+type SessionRequestMessage = InstanceType<typeof SessionRequest>;
+type SessionResponseMessage = InstanceType<typeof SessionResponse>;
 
 /**
  * Plain structural mirror of the generated `RegisteredActor` proto message
@@ -129,10 +129,10 @@ export class ActivityInvokeError extends Error {
 }
 
 /**
- * Minimal async push queue backing each worker's outbound ConnectResponse
+ * Minimal async push queue backing each worker's outbound SessionResponse
  * stream. `invoke()` (called from arbitrary places, e.g. the poll loop) and
  * `registerWorker()` push server-initiated messages (register_ack, invoke)
- * onto a worker's queue; `handleConnect`'s `for await` loop is the only
+ * onto a worker's queue; `handleSession`'s `for await` loop is the only
  * reader, draining it into that worker's actual HTTP/2 stream. No
  * backpressure beyond an unbounded in-memory array — acceptable here since
  * the sidecar only ever queues a handful of in-flight invokes per worker.
@@ -202,7 +202,7 @@ interface PendingInvoke {
 interface WorkerState {
   workerId: string;
   language: string;
-  outbox: AsyncQueue<ConnectResponseMessage>;
+  outbox: AsyncQueue<SessionResponseMessage>;
   actors: Set<string>;
   pendingByInvokeId: Map<string, PendingInvoke>;
   alive: boolean;
@@ -243,7 +243,7 @@ export class SidecarGateway {
     const routes = (router: ConnectRouter): void => {
       router.service(
         SidecarGatewayService,
-        { connect: this.handleConnect.bind(this) } as unknown as Partial<
+        { session: this.handleSession.bind(this) } as unknown as Partial<
           ServiceImpl<typeof SidecarGatewayService>
         >,
       );
@@ -344,7 +344,7 @@ export class SidecarGateway {
       });
 
       worker.outbox.push(
-        new ConnectResponse({
+        new SessionResponse({
           payload: {
             case: "invoke",
             value: new Invoke({
@@ -368,7 +368,7 @@ export class SidecarGateway {
   }
 
   /**
-   * The Connect bidi-streaming handler: one call per worker process. Reads
+   * The Session bidi-streaming handler: one call per worker process. Reads
    * `register` as the required first message, acks it, then concurrently
    * drains `requests` (heartbeat/invoke_result/invoke_error/unregister,
    * updating gateway state as they arrive) while yielding whatever `invoke()`
@@ -376,21 +376,21 @@ export class SidecarGateway {
    * gateway-pushes-invoke shape the old length-prefixed protocol had, now
    * carried over one gRPC stream instead of a raw socket.
    */
-  private async *handleConnect(
-    requests: AsyncIterable<ConnectRequestMessage>,
-  ): AsyncIterable<ConnectResponseMessage> {
+  private async *handleSession(
+    requests: AsyncIterable<SessionRequestMessage>,
+  ): AsyncIterable<SessionResponseMessage> {
     const iterator = requests[Symbol.asyncIterator]();
     const first = await iterator.next();
     if (first.done || first.value.payload.case !== "register") {
       throw new ConnectError(
-        "first message on a sidecar Connect stream must be register",
+        "first message on a sidecar Session stream must be register",
         Code.InvalidArgument,
       );
     }
 
     const worker = this.registerWorker(first.value.payload.value);
 
-    yield new ConnectResponse({
+    yield new SessionResponse({
       payload: {
         case: "registerAck",
         value: this.buildRegisterAck(first.value.payload.value),
@@ -447,7 +447,7 @@ export class SidecarGateway {
 
   private handleWorkerMessage(
     worker: WorkerState,
-    msg: ConnectRequestMessage,
+    msg: SessionRequestMessage,
   ): void {
     switch (msg.payload.case) {
       case "heartbeat":
@@ -505,7 +505,7 @@ export class SidecarGateway {
     const worker: WorkerState = {
       workerId: register.workerId,
       language: register.language,
-      outbox: new AsyncQueue<ConnectResponseMessage>(),
+      outbox: new AsyncQueue<SessionResponseMessage>(),
       actors: new Set(),
       pendingByInvokeId: new Map(),
       alive: true,

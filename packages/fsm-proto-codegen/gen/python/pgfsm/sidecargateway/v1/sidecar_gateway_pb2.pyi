@@ -126,7 +126,7 @@ class Unregister(_message.Message):
     worker_id: str
     def __init__(self, worker_id: _Optional[str] = ...) -> None: ...
 
-class ConnectRequest(_message.Message):
+class SessionRequest(_message.Message):
     __slots__ = ("register", "heartbeat", "invoke_result", "invoke_error", "unregister")
     REGISTER_FIELD_NUMBER: _ClassVar[int]
     HEARTBEAT_FIELD_NUMBER: _ClassVar[int]
@@ -140,7 +140,7 @@ class ConnectRequest(_message.Message):
     unregister: Unregister
     def __init__(self, register: _Optional[_Union[Register, _Mapping]] = ..., heartbeat: _Optional[_Union[Heartbeat, _Mapping]] = ..., invoke_result: _Optional[_Union[InvokeResult, _Mapping]] = ..., invoke_error: _Optional[_Union[InvokeError, _Mapping]] = ..., unregister: _Optional[_Union[Unregister, _Mapping]] = ...) -> None: ...
 
-class ConnectResponse(_message.Message):
+class SessionResponse(_message.Message):
     __slots__ = ("register_ack", "invoke", "cancel")
     REGISTER_ACK_FIELD_NUMBER: _ClassVar[int]
     INVOKE_FIELD_NUMBER: _ClassVar[int]

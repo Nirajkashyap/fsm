@@ -25,14 +25,14 @@ import {
 import * as net from "node:net";
 import { SidecarGatewayService } from "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";
 import {
-  ConnectRequest,
-  type ConnectResponse,
   Heartbeat,
   type Invoke,
   InvokeError,
   InvokeErrorDetail,
   InvokeResult,
   Register,
+  SessionRequest,
+  type SessionResponse,
   Unregister,
 } from "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";
 
@@ -48,8 +48,8 @@ const logger = getLogger([
 // `Client<T>` utility type) — deriving instance types from the constructors
 // via `InstanceType<typeof X>` sidesteps it, and every type position below
 // goes through one of these aliases rather than the bare class name.
-type ConnectRequestMessage = InstanceType<typeof ConnectRequest>;
-type ConnectResponseMessage = InstanceType<typeof ConnectResponse>;
+type SessionRequestMessage = InstanceType<typeof SessionRequest>;
+type SessionResponseMessage = InstanceType<typeof SessionResponse>;
 type InvokeMessage = InstanceType<typeof Invoke>;
 
 /**
@@ -72,9 +72,9 @@ export interface RegisteredActor {
 // hits it too. Hand-rolled to the exact shape actually called, instead of
 // fighting Connect's generic inference under Deno.
 interface RawSidecarGatewayClient {
-  connect(
-    requests: AsyncIterable<ConnectRequestMessage>,
-  ): AsyncIterable<ConnectResponseMessage>;
+  session(
+    requests: AsyncIterable<SessionRequestMessage>,
+  ): AsyncIterable<SessionResponseMessage>;
 }
 
 export type ActorHandler = (input: unknown) => unknown | Promise<unknown>;
@@ -118,7 +118,7 @@ function parseInputJson(json: string): unknown {
 }
 
 /**
- * Minimal async push queue feeding this worker's outgoing ConnectRequest
+ * Minimal async push queue feeding this worker's outgoing SessionRequest
  * stream — `run()`/`heartbeatLoop()`/`handleInvoke()` push register,
  * heartbeat, invoke_result, and invoke_error messages onto it; the transport
  * drains it as the actual HTTP/2 request stream. Mirrors
@@ -185,7 +185,7 @@ class AsyncQueue<T> implements AsyncIterable<T> {
 // serves invoke requests until the gateway ends the stream or `stop()` is
 // called.
 export class ActorWorker {
-  private outbox: AsyncQueue<ConnectRequestMessage> | null = null;
+  private outbox: AsyncQueue<SessionRequestMessage> | null = null;
   private stopped = false;
   private readonly handlers = new Map<string, ActorHandler>();
 
@@ -229,11 +229,11 @@ export class ActorWorker {
       transport,
     ) as unknown as RawSidecarGatewayClient;
 
-    const outbox = new AsyncQueue<ConnectRequestMessage>();
+    const outbox = new AsyncQueue<SessionRequestMessage>();
     this.outbox = outbox;
 
     outbox.push(
-      new ConnectRequest({
+      new SessionRequest({
         payload: {
           case: "register",
           value: new Register({
@@ -246,7 +246,7 @@ export class ActorWorker {
       }),
     );
 
-    const responses = client.connect(outbox);
+    const responses = client.session(outbox);
     const iterator = responses[Symbol.asyncIterator]();
 
     const first = await iterator.next();
@@ -274,7 +274,7 @@ export class ActorWorker {
       this.stopped = true;
       await heartbeat.catch(() => {});
       outbox.push(
-        new ConnectRequest({
+        new SessionRequest({
           payload: {
             case: "unregister",
             value: new Unregister({ workerId: this.options.workerId }),
@@ -289,7 +289,7 @@ export class ActorWorker {
     if (this.stopped) return;
     this.stopped = true;
     this.outbox?.push(
-      new ConnectRequest({
+      new SessionRequest({
         payload: {
           case: "unregister",
           value: new Unregister({ workerId: this.options.workerId }),
@@ -307,7 +307,7 @@ export class ActorWorker {
         break;
       }
       this.outbox?.push(
-        new ConnectRequest({
+        new SessionRequest({
           payload: {
             case: "heartbeat",
             value: new Heartbeat({ workerId: this.options.workerId }),
@@ -318,7 +318,7 @@ export class ActorWorker {
   }
 
   private async serveLoop(
-    iterator: AsyncIterator<ConnectResponseMessage>,
+    iterator: AsyncIterator<SessionResponseMessage>,
   ): Promise<void> {
     while (!this.stopped) {
       const { value, done } = await iterator.next();
@@ -358,7 +358,7 @@ export class ActorWorker {
       );
       const durationMs = Math.max(0, Math.round(performance.now() - started));
       this.outbox?.push(
-        new ConnectRequest({
+        new SessionRequest({
           payload: {
             case: "invokeResult",
             value: new InvokeResult({
@@ -380,7 +380,7 @@ export class ActorWorker {
 
   private sendError(invokeId: string, code: string, message: string): void {
     this.outbox?.push(
-      new ConnectRequest({
+      new SessionRequest({
         payload: {
           case: "invokeError",
           value: new InvokeError({

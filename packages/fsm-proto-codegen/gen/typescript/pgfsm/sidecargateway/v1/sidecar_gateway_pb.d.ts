@@ -73,7 +73,7 @@ export declare class RegisteredActor extends Message<RegisteredActor> {
 }
 
 /**
- * First message a worker sends on a new Connect stream.
+ * First message a worker sends on a new Session stream.
  *
  * @generated from message pgfsm.sidecargateway.v1.Register
  */
@@ -114,7 +114,7 @@ export declare class Register extends Message<Register> {
 }
 
 /**
- * The gateway's reply to Register, sent once as the first ConnectResponse.
+ * The gateway's reply to Register, sent once as the first SessionResponse.
  *
  * @generated from message pgfsm.sidecargateway.v1.RegisterAck
  */
@@ -432,11 +432,11 @@ export declare class Unregister extends Message<Unregister> {
 }
 
 /**
- * @generated from message pgfsm.sidecargateway.v1.ConnectRequest
+ * @generated from message pgfsm.sidecargateway.v1.SessionRequest
  */
-export declare class ConnectRequest extends Message<ConnectRequest> {
+export declare class SessionRequest extends Message<SessionRequest> {
   /**
-   * @generated from oneof pgfsm.sidecargateway.v1.ConnectRequest.payload
+   * @generated from oneof pgfsm.sidecargateway.v1.SessionRequest.payload
    */
   payload: {
     /**
@@ -470,27 +470,27 @@ export declare class ConnectRequest extends Message<ConnectRequest> {
     case: "unregister";
   } | { case: undefined; value?: undefined };
 
-  constructor(data?: PartialMessage<ConnectRequest>);
+  constructor(data?: PartialMessage<SessionRequest>);
 
   static readonly runtime: typeof proto3;
-  static readonly typeName = "pgfsm.sidecargateway.v1.ConnectRequest";
+  static readonly typeName = "pgfsm.sidecargateway.v1.SessionRequest";
   static readonly fields: FieldList;
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectRequest;
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionRequest;
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectRequest;
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionRequest;
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectRequest;
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionRequest;
 
-  static equals(a: ConnectRequest | PlainMessage<ConnectRequest> | undefined, b: ConnectRequest | PlainMessage<ConnectRequest> | undefined): boolean;
+  static equals(a: SessionRequest | PlainMessage<SessionRequest> | undefined, b: SessionRequest | PlainMessage<SessionRequest> | undefined): boolean;
 }
 
 /**
- * @generated from message pgfsm.sidecargateway.v1.ConnectResponse
+ * @generated from message pgfsm.sidecargateway.v1.SessionResponse
  */
-export declare class ConnectResponse extends Message<ConnectResponse> {
+export declare class SessionResponse extends Message<SessionResponse> {
   /**
-   * @generated from oneof pgfsm.sidecargateway.v1.ConnectResponse.payload
+   * @generated from oneof pgfsm.sidecargateway.v1.SessionResponse.payload
    */
   payload: {
     /**
@@ -512,18 +512,18 @@ export declare class ConnectResponse extends Message<ConnectResponse> {
     case: "cancel";
   } | { case: undefined; value?: undefined };
 
-  constructor(data?: PartialMessage<ConnectResponse>);
+  constructor(data?: PartialMessage<SessionResponse>);
 
   static readonly runtime: typeof proto3;
-  static readonly typeName = "pgfsm.sidecargateway.v1.ConnectResponse";
+  static readonly typeName = "pgfsm.sidecargateway.v1.SessionResponse";
   static readonly fields: FieldList;
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectResponse;
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionResponse;
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectResponse;
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionResponse;
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectResponse;
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionResponse;
 
-  static equals(a: ConnectResponse | PlainMessage<ConnectResponse> | undefined, b: ConnectResponse | PlainMessage<ConnectResponse> | undefined): boolean;
+  static equals(a: SessionResponse | PlainMessage<SessionResponse> | undefined, b: SessionResponse | PlainMessage<SessionResponse> | undefined): boolean;
 }
 

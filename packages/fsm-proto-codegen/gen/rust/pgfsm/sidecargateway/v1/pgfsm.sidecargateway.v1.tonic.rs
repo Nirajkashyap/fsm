@@ -90,11 +90,11 @@ pub mod sidecar_gateway_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn connect(
+        pub async fn session(
             &mut self,
-            request: impl tonic::IntoStreamingRequest<Message = super::ConnectRequest>,
+            request: impl tonic::IntoStreamingRequest<Message = super::SessionRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::ConnectResponse>>,
+            tonic::Response<tonic::codec::Streaming<super::SessionResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -107,14 +107,14 @@ pub mod sidecar_gateway_service_client {
                 })?;
             let codec = tonic_prost::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/pgfsm.sidecargateway.v1.SidecarGatewayService/Connect",
+                "/pgfsm.sidecargateway.v1.SidecarGatewayService/Session",
             );
             let mut req = request.into_streaming_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
                         "pgfsm.sidecargateway.v1.SidecarGatewayService",
-                        "Connect",
+                        "Session",
                     ),
                 );
             self.inner.streaming(req, path, codec).await
@@ -134,16 +134,16 @@ pub mod sidecar_gateway_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with SidecarGatewayServiceServer.
     #[async_trait]
     pub trait SidecarGatewayService: std::marker::Send + std::marker::Sync + 'static {
-        /// Server streaming response type for the Connect method.
-        type ConnectStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<super::ConnectResponse, tonic::Status>,
+        /// Server streaming response type for the Session method.
+        type SessionStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::SessionResponse, tonic::Status>,
             >
             + std::marker::Send
             + 'static;
-        async fn connect(
+        async fn session(
             &self,
-            request: tonic::Request<tonic::Streaming<super::ConnectRequest>>,
-        ) -> std::result::Result<tonic::Response<Self::ConnectStream>, tonic::Status>;
+            request: tonic::Request<tonic::Streaming<super::SessionRequest>>,
+        ) -> std::result::Result<tonic::Response<Self::SessionStream>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct SidecarGatewayServiceServer<T> {
@@ -222,15 +222,15 @@ pub mod sidecar_gateway_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/pgfsm.sidecargateway.v1.SidecarGatewayService/Connect" => {
+                "/pgfsm.sidecargateway.v1.SidecarGatewayService/Session" => {
                     #[allow(non_camel_case_types)]
-                    struct ConnectSvc<T: SidecarGatewayService>(pub Arc<T>);
+                    struct SessionSvc<T: SidecarGatewayService>(pub Arc<T>);
                     impl<
                         T: SidecarGatewayService,
-                    > tonic::server::StreamingService<super::ConnectRequest>
-                    for ConnectSvc<T> {
-                        type Response = super::ConnectResponse;
-                        type ResponseStream = T::ConnectStream;
+                    > tonic::server::StreamingService<super::SessionRequest>
+                    for SessionSvc<T> {
+                        type Response = super::SessionResponse;
+                        type ResponseStream = T::SessionStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
                             tonic::Status,
@@ -238,12 +238,12 @@ pub mod sidecar_gateway_service_server {
                         fn call(
                             &mut self,
                             request: tonic::Request<
-                                tonic::Streaming<super::ConnectRequest>,
+                                tonic::Streaming<super::SessionRequest>,
                             >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as SidecarGatewayService>::connect(&inner, request).await
+                                <T as SidecarGatewayService>::session(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -254,7 +254,7 @@ pub mod sidecar_gateway_service_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = ConnectSvc(inner);
+                        let method = SessionSvc(inner);
                         let codec = tonic_prost::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

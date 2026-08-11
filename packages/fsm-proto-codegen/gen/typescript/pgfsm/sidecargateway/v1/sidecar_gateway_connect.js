@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ConnectRequest, ConnectResponse } from "./sidecar_gateway_pb.js";
+import { SessionRequest, SessionResponse } from "./sidecar_gateway_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -30,18 +30,26 @@ import { MethodKind } from "@bufbuild/protobuf";
  * PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
  * the start.
  *
+ * Named `Session`, not the more obvious `Connect`: tonic-build always emits
+ * an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
+ * convenience constructor on the generated client, regardless of RPC names.
+ * An RPC also named `Connect` collides with it on the same concretized type
+ * (`error[E0592]: duplicate definitions with name 'connect'`) and simply
+ * fails to compile — confirmed by building the generated Rust client in
+ * isolation before picking this name.
+ *
  * @generated from service pgfsm.sidecargateway.v1.SidecarGatewayService
  */
 export const SidecarGatewayService = {
   typeName: "pgfsm.sidecargateway.v1.SidecarGatewayService",
   methods: {
     /**
-     * @generated from rpc pgfsm.sidecargateway.v1.SidecarGatewayService.Connect
+     * @generated from rpc pgfsm.sidecargateway.v1.SidecarGatewayService.Session
      */
-    connect: {
-      name: "Connect",
-      I: ConnectRequest,
-      O: ConnectResponse,
+    session: {
+      name: "Session",
+      I: SessionRequest,
+      O: SessionResponse,
       kind: MethodKind.BiDiStreaming,
     },
   }

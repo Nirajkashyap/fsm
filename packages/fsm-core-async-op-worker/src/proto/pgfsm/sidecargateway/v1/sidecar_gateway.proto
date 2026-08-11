@@ -26,8 +26,16 @@ option go_package = "github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/side
 // history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
 // PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
 // the start.
+//
+// Named `Session`, not the more obvious `Connect`: tonic-build always emits
+// an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
+// convenience constructor on the generated client, regardless of RPC names.
+// An RPC also named `Connect` collides with it on the same concretized type
+// (`error[E0592]: duplicate definitions with name 'connect'`) and simply
+// fails to compile — confirmed by building the generated Rust client in
+// isolation before picking this name.
 service SidecarGatewayService {
-  rpc Connect(stream ConnectRequest) returns (stream ConnectResponse);
+  rpc Session(stream SessionRequest) returns (stream SessionResponse);
 }
 
 // One actor entrypoint a worker process serves. Mirrors
@@ -47,7 +55,7 @@ message RegisteredActor {
   string description = 8;
 }
 
-// First message a worker sends on a new Connect stream.
+// First message a worker sends on a new Session stream.
 message Register {
   string worker_id = 1;
   string language = 2;
@@ -55,7 +63,7 @@ message Register {
   repeated RegisteredActor actors = 4;
 }
 
-// The gateway's reply to Register, sent once as the first ConnectResponse.
+// The gateway's reply to Register, sent once as the first SessionResponse.
 message RegisterAck {
   bool accepted = 1;
   string gateway_protocol_version = 2;
@@ -124,7 +132,7 @@ message Unregister {
   string worker_id = 1;
 }
 
-message ConnectRequest {
+message SessionRequest {
   oneof payload {
     Register register = 1;
     Heartbeat heartbeat = 2;
@@ -134,7 +142,7 @@ message ConnectRequest {
   }
 }
 
-message ConnectResponse {
+message SessionResponse {
   oneof payload {
     RegisterAck register_ack = 1;
     Invoke invoke = 2;

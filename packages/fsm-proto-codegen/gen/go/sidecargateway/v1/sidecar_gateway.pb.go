@@ -127,7 +127,7 @@ func (x *RegisteredActor) GetDescription() string {
 	return ""
 }
 
-// First message a worker sends on a new Connect stream.
+// First message a worker sends on a new Session stream.
 type Register struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	WorkerId        string                 `protobuf:"bytes,1,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
@@ -196,7 +196,7 @@ func (x *Register) GetActors() []*RegisteredActor {
 	return nil
 }
 
-// The gateway's reply to Register, sent once as the first ConnectResponse.
+// The gateway's reply to Register, sent once as the first SessionResponse.
 type RegisterAck struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Accepted               bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
@@ -725,34 +725,34 @@ func (x *Unregister) GetWorkerId() string {
 	return ""
 }
 
-type ConnectRequest struct {
+type SessionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Payload:
 	//
-	//	*ConnectRequest_Register
-	//	*ConnectRequest_Heartbeat
-	//	*ConnectRequest_InvokeResult
-	//	*ConnectRequest_InvokeError
-	//	*ConnectRequest_Unregister
-	Payload       isConnectRequest_Payload `protobuf_oneof:"payload"`
+	//	*SessionRequest_Register
+	//	*SessionRequest_Heartbeat
+	//	*SessionRequest_InvokeResult
+	//	*SessionRequest_InvokeError
+	//	*SessionRequest_Unregister
+	Payload       isSessionRequest_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ConnectRequest) Reset() {
-	*x = ConnectRequest{}
+func (x *SessionRequest) Reset() {
+	*x = SessionRequest{}
 	mi := &file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ConnectRequest) String() string {
+func (x *SessionRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConnectRequest) ProtoMessage() {}
+func (*SessionRequest) ProtoMessage() {}
 
-func (x *ConnectRequest) ProtoReflect() protoreflect.Message {
+func (x *SessionRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -764,123 +764,123 @@ func (x *ConnectRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ConnectRequest.ProtoReflect.Descriptor instead.
-func (*ConnectRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SessionRequest.ProtoReflect.Descriptor instead.
+func (*SessionRequest) Descriptor() ([]byte, []int) {
 	return file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *ConnectRequest) GetPayload() isConnectRequest_Payload {
+func (x *SessionRequest) GetPayload() isSessionRequest_Payload {
 	if x != nil {
 		return x.Payload
 	}
 	return nil
 }
 
-func (x *ConnectRequest) GetRegister() *Register {
+func (x *SessionRequest) GetRegister() *Register {
 	if x != nil {
-		if x, ok := x.Payload.(*ConnectRequest_Register); ok {
+		if x, ok := x.Payload.(*SessionRequest_Register); ok {
 			return x.Register
 		}
 	}
 	return nil
 }
 
-func (x *ConnectRequest) GetHeartbeat() *Heartbeat {
+func (x *SessionRequest) GetHeartbeat() *Heartbeat {
 	if x != nil {
-		if x, ok := x.Payload.(*ConnectRequest_Heartbeat); ok {
+		if x, ok := x.Payload.(*SessionRequest_Heartbeat); ok {
 			return x.Heartbeat
 		}
 	}
 	return nil
 }
 
-func (x *ConnectRequest) GetInvokeResult() *InvokeResult {
+func (x *SessionRequest) GetInvokeResult() *InvokeResult {
 	if x != nil {
-		if x, ok := x.Payload.(*ConnectRequest_InvokeResult); ok {
+		if x, ok := x.Payload.(*SessionRequest_InvokeResult); ok {
 			return x.InvokeResult
 		}
 	}
 	return nil
 }
 
-func (x *ConnectRequest) GetInvokeError() *InvokeError {
+func (x *SessionRequest) GetInvokeError() *InvokeError {
 	if x != nil {
-		if x, ok := x.Payload.(*ConnectRequest_InvokeError); ok {
+		if x, ok := x.Payload.(*SessionRequest_InvokeError); ok {
 			return x.InvokeError
 		}
 	}
 	return nil
 }
 
-func (x *ConnectRequest) GetUnregister() *Unregister {
+func (x *SessionRequest) GetUnregister() *Unregister {
 	if x != nil {
-		if x, ok := x.Payload.(*ConnectRequest_Unregister); ok {
+		if x, ok := x.Payload.(*SessionRequest_Unregister); ok {
 			return x.Unregister
 		}
 	}
 	return nil
 }
 
-type isConnectRequest_Payload interface {
-	isConnectRequest_Payload()
+type isSessionRequest_Payload interface {
+	isSessionRequest_Payload()
 }
 
-type ConnectRequest_Register struct {
+type SessionRequest_Register struct {
 	Register *Register `protobuf:"bytes,1,opt,name=register,proto3,oneof"`
 }
 
-type ConnectRequest_Heartbeat struct {
+type SessionRequest_Heartbeat struct {
 	Heartbeat *Heartbeat `protobuf:"bytes,2,opt,name=heartbeat,proto3,oneof"`
 }
 
-type ConnectRequest_InvokeResult struct {
+type SessionRequest_InvokeResult struct {
 	InvokeResult *InvokeResult `protobuf:"bytes,3,opt,name=invoke_result,json=invokeResult,proto3,oneof"`
 }
 
-type ConnectRequest_InvokeError struct {
+type SessionRequest_InvokeError struct {
 	InvokeError *InvokeError `protobuf:"bytes,4,opt,name=invoke_error,json=invokeError,proto3,oneof"`
 }
 
-type ConnectRequest_Unregister struct {
+type SessionRequest_Unregister struct {
 	Unregister *Unregister `protobuf:"bytes,5,opt,name=unregister,proto3,oneof"`
 }
 
-func (*ConnectRequest_Register) isConnectRequest_Payload() {}
+func (*SessionRequest_Register) isSessionRequest_Payload() {}
 
-func (*ConnectRequest_Heartbeat) isConnectRequest_Payload() {}
+func (*SessionRequest_Heartbeat) isSessionRequest_Payload() {}
 
-func (*ConnectRequest_InvokeResult) isConnectRequest_Payload() {}
+func (*SessionRequest_InvokeResult) isSessionRequest_Payload() {}
 
-func (*ConnectRequest_InvokeError) isConnectRequest_Payload() {}
+func (*SessionRequest_InvokeError) isSessionRequest_Payload() {}
 
-func (*ConnectRequest_Unregister) isConnectRequest_Payload() {}
+func (*SessionRequest_Unregister) isSessionRequest_Payload() {}
 
-type ConnectResponse struct {
+type SessionResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Payload:
 	//
-	//	*ConnectResponse_RegisterAck
-	//	*ConnectResponse_Invoke
-	//	*ConnectResponse_Cancel
-	Payload       isConnectResponse_Payload `protobuf_oneof:"payload"`
+	//	*SessionResponse_RegisterAck
+	//	*SessionResponse_Invoke
+	//	*SessionResponse_Cancel
+	Payload       isSessionResponse_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ConnectResponse) Reset() {
-	*x = ConnectResponse{}
+func (x *SessionResponse) Reset() {
+	*x = SessionResponse{}
 	mi := &file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ConnectResponse) String() string {
+func (x *SessionResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConnectResponse) ProtoMessage() {}
+func (*SessionResponse) ProtoMessage() {}
 
-func (x *ConnectResponse) ProtoReflect() protoreflect.Message {
+func (x *SessionResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -892,66 +892,66 @@ func (x *ConnectResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ConnectResponse.ProtoReflect.Descriptor instead.
-func (*ConnectResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use SessionResponse.ProtoReflect.Descriptor instead.
+func (*SessionResponse) Descriptor() ([]byte, []int) {
 	return file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *ConnectResponse) GetPayload() isConnectResponse_Payload {
+func (x *SessionResponse) GetPayload() isSessionResponse_Payload {
 	if x != nil {
 		return x.Payload
 	}
 	return nil
 }
 
-func (x *ConnectResponse) GetRegisterAck() *RegisterAck {
+func (x *SessionResponse) GetRegisterAck() *RegisterAck {
 	if x != nil {
-		if x, ok := x.Payload.(*ConnectResponse_RegisterAck); ok {
+		if x, ok := x.Payload.(*SessionResponse_RegisterAck); ok {
 			return x.RegisterAck
 		}
 	}
 	return nil
 }
 
-func (x *ConnectResponse) GetInvoke() *Invoke {
+func (x *SessionResponse) GetInvoke() *Invoke {
 	if x != nil {
-		if x, ok := x.Payload.(*ConnectResponse_Invoke); ok {
+		if x, ok := x.Payload.(*SessionResponse_Invoke); ok {
 			return x.Invoke
 		}
 	}
 	return nil
 }
 
-func (x *ConnectResponse) GetCancel() *Cancel {
+func (x *SessionResponse) GetCancel() *Cancel {
 	if x != nil {
-		if x, ok := x.Payload.(*ConnectResponse_Cancel); ok {
+		if x, ok := x.Payload.(*SessionResponse_Cancel); ok {
 			return x.Cancel
 		}
 	}
 	return nil
 }
 
-type isConnectResponse_Payload interface {
-	isConnectResponse_Payload()
+type isSessionResponse_Payload interface {
+	isSessionResponse_Payload()
 }
 
-type ConnectResponse_RegisterAck struct {
+type SessionResponse_RegisterAck struct {
 	RegisterAck *RegisterAck `protobuf:"bytes,1,opt,name=register_ack,json=registerAck,proto3,oneof"`
 }
 
-type ConnectResponse_Invoke struct {
+type SessionResponse_Invoke struct {
 	Invoke *Invoke `protobuf:"bytes,2,opt,name=invoke,proto3,oneof"`
 }
 
-type ConnectResponse_Cancel struct {
+type SessionResponse_Cancel struct {
 	Cancel *Cancel `protobuf:"bytes,3,opt,name=cancel,proto3,oneof"`
 }
 
-func (*ConnectResponse_RegisterAck) isConnectResponse_Payload() {}
+func (*SessionResponse_RegisterAck) isSessionResponse_Payload() {}
 
-func (*ConnectResponse_Invoke) isConnectResponse_Payload() {}
+func (*SessionResponse_Invoke) isSessionResponse_Payload() {}
 
-func (*ConnectResponse_Cancel) isConnectResponse_Payload() {}
+func (*SessionResponse_Cancel) isSessionResponse_Payload() {}
 
 var File_pgfsm_sidecargateway_v1_sidecar_gateway_proto protoreflect.FileDescriptor
 
@@ -1019,7 +1019,7 @@ const file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_rawDesc = "" +
 	"\n" +
 	"Unregister\x12\x1b\n" +
 	"\tworker_id\x18\x01 \x01(\tR\bworkerId\"\x80\x03\n" +
-	"\x0eConnectRequest\x12?\n" +
+	"\x0eSessionRequest\x12?\n" +
 	"\bregister\x18\x01 \x01(\v2!.pgfsm.sidecargateway.v1.RegisterH\x00R\bregister\x12B\n" +
 	"\theartbeat\x18\x02 \x01(\v2\".pgfsm.sidecargateway.v1.HeartbeatH\x00R\theartbeat\x12L\n" +
 	"\rinvoke_result\x18\x03 \x01(\v2%.pgfsm.sidecargateway.v1.InvokeResultH\x00R\finvokeResult\x12I\n" +
@@ -1028,13 +1028,13 @@ const file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_rawDesc = "" +
 	"unregister\x18\x05 \x01(\v2#.pgfsm.sidecargateway.v1.UnregisterH\x00R\n" +
 	"unregisterB\t\n" +
 	"\apayload\"\xdd\x01\n" +
-	"\x0fConnectResponse\x12I\n" +
+	"\x0fSessionResponse\x12I\n" +
 	"\fregister_ack\x18\x01 \x01(\v2$.pgfsm.sidecargateway.v1.RegisterAckH\x00R\vregisterAck\x129\n" +
 	"\x06invoke\x18\x02 \x01(\v2\x1f.pgfsm.sidecargateway.v1.InvokeH\x00R\x06invoke\x129\n" +
 	"\x06cancel\x18\x03 \x01(\v2\x1f.pgfsm.sidecargateway.v1.CancelH\x00R\x06cancelB\t\n" +
 	"\apayload2y\n" +
 	"\x15SidecarGatewayService\x12`\n" +
-	"\aConnect\x12'.pgfsm.sidecargateway.v1.ConnectRequest\x1a(.pgfsm.sidecargateway.v1.ConnectResponse(\x010\x01B\xfa\x01\n" +
+	"\aSession\x12'.pgfsm.sidecargateway.v1.SessionRequest\x1a(.pgfsm.sidecargateway.v1.SessionResponse(\x010\x01B\xfa\x01\n" +
 	"\x1bcom.pgfsm.sidecargateway.v1B\x13SidecarGatewayProtoP\x01ZHgithub.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/sidecargateway/v1\xa2\x02\x03PSX\xaa\x02\x17Pgfsm.Sidecargateway.V1\xca\x02\x17Pgfsm\\Sidecargateway\\V1\xe2\x02#Pgfsm\\Sidecargateway\\V1\\GPBMetadata\xea\x02\x19Pgfsm::Sidecargateway::V1b\x06proto3"
 
 var (
@@ -1061,22 +1061,22 @@ var file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_goTypes = []any{
 	(*InvokeError)(nil),       // 7: pgfsm.sidecargateway.v1.InvokeError
 	(*Cancel)(nil),            // 8: pgfsm.sidecargateway.v1.Cancel
 	(*Unregister)(nil),        // 9: pgfsm.sidecargateway.v1.Unregister
-	(*ConnectRequest)(nil),    // 10: pgfsm.sidecargateway.v1.ConnectRequest
-	(*ConnectResponse)(nil),   // 11: pgfsm.sidecargateway.v1.ConnectResponse
+	(*SessionRequest)(nil),    // 10: pgfsm.sidecargateway.v1.SessionRequest
+	(*SessionResponse)(nil),   // 11: pgfsm.sidecargateway.v1.SessionResponse
 }
 var file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_depIdxs = []int32{
 	0,  // 0: pgfsm.sidecargateway.v1.Register.actors:type_name -> pgfsm.sidecargateway.v1.RegisteredActor
 	6,  // 1: pgfsm.sidecargateway.v1.InvokeError.error:type_name -> pgfsm.sidecargateway.v1.InvokeErrorDetail
-	1,  // 2: pgfsm.sidecargateway.v1.ConnectRequest.register:type_name -> pgfsm.sidecargateway.v1.Register
-	3,  // 3: pgfsm.sidecargateway.v1.ConnectRequest.heartbeat:type_name -> pgfsm.sidecargateway.v1.Heartbeat
-	5,  // 4: pgfsm.sidecargateway.v1.ConnectRequest.invoke_result:type_name -> pgfsm.sidecargateway.v1.InvokeResult
-	7,  // 5: pgfsm.sidecargateway.v1.ConnectRequest.invoke_error:type_name -> pgfsm.sidecargateway.v1.InvokeError
-	9,  // 6: pgfsm.sidecargateway.v1.ConnectRequest.unregister:type_name -> pgfsm.sidecargateway.v1.Unregister
-	2,  // 7: pgfsm.sidecargateway.v1.ConnectResponse.register_ack:type_name -> pgfsm.sidecargateway.v1.RegisterAck
-	4,  // 8: pgfsm.sidecargateway.v1.ConnectResponse.invoke:type_name -> pgfsm.sidecargateway.v1.Invoke
-	8,  // 9: pgfsm.sidecargateway.v1.ConnectResponse.cancel:type_name -> pgfsm.sidecargateway.v1.Cancel
-	10, // 10: pgfsm.sidecargateway.v1.SidecarGatewayService.Connect:input_type -> pgfsm.sidecargateway.v1.ConnectRequest
-	11, // 11: pgfsm.sidecargateway.v1.SidecarGatewayService.Connect:output_type -> pgfsm.sidecargateway.v1.ConnectResponse
+	1,  // 2: pgfsm.sidecargateway.v1.SessionRequest.register:type_name -> pgfsm.sidecargateway.v1.Register
+	3,  // 3: pgfsm.sidecargateway.v1.SessionRequest.heartbeat:type_name -> pgfsm.sidecargateway.v1.Heartbeat
+	5,  // 4: pgfsm.sidecargateway.v1.SessionRequest.invoke_result:type_name -> pgfsm.sidecargateway.v1.InvokeResult
+	7,  // 5: pgfsm.sidecargateway.v1.SessionRequest.invoke_error:type_name -> pgfsm.sidecargateway.v1.InvokeError
+	9,  // 6: pgfsm.sidecargateway.v1.SessionRequest.unregister:type_name -> pgfsm.sidecargateway.v1.Unregister
+	2,  // 7: pgfsm.sidecargateway.v1.SessionResponse.register_ack:type_name -> pgfsm.sidecargateway.v1.RegisterAck
+	4,  // 8: pgfsm.sidecargateway.v1.SessionResponse.invoke:type_name -> pgfsm.sidecargateway.v1.Invoke
+	8,  // 9: pgfsm.sidecargateway.v1.SessionResponse.cancel:type_name -> pgfsm.sidecargateway.v1.Cancel
+	10, // 10: pgfsm.sidecargateway.v1.SidecarGatewayService.Session:input_type -> pgfsm.sidecargateway.v1.SessionRequest
+	11, // 11: pgfsm.sidecargateway.v1.SidecarGatewayService.Session:output_type -> pgfsm.sidecargateway.v1.SessionResponse
 	11, // [11:12] is the sub-list for method output_type
 	10, // [10:11] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
@@ -1090,16 +1090,16 @@ func file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_init() {
 		return
 	}
 	file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_msgTypes[10].OneofWrappers = []any{
-		(*ConnectRequest_Register)(nil),
-		(*ConnectRequest_Heartbeat)(nil),
-		(*ConnectRequest_InvokeResult)(nil),
-		(*ConnectRequest_InvokeError)(nil),
-		(*ConnectRequest_Unregister)(nil),
+		(*SessionRequest_Register)(nil),
+		(*SessionRequest_Heartbeat)(nil),
+		(*SessionRequest_InvokeResult)(nil),
+		(*SessionRequest_InvokeError)(nil),
+		(*SessionRequest_Unregister)(nil),
 	}
 	file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_msgTypes[11].OneofWrappers = []any{
-		(*ConnectResponse_RegisterAck)(nil),
-		(*ConnectResponse_Invoke)(nil),
-		(*ConnectResponse_Cancel)(nil),
+		(*SessionResponse_RegisterAck)(nil),
+		(*SessionResponse_Invoke)(nil),
+		(*SessionResponse_Cancel)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
