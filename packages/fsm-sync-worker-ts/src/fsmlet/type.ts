@@ -13,8 +13,7 @@ export type FsmFolderConfig = {
   skipDirs?: string[];
 };
 
-// Used in: fsmlet.ts, cli/fsmlet.ts, index.ts (direct import),
-// deprecated-inprocess-approach/deprecated_inprocess_worker.ts (via index.ts)
+// Used in: fsmlet.ts, cli/fsmlet.ts, index.ts (direct import)
 export type FsmStartupConfig = {
   sharedPromise?: FsmFolderConfig;
   fsm?: FsmFolderConfig;

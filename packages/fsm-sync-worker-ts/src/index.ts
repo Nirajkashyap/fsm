@@ -4,14 +4,12 @@ export {
   startFSMWorkerWithDBLock,
 } from "./fsmlet/fsmworker.ts";
 export type { FsmQueueMessage, FsmQueueMessageEventData } from "./types.ts";
-export { createAndStartFSMWorker } from "./deprecated-inprocess-approach/create-and-start-fsm-worker.ts";
 export {
   macrostepV2,
   runActionImplementation,
   splitByEventTypes,
   splitBySendEventName,
 } from "./fsmlet/fsmworker-helper.ts";
-export { createAndStartPromiseWorker } from "./deprecated-inprocess-approach/create-and-start-promise-worker.ts";
 export type {
   BootstrapResult,
   DbConfig,

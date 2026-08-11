@@ -33,8 +33,4 @@ deno task check        # deno check src/index.ts
 - `cli/` — three CLI entry points (`fsmlet.ts`, `fsmscheduler.ts`, `fsmctl.ts`)
 - `fsmlet/` — node-agent implementation for FSM workers
 - `fsmscheduler/` — control-plane routing implementation
-- `deprecated-inprocess-approach/` — legacy pre-scheduler CLI, superseded by the
-  fsmlet/fsmscheduler dispatch model; not the path for new work. Depends on
-  `@pgfsm/async-worker` for the promise-worker path
-  (`create-and-start-promise-worker.ts`)
 - `logger.ts` — composition-root LogTape config for this process
