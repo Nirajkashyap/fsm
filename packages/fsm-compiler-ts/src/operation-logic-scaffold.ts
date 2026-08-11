@@ -1,6 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import {
   type ActorReference,
+  isValidPythonIdentifier,
   isVersionFolderName,
   toGoExportedName,
 } from "./util.ts";
@@ -502,14 +503,46 @@ function groupKeyToIdentifier(key: string): string {
 }
 
 /**
+ * Validates that every folder-name segment a Python aggregate import's
+ * dotted path is built from (`fsm.<fsmName>.<fsmVersion>...`) is a valid
+ * Python identifier. Unlike TS's string import specifiers or Rust's
+ * `#[path]` (which accept arbitrary path strings), Python's `import a.b.c`
+ * syntax requires each segment to already be a real, identifier-safe
+ * directory name on disk — there's no way to sanitize around a mismatch, so
+ * this fails the build with a clear error instead of letting `deno task
+ * generate:templates`' output silently fail to import at worker-sdk runtime.
+ */
+function assertPythonAggregateImportPathsAreValid(
+  pluginRootDirName: string,
+  groupKeys: string[],
+): void {
+  const segments = [
+    pluginRootDirName,
+    ...groupKeys.flatMap((key) => key.split("/")),
+  ];
+  const invalid = [
+    ...new Set(segments.filter((s) => !isValidPythonIdentifier(s))),
+  ];
+  if (invalid.length > 0) {
+    throw new Error(
+      `Python worker-sdk aggregate registry codegen requires every plugin-root/FSM-name/version folder name to be a valid Python identifier (letters, digits, underscores, not starting with a digit, not a keyword) since it statically imports them via a dotted path. Invalid folder name(s): ${
+        invalid.join(", ")
+      }`,
+    );
+  }
+}
+
+/**
  * Renders the aggregate registry content for one language, combining every
  * FSM-version group's actors, via the language's Eta template
  * (`scaffold-templates/eta/<lang>/actors-registry-aggregate.eta`). TS/Python
  * re-import each FSM-version's already-generated
  * {@linkcode writeActorsRegistry} output and flatten it — simpler and avoids
  * re-deriving every entry, since both languages can statically import an
- * arbitrarily-nested sibling file. Rust can't do the equivalent (each
- * per-version `generated_registry.rs` defines its own nominally distinct
+ * arbitrarily-nested sibling file (Python via a dotted `sys.path`-relative
+ * import, see {@linkcode assertPythonAggregateImportPathsAreValid}; TS via a
+ * plain relative specifier). Rust can't do the equivalent (each per-version
+ * `generated_registry.rs` defines its own nominally distinct
  * `ActorRegistration` type, so `Vec`s of them can't be concatenated) —
  * instead it `#[path]`-includes each FSM-version's actor barrel (`mod.rs`,
  * functions only, no competing type) under a unique per-group module alias,
@@ -534,6 +567,10 @@ function buildAggregateRegistryContent(
         pluginRootDirName,
       });
     case "python":
+      assertPythonAggregateImportPathsAreValid(
+        pluginRootDirName,
+        groupList.map((g) => g.key),
+      );
       return renderPyActorsRegistryAggregate({
         groups: groupList,
         pluginRootDirName,
@@ -745,7 +782,10 @@ export async function writeWorkerSdk(
     await Deno.writeTextFile(
       `${dir}/cli.py`,
       renderPyWorkerSdkCli({
-        registryRelativePath: "./python_actors_registry_generated.py",
+        registryModuleName: AGGREGATE_ACTORS_REGISTRY_FILE_NAME.python.replace(
+          /\.py$/,
+          "",
+        ),
       }),
     );
     await Deno.writeTextFile(`${dir}/sdk.py`, renderPyWorkerSdkSdk({}));

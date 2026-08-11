@@ -215,6 +215,59 @@ export function isTimestampFolderName(name: string): boolean {
   return /^\d{14}$/.test(name);
 }
 
+const PYTHON_KEYWORDS = new Set([
+  "False",
+  "None",
+  "True",
+  "and",
+  "as",
+  "assert",
+  "async",
+  "await",
+  "break",
+  "class",
+  "continue",
+  "def",
+  "del",
+  "elif",
+  "else",
+  "except",
+  "finally",
+  "for",
+  "from",
+  "global",
+  "if",
+  "import",
+  "in",
+  "is",
+  "lambda",
+  "nonlocal",
+  "not",
+  "or",
+  "pass",
+  "raise",
+  "return",
+  "try",
+  "while",
+  "with",
+  "yield",
+]);
+
+/**
+ * Checks whether `name` is a syntactically valid, non-keyword Python
+ * identifier. Needed wherever generated Python code imports a module via a
+ * dotted path built from an on-disk folder name (e.g. the worker-sdk
+ * aggregate registry's `fsm.<fsmName>.<fsmVersion>...` import) — unlike TS's
+ * string import specifiers or Rust's `#[path]`, Python's `import a.b.c`
+ * syntax requires every path segment to already be a valid identifier on
+ * disk, so an arbitrary folder name can't just be sanitized/escaped the way
+ * filename-sanitizing helpers do elsewhere in this package — it either
+ * already matches, or the import can't be made static.
+ */
+export function isValidPythonIdentifier(name: string): boolean {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && !PYTHON_KEYWORDS.has(name);
+}
+
 /**
  * Recursively replaces underscores with spaces in keys and string values of an object.
  */
