@@ -835,7 +835,13 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
     const tsSdk = await Deno.readTextFile(`${base}/typescript/sdk.ts`);
     assertEquals(
       tsSdk.includes(
-        'from "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";',
+        'from "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";',
+      ),
+      true,
+    );
+    assertEquals(
+      tsSdk.includes(
+        'from "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";',
       ),
       true,
     );

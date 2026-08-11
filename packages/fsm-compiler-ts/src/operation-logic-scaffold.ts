@@ -716,18 +716,22 @@ export async function writeAggregateGoRegistry(
 }
 
 /**
- * Fixed relative path from `<appRoot>/worker-sdk-generated/typescript/` to
- * the Activity Gateway's own sidecar wire protocol
- * (`packages/fsm-core-async-op-worker/src/sidecar/protocol.ts`) — the one
- * piece of worker-sdk that's genuinely gateway-owned and never duplicated
- * per language, so generated `sdk.ts` imports it directly instead of
- * getting its own copy (unlike Python/Rust/Go, whose `protocol.*` are full
- * ports since they can't import a `.ts` file). A hardcoded, consumer-aware
- * path by design — see `writeAggregateGoRegistry`'s doc comment for the
- * same tradeoff elsewhere in this file.
+ * Fixed relative paths from `<appRoot>/worker-sdk-generated/typescript/` to
+ * the generated `pgfsm.sidecargateway.v1.SidecarGatewayService` stub
+ * (`packages/fsm-proto-codegen/gen/typescript/`, from
+ * `proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto` — see #100) — the
+ * one piece of worker-sdk that's genuinely gateway-owned and never
+ * duplicated per language, so generated `sdk.ts` imports it directly instead
+ * of getting its own copy (unlike Python/Rust/Go, which still speak
+ * sidecar/protocol.ts's hand-ported envelope until they migrate too).
+ * Hardcoded, consumer-aware paths by design — see
+ * `writeAggregateGoRegistry`'s doc comment for the same tradeoff elsewhere
+ * in this file.
  */
-const GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH =
-  "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";
+const GATEWAY_SIDECAR_PROTO_CONNECT_IMPORT_PATH =
+  "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";
+const GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH =
+  "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";
 
 /**
  * Writes the cli/main entrypoint + sdk protocol implementation + build
@@ -770,7 +774,8 @@ export async function writeWorkerSdk(
     await Deno.writeTextFile(
       `${dir}/sdk.ts`,
       renderTsWorkerSdkSdk({
-        protocolImportPath: GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH,
+        protoConnectImportPath: GATEWAY_SIDECAR_PROTO_CONNECT_IMPORT_PATH,
+        protoPbImportPath: GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH,
       }),
     );
   }

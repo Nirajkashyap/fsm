@@ -11,6 +11,9 @@
     "json-diff-ts": "npm:json-diff-ts@^4.9.1",
     "pg": "npm:pg@^8.16.0",
     "@types/pg": "npm:@types/pg@^8.15.2",
-    "xstate": "npm:xstate@^5.28.0"
+    "xstate": "npm:xstate@^5.28.0",
+    "@connectrpc/connect": "npm:@connectrpc/connect@^1.7.0",
+    "@connectrpc/connect-node": "npm:@connectrpc/connect-node@^1.7.0",
+    "@bufbuild/protobuf": "npm:@bufbuild/protobuf@^1.10.1"
   }
 }

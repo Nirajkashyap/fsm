@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package pgfsm.sidecargateway.v1;
+
+option go_package = "github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/sidecargateway/v1";
+
+// Worker-facing contract for the Activity Gateway's sidecar leg — the
+// register/invoke/heartbeat channel between the gateway and each language's
+// worker SDK, previously a hand-rolled length-prefixed-JSON envelope
+// (sidecar/protocol.ts) hand-ported per language by fsm-compiler-ts's
+// worker-sdk-protocol.eta templates with no schema to check them against
+// (#88). This proto is the single source of truth those copies drove from;
+// see #100 for the migration.
+//
+// Unlike activity-gateway.proto (the client-facing leg, #86/#87 — a client
+// calls Invoke() and gets one response back), this leg is not unary: the
+// worker initiates the connection and pushes Register once, then
+// Heartbeat/InvokeResult/InvokeError as needed, while the gateway pushes
+// Invoke/Cancel back unsolicited on the same stream — a worker registers
+// once and serves invocations indefinitely without the gateway needing to
+// reach it externally. A single bidi-streaming RPC preserves that shape.
+//
+// Unlike the new proto's file layout, activity-gateway.proto predates buf
+// adoption and is exempted from several STANDARD lint rules (see that
+// package's buf.yaml) as an already-shipped contract. This file has no such
+// history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
+// PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
+// the start.
+service SidecarGatewayService {
+  rpc Connect(stream ConnectRequest) returns (stream ConnectResponse);
+}
+
+// One actor entrypoint a worker process serves. Mirrors
+// ActorPluginValidationResult's identity fields (see @pgfsm/compiler's
+// util.ts) — actorKey() in the current sidecar/protocol.ts is what the
+// gateway routes on. fsm_language is part of the identity (not just a
+// display field) because the other five fields alone aren't guaranteed
+// unique across languages.
+message RegisteredActor {
+  string parent_fsm_name = 1;
+  string parent_fsm_version = 2;
+  string fsm_type = 3;
+  string fsm_name = 4;
+  string fsm_version = 5;
+  string fsm_language = 6;
+  uint32 timeout_ms = 7;
+  string description = 8;
+}
+
+// First message a worker sends on a new Connect stream.
+message Register {
+  string worker_id = 1;
+  string language = 2;
+  string protocol_version = 3;
+  repeated RegisteredActor actors = 4;
+}
+
+// The gateway's reply to Register, sent once as the first ConnectResponse.
+message RegisterAck {
+  bool accepted = 1;
+  string gateway_protocol_version = 2;
+  // "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
+  // keys, mirroring sidecar/protocol.ts's actorKey().
+  repeated string registered_actors = 3;
+  repeated string rejected_actors = 4;
+}
+
+// Sent periodically by the worker to keep its registration alive.
+message Heartbeat {
+  string worker_id = 1;
+}
+
+// Pushed by the gateway, unsolicited, once per activity invocation.
+message Invoke {
+  string invoke_id = 1;
+  string parent_fsm_name = 2;
+  string parent_fsm_version = 3;
+  string fsm_type = 4;
+  string fsm_name = 5;
+  string fsm_version = 6;
+  string fsm_language = 7;
+  // JSON-encoded activity input — kept as an opaque string (not a typed
+  // message) the same way activity-gateway.proto's InvokeRequest.input_json
+  // is, since the actual shape is user-defined per actor.
+  string input_json = 8;
+  string instance_id = 9;
+  string correlation_id = 10;
+  uint32 timeout_ms = 11;
+  int64 deadline_unix_ms = 12;
+}
+
+// Sent by the worker after a successful Invoke.
+message InvokeResult {
+  string invoke_id = 1;
+  string output_json = 2;
+  uint32 duration_ms = 3;
+}
+
+message InvokeErrorDetail {
+  string code = 1;
+  string message = 2;
+  bool retriable = 3;
+}
+
+// Sent by the worker after a failed Invoke.
+message InvokeError {
+  string invoke_id = 1;
+  InvokeErrorDetail error = 2;
+  uint32 duration_ms = 3;
+}
+
+// Pushed by the gateway to ask a worker to abandon an in-flight invoke.
+// Not yet acted on by any worker SDK (mirrors the current protocol.ts
+// "cancel" WireType, which gateway.ts/sdk.ts already carry but don't wire up
+// to real cancellation) — carried here so the schema doesn't need a second
+// breaking change once that lands.
+message Cancel {
+  string invoke_id = 1;
+}
+
+// Sent by the worker to end registration gracefully before closing the
+// stream.
+message Unregister {
+  string worker_id = 1;
+}
+
+message ConnectRequest {
+  oneof payload {
+    Register register = 1;
+    Heartbeat heartbeat = 2;
+    InvokeResult invoke_result = 3;
+    InvokeError invoke_error = 4;
+    Unregister unregister = 5;
+  }
+}
+
+message ConnectResponse {
+  oneof payload {
+    RegisterAck register_ack = 1;
+    Invoke invoke = 2;
+    Cancel cancel = 3;
+  }
+}

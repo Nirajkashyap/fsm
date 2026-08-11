@@ -27,8 +27,12 @@ import type { ConnectRouter, ServiceImpl } from "@connectrpc/connect";
 import * as http2 from "node:http2";
 import { getLogger } from "@logtape/logtape";
 import { type DBDeps, ensurePromiseQueueForWorker } from "@pgfsm/db";
-import { ActivityInvokeError, SidecarGateway } from "./sidecar/gateway.ts";
-import { actorKey, type RegisteredActor } from "./sidecar/protocol.ts";
+import {
+  ActivityInvokeError,
+  actorKey,
+  type RegisteredActor,
+  SidecarGateway,
+} from "./sidecar/gateway.ts";
 import { ActivityGateway } from "../../fsm-proto-codegen/gen/typescript/activity-gateway_connect.js";
 import { startAsyncOpPollLoop } from "./asyncOpPollLoop.ts";
 
@@ -183,7 +187,7 @@ export async function startActivityGatewayServer(
     socketPath: options.sidecarSocketPath,
     onActorRegistered,
   });
-  sidecar.start();
+  await sidecar.start();
   logger.info("Sidecar worker gateway listening on unix:{path}", {
     path: options.sidecarSocketPath,
   });
@@ -262,9 +266,10 @@ export async function startActivityGatewayServer(
     const shutdown = () => {
       logger.info("Activity gateway shutting down...");
       server.close(() => {
-        sidecar.stop();
-        cleanupUnixSocket(options.bindTarget);
-        resolve();
+        sidecar.stop().then(() => {
+          cleanupUnixSocket(options.bindTarget);
+          resolve();
+        });
       });
     };
 
