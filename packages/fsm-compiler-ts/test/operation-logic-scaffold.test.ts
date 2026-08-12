@@ -811,16 +811,13 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
     assertExists(await Deno.stat(`${base}/typescript/sdk.ts`));
     assertExists(await Deno.stat(`${base}/python/cli.py`));
     assertExists(await Deno.stat(`${base}/python/sdk.py`));
-    assertExists(await Deno.stat(`${base}/python/protocol.py`));
     assertExists(await Deno.stat(`${base}/python/requirements.txt`));
     assertExists(await Deno.stat(`${base}/rust/src/main.rs`));
     assertExists(await Deno.stat(`${base}/rust/src/sdk.rs`));
-    assertExists(await Deno.stat(`${base}/rust/src/protocol.rs`));
     assertExists(await Deno.stat(`${base}/rust/Cargo.toml`));
     assertExists(await Deno.stat(`${base}/rust/.gitignore`));
     assertExists(await Deno.stat(`${base}/go/main.go`));
     assertExists(await Deno.stat(`${base}/go/sdk.go`));
-    assertExists(await Deno.stat(`${base}/go/protocol.go`));
     assertExists(await Deno.stat(`${base}/go/go.mod`));
     assertExists(await Deno.stat(`${base}/go/.gitignore`));
 
@@ -835,7 +832,13 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
     const tsSdk = await Deno.readTextFile(`${base}/typescript/sdk.ts`);
     assertEquals(
       tsSdk.includes(
-        'from "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";',
+        'from "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";',
+      ),
+      true,
+    );
+    assertEquals(
+      tsSdk.includes(
+        'from "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";',
       ),
       true,
     );
@@ -862,10 +865,12 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
       "module pgfsm/async-op-worker-sdk\n\ngo 1.19\n\n" +
         "require fsm-core-example/go-actors-registry-generated v0.0.0\n" +
         "require fsm-core-example/creditcheck/v01/go/actors/checkbureau v0.0.0\n" +
-        "require fsm-core-example/otherfsm/v02/go/actors/someactor v0.0.0\n\n" +
+        "require fsm-core-example/otherfsm/v02/go/actors/someactor v0.0.0\n" +
+        "require github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go v0.0.0\n\n" +
         "replace fsm-core-example/go-actors-registry-generated => ./go-actors-registry-generated\n" +
         "replace fsm-core-example/creditcheck/v01/go/actors/checkbureau => ../../fsm/creditCheck/v01/go/actors/checkBureau\n" +
-        "replace fsm-core-example/otherfsm/v02/go/actors/someactor => ../../fsm/otherFsm/v02/go/actors/someActor\n",
+        "replace fsm-core-example/otherfsm/v02/go/actors/someactor => ../../fsm/otherFsm/v02/go/actors/someActor\n" +
+        "replace github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go => ../../../../packages/fsm-proto-codegen/gen/go\n",
     );
 
     for (
@@ -876,7 +881,6 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
         // header is the second line there, not the first.
         [`${base}/python/cli.py`, "#!/usr/bin/env python3\n# AUTO-GENERATED"],
         [`${base}/python/sdk.py`, "# AUTO-GENERATED"],
-        [`${base}/python/protocol.py`, "# AUTO-GENERATED"],
         [`${base}/rust/src/main.rs`, "// AUTO-GENERATED"],
         [`${base}/rust/src/sdk.rs`, "// AUTO-GENERATED"],
         [`${base}/go/main.go`, "// AUTO-GENERATED"],
@@ -890,6 +894,60 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
         `${file} should start with ${header}`,
       );
     }
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test('writeWorkerSdk - protocol: "legacy" restores protocol.{py,rs,go} and the pre-#100 sdk imports', async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const appRootAbsPath = `${dir}/apps/fsm-core-example`;
+    const actors = [
+      ...actorsForBarrelTests, // typescript, python, rust
+      ...actorsForGoAggregateTests, // go
+    ];
+    const wrote = await writeWorkerSdk(appRootAbsPath, "fsm", actors, {
+      protocol: "legacy",
+    });
+    assertEquals(wrote, {
+      typescript: true,
+      python: true,
+      rust: true,
+      go: true,
+    });
+
+    const base = `${appRootAbsPath}/worker-sdk-generated`;
+    assertExists(await Deno.stat(`${base}/python/protocol.py`));
+    assertExists(await Deno.stat(`${base}/rust/src/protocol.rs`));
+    assertExists(await Deno.stat(`${base}/go/protocol.go`));
+
+    const tsSdk = await Deno.readTextFile(`${base}/typescript/sdk.ts`);
+    assertEquals(
+      tsSdk.includes(
+        'from "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";',
+      ),
+      true,
+    );
+
+    const pySdk = await Deno.readTextFile(`${base}/python/sdk.py`);
+    assertEquals(
+      pySdk.includes("from protocol import actor_key, make_envelope"),
+      true,
+    );
+
+    const rustSdk = await Deno.readTextFile(`${base}/rust/src/sdk.rs`);
+    assertEquals(
+      rustSdk.includes("use crate::protocol::"),
+      true,
+    );
+
+    const goMod = await Deno.readTextFile(`${base}/go/go.mod`);
+    assertEquals(
+      goMod.includes("fsm-proto-codegen"),
+      false,
+      "legacy go.mod should not require the generated proto module",
+    );
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

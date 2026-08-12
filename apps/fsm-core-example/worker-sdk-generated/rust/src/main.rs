@@ -21,8 +21,17 @@
 //!   --heartbeat-ms <ms>       Heartbeat interval (default: 5000)
 //!   -h, --help                Show this help message
 
-mod protocol;
+// #[path]-included rather than a normal `mod` declaration: this crate has
+// no build.rs/prost-build step of its own, it just compiles the file
+// fsm-proto-codegen already generated and committed
+// (packages/fsm-proto-codegen/gen/rust/, from
+// proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto -- see #100). That
+// file's own `include!("pgfsm.sidecargateway.v1.tonic.rs")` resolves
+// relative to *its own* location regardless of where this `#[path]` points,
+// so the tonic client code comes along automatically.
 mod sdk;
+#[path = "../../../../../packages/fsm-proto-codegen/gen/rust/pgfsm/sidecargateway/v1/pgfsm.sidecargateway.v1.rs"]
+mod sidecar_gateway;
 
 // Fixed, compiler-generated registry -- see fsm-compiler-ts's
 // writeAggregateActorsRegistry. Regenerate with
@@ -34,8 +43,8 @@ mod sdk;
 #[path = "../rust-actors-registry.generated.rs"]
 mod generated_registry;
 
-use protocol::RegisteredActor;
 use sdk::{ActorHandler, ActorRegistration, ActorWorker, ActorWorkerOptions};
+use sidecar_gateway::RegisteredActor;
 use std::env;
 use std::process;
 use std::sync::Arc;
@@ -120,13 +129,15 @@ fn registrations_from_generated() -> Vec<ActorRegistration> {
                 fsm_name: reg.fsm_name.to_string(),
                 fsm_version: reg.fsm_version.to_string(),
                 fsm_language: reg.fsm_language.to_string(),
+                ..Default::default()
             },
             handler: Box::new(reg.handler) as ActorHandler,
         })
         .collect()
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = parse_args();
 
     let registrations = registrations_from_generated();
@@ -170,7 +181,7 @@ fn main() {
         args.worker_id, args.gateway_socket_path
     );
 
-    if let Err(err) = worker.run() {
+    if let Err(err) = worker.run().await {
         eprintln!("Worker {} failed: {}", args.worker_id, err);
         process::exit(1);
     }

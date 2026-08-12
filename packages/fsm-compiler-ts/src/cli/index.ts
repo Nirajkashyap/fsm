@@ -14,7 +14,14 @@ import {
   validateAsyncOperationFromFolders,
   validateSyncOperationFromFolders,
 } from "../index.ts";
-import type { ActorReference, OperationLang, WorkflowType } from "../index.ts";
+import type {
+  ActorReference,
+  OperationLang,
+  WorkerSdkProtocol,
+  WorkflowType,
+} from "../index.ts";
+
+const WORKER_SDK_PROTOCOLS: WorkerSdkProtocol[] = ["grpc", "legacy"];
 
 const logger = getLogger(["@pgfsm/compiler", "cli"]);
 await configureCompilerLogger();
@@ -28,6 +35,7 @@ const args = parseArgs(Deno.args, {
     "available-actors",
     "db-url",
     "lang",
+    "worker-sdk-protocol",
   ],
   boolean: ["help", "show-recommendation"],
   alias: {
@@ -40,6 +48,7 @@ const args = parseArgs(Deno.args, {
     a: "available-actors",
     d: "db-url",
     l: "lang",
+    p: "worker-sdk-protocol",
   },
 });
 
@@ -70,6 +79,7 @@ OPTIONS
   -s, --skip-dirs <dirs>              Comma-separated list of subdirectory names to skip
   -a, --available-actors <file>       Path to a JSON file containing available actor references (for validate-sync-operation, validate-async-operation)
   -d, --db-url <url>                  PostgreSQL connection string (overrides DATABASE_URL env var)
+  -p, --worker-sdk-protocol <proto>   Sidecar wire protocol for generated worker SDKs: grpc (default) or legacy (generate-async-logic only)
   -h, --help                          Show this help message
 
 ENVIRONMENT
@@ -81,6 +91,7 @@ EXAMPLES
   deno run --allow-all src/cli/index.ts -c generate -f apps/fsm-core-example/fsm --skip-dirs carVitals,taskMachineConfig
   deno run --allow-all src/cli/index.ts -c generate -f apps/fsm-core-example/fsm/creditCheck/v01/machine.ts
   deno run --allow-all src/cli/index.ts -c generate-async-logic -f apps/fsm-core-example/fsm
+  deno run --allow-all src/cli/index.ts -c generate-async-logic -f apps/fsm-core-example/fsm --worker-sdk-protocol legacy
   deno run --allow-all src/cli/index.ts -c generate-sync-logic -f apps/fsm-core-example/fsm --lang typescript,python
   deno run --allow-all src/cli/index.ts -c validate-sync-operation -f apps/fsm-core-example/fsm -w fsm
   deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/sharedFSM -w sharedPromise
@@ -100,6 +111,22 @@ const workflowType = args["workflow-type"] as WorkflowType | undefined;
 const skipDirs = args["skip-dirs"]
   ? args["skip-dirs"].split(",").map((s: string) => s.trim())
   : [];
+
+const workerSdkProtocol: WorkerSdkProtocol =
+  (args["worker-sdk-protocol"] ?? "grpc") as WorkerSdkProtocol;
+if (command === "generate-async-logic") {
+  if (!WORKER_SDK_PROTOCOLS.includes(workerSdkProtocol)) {
+    logger.error(
+      "Invalid --worker-sdk-protocol value: {value}. Must be one of: {valid}",
+      {
+        value: args["worker-sdk-protocol"],
+        valid: WORKER_SDK_PROTOCOLS.join(", "),
+      },
+    );
+    printHelp();
+    Deno.exit(1);
+  }
+}
 
 // Languages for generate-sync-logic (comma-separated). Defaults to typescript.
 const langs: OperationLang[] =
@@ -262,6 +289,7 @@ try {
         folder!,
         workflowType ?? "fsm",
         skipDirs,
+        workerSdkProtocol,
       );
       break;
     case "generate-sync-logic":

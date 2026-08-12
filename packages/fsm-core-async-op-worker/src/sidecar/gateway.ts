@@ -1,36 +1,105 @@
-// Sidecar gateway: accepts one Unix-socket connection per worker process,
-// tracks which actors each worker has registered, and routes invocations to
-// the right worker's connection. Ported from the polygot-lang-ipc-worker
-// prototype's server/src/sidecar/gateway.ts — the connection/registration/
-// pending-invoke bookkeeping is unchanged; routing keys are
-// `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage`
-// (see protocol.ts's `actorKey()`) instead of the prototype's free-form
-// function name, and the invoke/result/error bodies carry the KB-001
-// activity contract.
+// Sidecar gateway: accepts one worker-initiated bidi-streaming Session call
+// per worker process, tracks which actors each worker has registered, and
+// routes invocations to the right worker's stream. Bound to a Unix socket via
+// node:http2 + connectNodeAdapter, the same mechanism gatewayServer.ts uses
+// for the client-facing ActivityGateway leg — a separate http2.Server on a
+// separate socket path, since Node's http2 Server binds exactly one path.
 //
-// This class never opens a database connection — it only relays framed JSON
+// Replaces the hand-rolled length-prefixed-JSON envelope this class used to
+// speak (sidecar/protocol.ts's readFrame/writeFrame/makeEnvelope) with the
+// generated pgfsm.sidecargateway.v1.SidecarGatewayService stub
+// (packages/fsm-proto-codegen/gen/typescript/, from
+// proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto) — see #100. The
+// connection/registration/pending-invoke bookkeeping is otherwise unchanged
+// from the protocol.ts-based version, which was itself ported from the
+// polygot-lang-ipc-worker prototype's server/src/sidecar/gateway.ts; routing
+// keys are `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage`
+// (see this file's own `actorKey()`).
+//
+// This class never opens a database connection — it only relays messages
 // between the gRPC-facing AsyncOperationWorkerGateway and worker processes,
 // keeping the zero-DB-connections property SPEC-001 requires of the
 // polyglot side.
 
 import { getLogger } from "@logtape/logtape";
+import { connectNodeAdapter } from "@connectrpc/connect-node";
 import {
-  actorKey,
-  type InvokeBody,
-  type InvokeErrorBody,
-  type InvokeResultBody,
-  makeEnvelope,
-  readFrame,
-  type RegisterBody,
-  type RegisteredActor,
-  writeFrame,
-} from "./protocol.ts";
+  Code,
+  ConnectError,
+  type ConnectRouter,
+  type ServiceImpl,
+} from "@connectrpc/connect";
+import * as http2 from "node:http2";
+import { SidecarGatewayService } from "../../../fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";
+import {
+  Invoke,
+  type Register,
+  RegisterAck,
+  type SessionRequest,
+  SessionResponse,
+} from "../../../fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";
 
 const logger = getLogger([
   "@pgfsm/worker",
   "async-op-worker-gateway",
   "sidecar",
 ]);
+
+// `deno check` fails to merge these generated classes' sibling .d.ts type
+// declarations with their .js value bindings when imported by name (the same
+// gap gatewayClient.ts/gatewayServer.ts document for Connect's `Client<T>`
+// utility type) — using the constructor's instance type instead sidesteps it
+// and still tracks the generated shape exactly (no hand-duplicated fields).
+type RegisterMessage = InstanceType<typeof Register>;
+type RegisterAckMessage = InstanceType<typeof RegisterAck>;
+type SessionRequestMessage = InstanceType<typeof SessionRequest>;
+type SessionResponseMessage = InstanceType<typeof SessionResponse>;
+
+/**
+ * Plain structural mirror of the generated `RegisteredActor` proto message
+ * (see sidecar_gateway.proto), hand-written rather than derived via
+ * `InstanceType<typeof RegisteredActor>` — unlike this file's other
+ * `*Message` aliases, this one is re-exported and consumed by other files
+ * (gatewayServer.ts, asyncOpPollLoop.ts's `PromiseWorkerIdentity`), and the
+ * derived alias silently widened to `AnyMessage` once it crossed a file
+ * boundary under `deno check` (caught by `PromiseWorkerIdentity` assignment
+ * errors downstream, not by this file's own check). The actual values
+ * flowing through these fields are still real generated `RegisteredActor`
+ * instances off the wire — structurally compatible with this interface, so
+ * no conversion is needed, only a type that survives re-export.
+ */
+export interface RegisteredActor {
+  parentFsmName: string;
+  parentFsmVersion: string;
+  fsmType: string;
+  fsmName: string;
+  fsmVersion: string;
+  fsmLanguage: string;
+  timeoutMs: number;
+  description: string;
+}
+
+export function actorKey(
+  parentFsmName: string,
+  parentFsmVersion: string,
+  fsmType: string,
+  fsmName: string,
+  fsmVersion: string,
+  fsmLanguage: string,
+): string {
+  return `${parentFsmName}@${parentFsmVersion}@${fsmType}@${fsmName}@${fsmVersion}@${fsmLanguage}`;
+}
+
+function toInputJson(input: unknown): string {
+  return JSON.stringify(input ?? null);
+}
+
+function parseOutputJson(json: string): unknown {
+  if (!json.trim()) {
+    return null;
+  }
+  return JSON.parse(json);
+}
 
 export interface ActivityInvokeInput {
   parentFsmName: string;
@@ -59,6 +128,70 @@ export class ActivityInvokeError extends Error {
   }
 }
 
+/**
+ * Minimal async push queue backing each worker's outbound SessionResponse
+ * stream. `invoke()` (called from arbitrary places, e.g. the poll loop) and
+ * `registerWorker()` push server-initiated messages (register_ack, invoke)
+ * onto a worker's queue; `handleSession`'s `for await` loop is the only
+ * reader, draining it into that worker's actual HTTP/2 stream. No
+ * backpressure beyond an unbounded in-memory array — acceptable here since
+ * the sidecar only ever queues a handful of in-flight invokes per worker.
+ */
+class AsyncQueue<T> implements AsyncIterable<T> {
+  private readonly buffered: T[] = [];
+  private readonly waiting: Array<(result: IteratorResult<T>) => void> = [];
+  private closed = false;
+
+  push(item: T): void {
+    if (this.closed) return;
+    const next = this.waiting.shift();
+    if (next) {
+      next({ value: item, done: false });
+      return;
+    }
+    this.buffered.push(item);
+  }
+
+  close(): void {
+    if (this.closed) return;
+    this.closed = true;
+    for (const resolve of this.waiting.splice(0)) {
+      resolve({ value: undefined, done: true });
+    }
+  }
+
+  [Symbol.asyncIterator](): AsyncIterator<T> {
+    return {
+      next: (): Promise<IteratorResult<T>> => {
+        if (this.buffered.length > 0) {
+          return Promise.resolve({
+            value: this.buffered.shift()!,
+            done: false,
+          });
+        }
+        if (this.closed) {
+          return Promise.resolve({ value: undefined, done: true });
+        }
+        return new Promise((resolve) => this.waiting.push(resolve));
+      },
+      // Connect's transport machinery expects the full async-iterator
+      // protocol on any iterable it wraps for abort handling (native async
+      // generators get `throw`/`return` for free; this hand-rolled queue
+      // needs them spelled out) — see the identically-shaped queue in
+      // worker-sdk-sdk.eta, where omitting these fails client calls outright
+      // with "AsyncIterable does not implement throw".
+      return: (value?: T): Promise<IteratorResult<T>> => {
+        this.close();
+        return Promise.resolve({ value: value as T, done: true });
+      },
+      throw: (error?: unknown): Promise<IteratorResult<T>> => {
+        this.close();
+        return Promise.reject(error);
+      },
+    };
+  }
+}
+
 interface PendingInvoke {
   resolve: (value: ActivityInvokeResult) => void;
   reject: (error: Error) => void;
@@ -69,7 +202,7 @@ interface PendingInvoke {
 interface WorkerState {
   workerId: string;
   language: string;
-  conn: Deno.Conn;
+  outbox: AsyncQueue<SessionResponseMessage>;
   actors: Set<string>;
   pendingByInvokeId: Map<string, PendingInvoke>;
   alive: boolean;
@@ -95,7 +228,7 @@ export interface SidecarGatewayOptions {
 export class SidecarGateway {
   private readonly socketPath: string;
   private readonly onActorRegistered?: (actor: RegisteredActor) => void;
-  private listener: Deno.UnixListener | null = null;
+  private server: http2.Http2Server | null = null;
   private readonly workers = new Map<string, WorkerState>();
   private readonly actorRoutes = new Map<string, ActorRoute>();
 
@@ -104,29 +237,45 @@ export class SidecarGateway {
     this.onActorRegistered = options.onActorRegistered;
   }
 
-  start(): void {
+  async start(): Promise<void> {
     this.cleanupSocket();
-    this.listener = Deno.listen({ transport: "unix", path: this.socketPath });
-    this.acceptLoop();
+
+    const routes = (router: ConnectRouter): void => {
+      router.service(
+        SidecarGatewayService,
+        { session: this.handleSession.bind(this) } as unknown as Partial<
+          ServiceImpl<typeof SidecarGatewayService>
+        >,
+      );
+    };
+
+    const server = http2.createServer(connectNodeAdapter({ routes }));
+    this.server = server;
+
+    await new Promise<void>((resolve, reject) => {
+      const onError = (err: Error) => reject(err);
+      server.once("error", onError);
+      server.listen(this.socketPath, () => {
+        server.off("error", onError);
+        resolve();
+      });
+    });
   }
 
-  stop(): void {
-    if (this.listener) {
-      this.listener.close();
-      this.listener = null;
-    }
-
+  async stop(): Promise<void> {
     for (const worker of this.workers.values()) {
       worker.alive = false;
-      try {
-        worker.conn.close();
-      } catch {
-        // already closed
-      }
+      worker.outbox.close();
     }
-
     this.workers.clear();
     this.actorRoutes.clear();
+
+    const server = this.server;
+    this.server = null;
+    if (server) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+
     this.cleanupSocket();
   }
 
@@ -194,179 +343,177 @@ export class SidecarGateway {
         key,
       });
 
-      const body: InvokeBody = {
-        invoke_id: invokeId,
-        parent_fsm_name: request.parentFsmName,
-        parent_fsm_version: request.parentFsmVersion,
-        fsm_type: request.fsmType,
-        fsm_name: request.fsmName,
-        fsm_version: request.fsmVersion,
-        fsm_language: request.fsmLanguage,
-        input: request.input,
-        instance_id: request.instanceId,
-        correlation_id: request.correlationId,
-        timeout_ms: timeoutMs,
-        deadline_unix_ms: Date.now() + timeoutMs,
-      };
-
-      writeFrame(
-        worker.conn,
-        makeEnvelope(
-          "invoke",
-          "gateway",
-          `worker:${worker.workerId}`,
-          body as unknown as Record<string, unknown>,
-          request.correlationId,
-        ),
-      ).catch((error) => {
-        worker.pendingByInvokeId.delete(invokeId);
-        clearTimeout(timer);
-        reject(error instanceof Error ? error : new Error(String(error)));
-      });
+      worker.outbox.push(
+        new SessionResponse({
+          payload: {
+            case: "invoke",
+            value: new Invoke({
+              invokeId,
+              parentFsmName: request.parentFsmName,
+              parentFsmVersion: request.parentFsmVersion,
+              fsmType: request.fsmType,
+              fsmName: request.fsmName,
+              fsmVersion: request.fsmVersion,
+              fsmLanguage: request.fsmLanguage,
+              inputJson: toInputJson(request.input),
+              instanceId: request.instanceId,
+              correlationId: request.correlationId,
+              timeoutMs,
+              deadlineUnixMs: BigInt(Date.now() + timeoutMs),
+            }),
+          },
+        }),
+      );
     });
   }
 
-  private async acceptLoop(): Promise<void> {
-    if (!this.listener) {
-      return;
+  /**
+   * The Session bidi-streaming handler: one call per worker process. Reads
+   * `register` as the required first message, acks it, then concurrently
+   * drains `requests` (heartbeat/invoke_result/invoke_error/unregister,
+   * updating gateway state as they arrive) while yielding whatever `invoke()`
+   * pushes onto this worker's outbox — the same worker-initiates,
+   * gateway-pushes-invoke shape the old length-prefixed protocol had, now
+   * carried over one gRPC stream instead of a raw socket.
+   */
+  private async *handleSession(
+    requests: AsyncIterable<SessionRequestMessage>,
+  ): AsyncIterable<SessionResponseMessage> {
+    const iterator = requests[Symbol.asyncIterator]();
+    const first = await iterator.next();
+    if (first.done || first.value.payload.case !== "register") {
+      throw new ConnectError(
+        "first message on a sidecar Session stream must be register",
+        Code.InvalidArgument,
+      );
     }
 
-    for await (const conn of this.listener) {
-      this.handleConnection(conn);
-    }
-  }
+    const worker = this.registerWorker(first.value.payload.value);
 
-  private async handleConnection(conn: Deno.Conn): Promise<void> {
-    let workerId: string | null = null;
+    yield new SessionResponse({
+      payload: {
+        case: "registerAck",
+        value: this.buildRegisterAck(first.value.payload.value),
+      },
+    });
+
+    const readerLoop = (async () => {
+      try {
+        while (true) {
+          const { value, done } = await iterator.next();
+          if (done) break;
+          this.handleWorkerMessage(worker, value);
+          if (value.payload.case === "unregister") break;
+        }
+      } catch (error) {
+        logger.warn(
+          "Sidecar stream read error for worker={workerId}: {error}",
+          {
+            workerId: worker.workerId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        );
+      } finally {
+        this.unregisterWorker(worker.workerId);
+      }
+    })();
 
     try {
-      while (true) {
-        const envelope = await readFrame(conn);
-        if (!envelope) {
-          break;
-        }
-
-        if (envelope.type === "register") {
-          const body = envelope.body as unknown as RegisterBody;
-          workerId = body.worker_id;
-          this.registerWorker(body, conn);
-          await writeFrame(
-            conn,
-            makeEnvelope(
-              "register_ack",
-              "gateway",
-              `worker:${body.worker_id}`,
-              {
-                accepted: true,
-                gateway_protocol_version: "1.0",
-                registered_actors: body.actors.map((a) =>
-                  actorKey(
-                    a.parentFsmName,
-                    a.parentFsmVersion,
-                    a.fsmType,
-                    a.fsmName,
-                    a.fsmVersion,
-                    a.fsmLanguage,
-                  )
-                ),
-                rejected_actors: [],
-              },
-              envelope.trace_id,
-            ),
-          );
-          continue;
-        }
-
-        if (!workerId) {
-          continue;
-        }
-
-        if (envelope.type === "invoke_result") {
-          const body = envelope.body as unknown as InvokeResultBody;
-          logger.info(
-            "Received invoke_result from worker {workerId} (invoke_id={invokeId}): {output}",
-            {
-              workerId,
-              invokeId: body.invoke_id,
-              output: body.output,
-            },
-          );
-          this.resolvePendingInvoke(workerId, body.invoke_id, {
-            output: body.output,
-          });
-          continue;
-        }
-
-        if (envelope.type === "invoke_error") {
-          const body = envelope.body as unknown as InvokeErrorBody;
-          logger.warn(
-            "Received invoke_error from worker {workerId} (invoke_id={invokeId}): {code} {message} (retriable={retriable})",
-            {
-              workerId,
-              invokeId: body.invoke_id,
-              code: body.error?.code ?? "UNKNOWN",
-              message: body.error?.message ?? "",
-              retriable: body.error?.retriable ?? false,
-            },
-          );
-          this.rejectPendingInvoke(
-            workerId,
-            body.invoke_id,
-            new ActivityInvokeError(
-              body.error?.message ||
-                `worker error (${body.error?.code ?? "UNKNOWN"})`,
-              body.error?.code ?? "UNKNOWN",
-              body.error?.retriable,
-            ),
-          );
-          continue;
-        }
-
-        if (envelope.type === "unregister") {
-          this.unregisterWorker(workerId);
-          break;
-        }
+      for await (const response of worker.outbox) {
+        yield response;
       }
-    } catch (error) {
-      logger.warn("Sidecar connection error for worker={workerId}: {error}", {
-        workerId,
-        error: error instanceof Error ? error.message : String(error),
-      });
     } finally {
-      if (workerId) {
-        this.unregisterWorker(workerId);
-      }
-      try {
-        conn.close();
-      } catch {
-        // already closed
-      }
+      await readerLoop.catch(() => {});
     }
   }
 
-  private registerWorker(body: RegisterBody, conn: Deno.Conn): void {
-    const existing = this.workers.get(body.worker_id);
-    if (existing) {
-      this.unregisterWorker(body.worker_id);
-      try {
-        existing.conn.close();
-      } catch {
-        // already closed
+  private buildRegisterAck(register: RegisterMessage): RegisterAckMessage {
+    return new RegisterAck({
+      accepted: true,
+      gatewayProtocolVersion: "1.0",
+      registeredActors: register.actors.map((a: RegisteredActor) =>
+        actorKey(
+          a.parentFsmName,
+          a.parentFsmVersion,
+          a.fsmType,
+          a.fsmName,
+          a.fsmVersion,
+          a.fsmLanguage,
+        )
+      ),
+      rejectedActors: [],
+    });
+  }
+
+  private handleWorkerMessage(
+    worker: WorkerState,
+    msg: SessionRequestMessage,
+  ): void {
+    switch (msg.payload.case) {
+      case "heartbeat":
+        return;
+
+      case "invokeResult": {
+        const body = msg.payload.value;
+        logger.info(
+          "Received invoke_result from worker {workerId} (invoke_id={invokeId})",
+          { workerId: worker.workerId, invokeId: body.invokeId },
+        );
+        this.resolvePendingInvoke(worker.workerId, body.invokeId, {
+          output: parseOutputJson(body.outputJson),
+        });
+        return;
       }
+
+      case "invokeError": {
+        const body = msg.payload.value;
+        logger.warn(
+          "Received invoke_error from worker {workerId} (invoke_id={invokeId}): {code} {message} (retriable={retriable})",
+          {
+            workerId: worker.workerId,
+            invokeId: body.invokeId,
+            code: body.error?.code ?? "UNKNOWN",
+            message: body.error?.message ?? "",
+            retriable: body.error?.retriable ?? false,
+          },
+        );
+        this.rejectPendingInvoke(
+          worker.workerId,
+          body.invokeId,
+          new ActivityInvokeError(
+            body.error?.message ||
+              `worker error (${body.error?.code ?? "UNKNOWN"})`,
+            body.error?.code ?? "UNKNOWN",
+            body.error?.retriable,
+          ),
+        );
+        return;
+      }
+
+      case "unregister":
+      case "register":
+        return;
+    }
+  }
+
+  private registerWorker(register: RegisterMessage): WorkerState {
+    const existing = this.workers.get(register.workerId);
+    if (existing) {
+      this.unregisterWorker(register.workerId);
     }
 
     const worker: WorkerState = {
-      workerId: body.worker_id,
-      language: body.language,
-      conn,
+      workerId: register.workerId,
+      language: register.language,
+      outbox: new AsyncQueue<SessionResponseMessage>(),
       actors: new Set(),
       pendingByInvokeId: new Map(),
       alive: true,
     };
 
-    this.workers.set(body.worker_id, worker);
+    this.workers.set(register.workerId, worker);
 
-    for (const meta of body.actors) {
+    for (const meta of register.actors) {
       const key = actorKey(
         meta.parentFsmName,
         meta.parentFsmVersion,
@@ -375,7 +522,7 @@ export class SidecarGateway {
         meta.fsmVersion,
         meta.fsmLanguage,
       );
-      this.actorRoutes.set(key, { workerId: body.worker_id, meta });
+      this.actorRoutes.set(key, { workerId: register.workerId, meta });
       worker.actors.add(key);
       this.onActorRegistered?.(meta);
     }
@@ -383,11 +530,13 @@ export class SidecarGateway {
     logger.info(
       "Registered worker {workerId} ({language}) with {count} actor(s)",
       {
-        workerId: body.worker_id,
-        language: body.language,
-        count: body.actors.length,
+        workerId: register.workerId,
+        language: register.language,
+        count: register.actors.length,
       },
     );
+
+    return worker;
   }
 
   private unregisterWorker(workerId: string): void {
@@ -414,6 +563,7 @@ export class SidecarGateway {
     }
 
     worker.pendingByInvokeId.clear();
+    worker.outbox.close();
     this.workers.delete(workerId);
 
     logger.info("Unregistered worker {workerId}", { workerId });

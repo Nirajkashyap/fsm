@@ -8,6 +8,7 @@ import {
   type RegisteredActor,
   resolvePluginRootAbsPath,
   toRegisteredActor,
+  type WorkerSdkProtocol,
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
@@ -50,11 +51,16 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  * what a worker SDK build imports, since a single worker process serves its
  * language's actors across every FSM, not just one (see
  * {@linkcode writeAggregateActorsRegistry}, {@linkcode writeAggregateGoRegistry}).
+ *
+ * `workerSdkProtocol` selects which sidecar wire protocol the generated
+ * worker SDKs speak — see {@linkcode WorkerSdkProtocol}. Defaults to
+ * `"grpc"`.
  */
 export async function generateAsyncOperationLogicFromFolders(
   folderPath: string,
   _workflowType: WorkflowType,
   skipDirs: string[] = [],
+  workerSdkProtocol: WorkerSdkProtocol = "grpc",
 ): Promise<void> {
   logger.info("Scaffolding async operation logic from {path}", {
     path: folderPath,
@@ -180,6 +186,7 @@ export async function generateAsyncOperationLogicFromFolders(
     appRootAbsPath,
     pluginRootDirName,
     allRegisteredActors,
+    { protocol: workerSdkProtocol },
   );
   logger.info(
     "Wrote worker-sdk-generated/ (typescript={ts}, python={py}, rust={rust}, go={go})",
