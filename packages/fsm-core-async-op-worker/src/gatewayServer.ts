@@ -12,9 +12,9 @@
 // (proto/pgfsm/activitygateway/v1/activity_gateway.proto)
 // and to this repo's logger.
 //
-// Built on the compiler-generated Connect-ES stubs
-// (packages/fsm-proto-codegen/gen/typescript/, see that package's README) via
-// @connectrpc/connect-node's connectNodeAdapter, instead of @grpc/grpc-js +
+// Built on the compiler-generated Connect-ES stubs (imported as
+// @pgfsm/proto-codegen, a Deno workspace-linked package, not published —
+// see #103) via @connectrpc/connect-node's connectNodeAdapter, instead of @grpc/grpc-js +
 // @grpc/proto-loader's runtime reflection (see gatewayClient.ts for the same
 // migration on the client side, including why it's still wire-compatible
 // with real gRPC clients: connectNodeAdapter serves the gRPC, gRPC-web, and
@@ -34,7 +34,7 @@ import {
   type RegisteredActor,
   SidecarGateway,
 } from "./sidecar/gateway.ts";
-import { ActivityGatewayService } from "../../fsm-proto-codegen/gen/typescript/pgfsm/activitygateway/v1/activity_gateway_connect.js";
+import { ActivityGatewayService } from "@pgfsm/proto-codegen/typescript/activitygateway/v1/connect";
 import { startAsyncOpPollLoop } from "./asyncOpPollLoop.ts";
 
 const logger = getLogger(["@pgfsm/worker", "async-op-worker-gateway"]);
