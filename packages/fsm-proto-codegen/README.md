@@ -33,26 +33,20 @@ codegen pipeline works and produces correct, runnable output.
 - `gen/{typescript,python,rust,go}/` — generated output, committed (same
   convention as `apps/fsm-core-example/worker-sdk-generated/`) so consumers
   don't need Buf installed just to build against it.
-- `package.json` / `node_modules/` — **not** app dependencies. Only the two
-  `protoc-gen-*` binaries `buf generate` needs on `PATH` for TypeScript (see
-  below). Nothing here is imported by any TS source file.
 
 ## Regenerating
 
 ```sh
 cd packages/fsm-proto-codegen
-npm install                          # once, or after pulling a version bump
-export PATH="$PWD/node_modules/.bin:$PATH"
-buf generate
+deno task generate                   # = buf generate
 ```
-
-(`deno task generate` from this directory runs `buf generate` too, but still
-needs `node_modules/.bin` on `PATH` first for the TypeScript plugins — see
-below.)
 
 Requires the `buf` CLI (`brew install bufbuild/buf/buf`, or see
 [buf.build/docs/installation](https://buf.build/docs/installation)); not pinned
-via this repo's `.prototools` since `proto` (moonrepo) has no buf plugin.
+via this repo's `.prototools` since `proto` (moonrepo) has no buf plugin. No
+`npm install` step: the two TypeScript plugins run via
+`deno run npm:<pkg>@<pinned-version>/` directly from `buf.gen.yaml` (see below)
+— there's no `package.json` or `node_modules/` in this package.
 
 ## Plugins, per language
 
@@ -60,12 +54,12 @@ Everything below is a **remote** BSR plugin (`buf.build/<owner>/<plugin>`, no
 local install needed) _except_ TypeScript's two — see why in the "Local, not
 remote" comment in `buf.gen.yaml`.
 
-| Language   | Plugins                                                           | Runtime deps a consumer needs                                                              |
-| ---------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| TypeScript | `protoc-gen-es` 1.10.1, `protoc-gen-connect-es` 1.7.0 (local)     | `@bufbuild/protobuf@^1`                                                                    |
-| Python     | `buf.build/protocolbuffers/{python,pyi}`, `buf.build/grpc/python` | `grpcio`, `protobuf`                                                                       |
-| Rust       | `buf.build/community/neoeinstein-{prost,tonic}`                   | `prost@^0.14`, `tonic@^0.14`, `tonic-prost@^0.14` (must all be the same major — see below) |
-| Go         | `buf.build/protocolbuffers/go`, `buf.build/grpc/go`               | `google.golang.org/protobuf`, `google.golang.org/grpc`                                     |
+| Language   | Plugins                                                                            | Runtime deps a consumer needs                                                              |
+| ---------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| TypeScript | `protoc-gen-es` 1.10.1, `protoc-gen-connect-es` 1.7.0 (local, via `deno run npm:`) | `@bufbuild/protobuf@^1`                                                                    |
+| Python     | `buf.build/protocolbuffers/{python,pyi}`, `buf.build/grpc/python`                  | `grpcio`, `protobuf`                                                                       |
+| Rust       | `buf.build/community/neoeinstein-{prost,tonic}`                                    | `prost@^0.14`, `tonic@^0.14`, `tonic-prost@^0.14` (must all be the same major — see below) |
+| Go         | `buf.build/protocolbuffers/go`, `buf.build/grpc/go`                                | `google.golang.org/protobuf`, `google.golang.org/grpc`                                     |
 
 ### TypeScript: why local, not remote plugins
 
@@ -82,10 +76,14 @@ provide an export named 'Empty'`. Caught
 by actually running the generated output, not just type-checking it.
 
 `protoc-gen-es` and `protoc-gen-connect-es` haven't published a mutually
-compatible v2 pair yet, so both are pinned in `package.json` to the last version
-pair that _is_ compatible (v1.10.1 / v1.7.0) and run as `local:` plugins
-instead, so the version actually used is exactly what's declared here rather
-than whatever BSR resolves "latest" to.
+compatible v2 pair yet, so both are pinned in `buf.gen.yaml` to the last version
+pair that _is_ compatible (v1.10.1 / v1.7.0), each invoked as
+`local: ["deno", "run", ..., "npm:<pkg>@<version>/"]` — Buf's `local:` field
+accepts an argv array, not just a PATH-resolved binary name, so the plugin runs
+straight off Deno's npm-specifier resolution with no separate install step and
+exactly the pinned version, rather than whatever BSR resolves "latest" to. Same
+pattern as bufbuild's own
+[Deno example](https://github.com/bufbuild/protobuf-es/blob/main/deno/example/buf.gen.yaml).
 
 ### Rust: prost/tonic/tonic-prost must share a major version
 

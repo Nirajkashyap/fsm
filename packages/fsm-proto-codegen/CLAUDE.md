@@ -1,16 +1,15 @@
 # CLAUDE.md — Proto Codegen (`packages/fsm-proto-codegen/`)
 
-Scoped guidance for `@pgfsm/proto-codegen-plugins`. Repo-wide conventions and
-session protocol live in the root `CLAUDE.md` / `AGENTS.md`. Full docs (why this
-exists, the plugin table, per-language gotchas) are in this package's
-`README.md` — read it before touching `buf.gen.yaml` or regenerating.
+Scoped guidance for `@pgfsm/proto-codegen`. Repo-wide conventions and session
+protocol live in the root `CLAUDE.md` / `AGENTS.md`. Full docs (why this exists,
+the plugin table, per-language gotchas) are in this package's `README.md` — read
+it before touching `buf.gen.yaml` or regenerating.
 
 ## Commands
 
 ```bash
 cd packages/fsm-proto-codegen
-npm install                          # once, or after a plugin version bump
-deno task generate                   # buf generate, with node_modules/.bin on PATH
+deno task generate                   # = buf generate
 ```
 
 Requires the `buf` CLI on `PATH` (not proto-pinned — see README).
@@ -25,6 +24,8 @@ four polyglot actor languages (TypeScript, Python, Rust, Go), committed under
 `buf.yaml` module config live with the gateway package that owns the contracts,
 not here.
 
-`package.json` / `node_modules/` here are not app dependencies — just the
-`protoc-gen-es` / `protoc-gen-connect-es` binaries `buf generate` needs on
-`PATH` for TypeScript output. Nothing in this package is imported by app code.
+Deno-only — no `package.json`/`node_modules`. `buf.gen.yaml`'s TypeScript
+plugins (`protoc-gen-es`, `protoc-gen-connect-es`) run via
+`deno run npm:<pkg>@<pinned-version>/` directly, so their pinned versions
+resolve through Deno's npm-specifier support with no separate install step.
+Nothing in this package is imported by app code.

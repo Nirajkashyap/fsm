@@ -15,10 +15,28 @@ plugins:
   # imports get erased -- but Deno/Node crash on the unresolved import).
   # protoc-gen-es and protoc-gen-connect-es haven't published a matching v2
   # pair yet, so both plugins are pinned here to the last mutually-compatible
-  # v1 line (`npm ls` in this package) instead.
-  - local: protoc-gen-es
+  # v1 line instead. Invoked via `deno run npm:<pkg>@<version>/` rather than a
+  # PATH-resolved binary name, so the pinned version is exactly what runs with
+  # no `package.json`/`node_modules` install step -- same pattern as
+  # bufbuild's own Deno example:
+  # https://github.com/bufbuild/protobuf-es/blob/main/deno/example/buf.gen.yaml
+  - local:
+      [
+        "deno",
+        "run",
+        "--allow-read",
+        "--allow-env",
+        "npm:@bufbuild/protoc-gen-es@1.10.1/",
+      ]
     out: gen/typescript
-  - local: protoc-gen-connect-es
+  - local:
+      [
+        "deno",
+        "run",
+        "--allow-read",
+        "--allow-env",
+        "npm:@connectrpc/protoc-gen-connect-es@1.7.0/",
+      ]
     out: gen/typescript
 
   # Python — base message classes, .pyi type stubs, gRPC service stubs.
