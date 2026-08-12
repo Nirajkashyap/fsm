@@ -19,15 +19,25 @@ import { render as renderGoModActor } from "./scaffold-templates/eta/go/go-mod-a
 import { render as renderGoModAggregate } from "./scaffold-templates/eta/go/go-mod-aggregate.generated.ts";
 import { render as renderTsWorkerSdkCli } from "./scaffold-templates/eta/typescript/worker-sdk-cli.generated.ts";
 import { render as renderTsWorkerSdkSdk } from "./scaffold-templates/eta/typescript/worker-sdk-sdk.generated.ts";
+import { render as renderTsWorkerSdkSdkLegacy } from "./scaffold-templates/eta/typescript/worker-sdk-sdk-legacy.generated.ts";
 import { render as renderPyWorkerSdkCli } from "./scaffold-templates/eta/python/worker-sdk-cli.generated.ts";
 import { render as renderPyWorkerSdkSdk } from "./scaffold-templates/eta/python/worker-sdk-sdk.generated.ts";
+import { render as renderPyWorkerSdkSdkLegacy } from "./scaffold-templates/eta/python/worker-sdk-sdk-legacy.generated.ts";
 import { render as renderPyWorkerSdkRequirements } from "./scaffold-templates/eta/python/worker-sdk-requirements.generated.ts";
+import { render as renderPyWorkerSdkRequirementsLegacy } from "./scaffold-templates/eta/python/worker-sdk-requirements-legacy.generated.ts";
+import { render as renderPyWorkerSdkProtocolLegacy } from "./scaffold-templates/eta/python/worker-sdk-protocol.generated.ts";
 import { render as renderRustWorkerSdkMain } from "./scaffold-templates/eta/rust/worker-sdk-main.generated.ts";
+import { render as renderRustWorkerSdkMainLegacy } from "./scaffold-templates/eta/rust/worker-sdk-main-legacy.generated.ts";
 import { render as renderRustWorkerSdkSdk } from "./scaffold-templates/eta/rust/worker-sdk-sdk.generated.ts";
+import { render as renderRustWorkerSdkSdkLegacy } from "./scaffold-templates/eta/rust/worker-sdk-sdk-legacy.generated.ts";
 import { render as renderRustWorkerSdkCargoToml } from "./scaffold-templates/eta/rust/worker-sdk-cargo-toml.generated.ts";
+import { render as renderRustWorkerSdkCargoTomlLegacy } from "./scaffold-templates/eta/rust/worker-sdk-cargo-toml-legacy.generated.ts";
+import { render as renderRustWorkerSdkProtocolLegacy } from "./scaffold-templates/eta/rust/worker-sdk-protocol.generated.ts";
 import { render as renderRustWorkerSdkGitignore } from "./scaffold-templates/eta/rust/worker-sdk-gitignore.generated.ts";
 import { render as renderGoWorkerSdkMain } from "./scaffold-templates/eta/go/worker-sdk-main.generated.ts";
 import { render as renderGoWorkerSdkSdk } from "./scaffold-templates/eta/go/worker-sdk-sdk.generated.ts";
+import { render as renderGoWorkerSdkSdkLegacy } from "./scaffold-templates/eta/go/worker-sdk-sdk-legacy.generated.ts";
+import { render as renderGoWorkerSdkProtocolLegacy } from "./scaffold-templates/eta/go/worker-sdk-protocol.generated.ts";
 import { render as renderGoWorkerSdkGitignore } from "./scaffold-templates/eta/go/worker-sdk-gitignore.generated.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "scaffold"]);
@@ -755,6 +765,33 @@ const GATEWAY_SIDECAR_PROTO_GEN_GO_REL_PATH =
   "../../../../packages/fsm-proto-codegen/gen/go";
 
 /**
+ * Fixed relative path from `<appRoot>/worker-sdk-generated/typescript/` to
+ * the Activity Gateway's sidecar wire protocol
+ * (`packages/fsm-core-async-op-worker/src/sidecar/protocol.ts`) — only used
+ * when `--worker-sdk-protocol legacy` selects the pre-#100 hand-rolled
+ * length-prefixed-JSON envelope over the current default (proto/grpc, see
+ * the `GATEWAY_SIDECAR_PROTO_*` constants above).
+ */
+const GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH =
+  "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";
+
+/**
+ * Which sidecar wire protocol the generated worker SDKs speak. `"grpc"`
+ * (default) is the proto-defined `SidecarGatewayService` from #100.
+ * `"legacy"` restores the pre-#100 hand-rolled length-prefixed-JSON
+ * envelope (`sidecar/protocol.ts`, hand-ported per language via
+ * `worker-sdk-protocol.eta`) — kept available behind
+ * `--worker-sdk-protocol legacy` for anyone not yet ready to move off it;
+ * has no schema-drift protection across languages the way `"grpc"` does,
+ * which is the whole reason #100 exists.
+ */
+export type WorkerSdkProtocol = "grpc" | "legacy";
+
+export interface WriteWorkerSdkOptions {
+  protocol?: WorkerSdkProtocol;
+}
+
+/**
  * Writes the cli/main entrypoint + sdk protocol implementation + build
  * manifest for one language, at `<appRootAbsPath>/worker-sdk-generated/<lang>/`
  * — the same directory {@linkcode writeAggregateActorsRegistry} (TS/Python/
@@ -764,20 +801,23 @@ const GATEWAY_SIDECAR_PROTO_GEN_GO_REL_PATH =
  * Returns `false` (writes nothing) when there are no actors for that language
  * across the whole run — matches every other aggregate writer in this file.
  *
- * Unlike the registries, `sdk.{ts,py,rs,go}`/`protocol.{rs,go}` don't vary
- * per project at all — every project using this gateway gets byte-identical
- * content. They're still rendered through Eta (a static template, no `<% %>`
- * tags) rather than written as plain strings, for the same reason every
- * other generated file in this package is: consistency, and so the
- * "AUTO-GENERATED, do not edit" header is never forgotten.
+ * Unlike the registries, `sdk.{ts,py,rs,go}`/`protocol.{ts,py,rs,go}` don't
+ * vary per project at all — every project using this gateway (and this
+ * options.protocol choice) gets byte-identical content. They're still
+ * rendered through Eta (a static template, no `<% %>` tags) rather than
+ * written as plain strings, for the same reason every other generated file
+ * in this package is: consistency, and so the "AUTO-GENERATED, do not edit"
+ * header is never forgotten.
  */
 export async function writeWorkerSdk(
   appRootAbsPath: string,
   pluginRootDirName: string,
   actors: RegisteredActor[],
+  options: WriteWorkerSdkOptions = {},
 ): Promise<
   { typescript: boolean; python: boolean; rust: boolean; go: boolean }
 > {
+  const protocol = options.protocol ?? "grpc";
   const appRoot = appRootAbsPath.split("/").at(-1)!;
   const hasLang = (lang: OperationLang) =>
     actors.some((a) => a.fsmLanguage === lang);
@@ -794,10 +834,14 @@ export async function writeWorkerSdk(
     );
     await Deno.writeTextFile(
       `${dir}/sdk.ts`,
-      renderTsWorkerSdkSdk({
-        protoConnectImportPath: GATEWAY_SIDECAR_PROTO_CONNECT_IMPORT_PATH,
-        protoPbImportPath: GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH,
-      }),
+      protocol === "legacy"
+        ? renderTsWorkerSdkSdkLegacy({
+          protocolImportPath: GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH,
+        })
+        : renderTsWorkerSdkSdk({
+          protoConnectImportPath: GATEWAY_SIDECAR_PROTO_CONNECT_IMPORT_PATH,
+          protoPbImportPath: GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH,
+        }),
     );
   }
 
@@ -814,16 +858,28 @@ export async function writeWorkerSdk(
         ),
       }),
     );
-    await Deno.writeTextFile(
-      `${dir}/sdk.py`,
-      renderPyWorkerSdkSdk({
-        protoGenPythonRelPath: GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH,
-      }),
-    );
-    await Deno.writeTextFile(
-      `${dir}/requirements.txt`,
-      renderPyWorkerSdkRequirements({}),
-    );
+    if (protocol === "legacy") {
+      await Deno.writeTextFile(`${dir}/sdk.py`, renderPyWorkerSdkSdkLegacy({}));
+      await Deno.writeTextFile(
+        `${dir}/protocol.py`,
+        renderPyWorkerSdkProtocolLegacy({}),
+      );
+      await Deno.writeTextFile(
+        `${dir}/requirements.txt`,
+        renderPyWorkerSdkRequirementsLegacy({}),
+      );
+    } else {
+      await Deno.writeTextFile(
+        `${dir}/sdk.py`,
+        renderPyWorkerSdkSdk({
+          protoGenPythonRelPath: GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH,
+        }),
+      );
+      await Deno.writeTextFile(
+        `${dir}/requirements.txt`,
+        renderPyWorkerSdkRequirements({}),
+      );
+    }
   }
 
   const wroteRust = hasLang("rust");
@@ -831,21 +887,41 @@ export async function writeWorkerSdk(
     const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/rust`;
     await Deno.mkdir(`${dir}/src`, { recursive: true });
     const mainFile = `${dir}/src/main.rs`;
-    await Deno.writeTextFile(
-      mainFile,
-      renderRustWorkerSdkMain({
-        registryRelativePath: "../rust-actors-registry.generated.rs",
-        protoGenRustRelPath: GATEWAY_SIDECAR_PROTO_GEN_RUST_REL_PATH,
-      }),
-    );
-    await formatRustFileBestEffort(mainFile);
     const sdkFile = `${dir}/src/sdk.rs`;
-    await Deno.writeTextFile(sdkFile, renderRustWorkerSdkSdk({}));
-    await formatRustFileBestEffort(sdkFile);
-    await Deno.writeTextFile(
-      `${dir}/Cargo.toml`,
-      renderRustWorkerSdkCargoToml({}),
-    );
+    if (protocol === "legacy") {
+      await Deno.writeTextFile(
+        mainFile,
+        renderRustWorkerSdkMainLegacy({
+          registryRelativePath: "../rust-actors-registry.generated.rs",
+        }),
+      );
+      await formatRustFileBestEffort(mainFile);
+      await Deno.writeTextFile(sdkFile, renderRustWorkerSdkSdkLegacy({}));
+      await formatRustFileBestEffort(sdkFile);
+      await Deno.writeTextFile(
+        `${dir}/src/protocol.rs`,
+        renderRustWorkerSdkProtocolLegacy({}),
+      );
+      await Deno.writeTextFile(
+        `${dir}/Cargo.toml`,
+        renderRustWorkerSdkCargoTomlLegacy({}),
+      );
+    } else {
+      await Deno.writeTextFile(
+        mainFile,
+        renderRustWorkerSdkMain({
+          registryRelativePath: "../rust-actors-registry.generated.rs",
+          protoGenRustRelPath: GATEWAY_SIDECAR_PROTO_GEN_RUST_REL_PATH,
+        }),
+      );
+      await formatRustFileBestEffort(mainFile);
+      await Deno.writeTextFile(sdkFile, renderRustWorkerSdkSdk({}));
+      await formatRustFileBestEffort(sdkFile);
+      await Deno.writeTextFile(
+        `${dir}/Cargo.toml`,
+        renderRustWorkerSdkCargoToml({}),
+      );
+    }
     await Deno.writeTextFile(
       `${dir}/.gitignore`,
       renderRustWorkerSdkGitignore({}),
@@ -859,14 +935,23 @@ export async function writeWorkerSdk(
     const mainFile = `${dir}/main.go`;
     await Deno.writeTextFile(mainFile, renderGoWorkerSdkMain({}));
     const sdkFile = `${dir}/sdk.go`;
-    await Deno.writeTextFile(
-      sdkFile,
-      renderGoWorkerSdkSdk({
-        protoGenGoImportPath:
-          `${GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH}/sidecargateway/v1`,
-      }),
-    );
-    await formatGoFileBestEffort(sdkFile);
+    if (protocol === "legacy") {
+      await Deno.writeTextFile(sdkFile, renderGoWorkerSdkSdkLegacy({}));
+      await formatGoFileBestEffort(sdkFile);
+      await Deno.writeTextFile(
+        `${dir}/protocol.go`,
+        renderGoWorkerSdkProtocolLegacy({}),
+      );
+    } else {
+      await Deno.writeTextFile(
+        sdkFile,
+        renderGoWorkerSdkSdk({
+          protoGenGoImportPath:
+            `${GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH}/sidecargateway/v1`,
+        }),
+      );
+      await formatGoFileBestEffort(sdkFile);
+    }
     await Deno.writeTextFile(
       `${dir}/.gitignore`,
       renderGoWorkerSdkGitignore({}),
@@ -888,7 +973,9 @@ export async function writeWorkerSdk(
         ...goActors.map((a) => ({
           modulePath: goActorModulePathFromRegisteredActor(appRoot, a),
         })),
-        { modulePath: GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH },
+        ...(protocol === "grpc"
+          ? [{ modulePath: GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH }]
+          : []),
       ],
       replaces: [
         {
@@ -900,10 +987,12 @@ export async function writeWorkerSdk(
           target:
             `../../${pluginRootDirName}/${a.parentFsmName}/${a.parentFsmVersion}/go/actors/${a.fileBaseName}`,
         })),
-        {
-          modulePath: GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH,
-          target: GATEWAY_SIDECAR_PROTO_GEN_GO_REL_PATH,
-        },
+        ...(protocol === "grpc"
+          ? [{
+            modulePath: GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH,
+            target: GATEWAY_SIDECAR_PROTO_GEN_GO_REL_PATH,
+          }]
+          : []),
       ],
     });
     await Deno.writeTextFile(`${dir}/go.mod`, goModContent);

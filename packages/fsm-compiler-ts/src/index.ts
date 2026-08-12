@@ -12,6 +12,7 @@ export {
   isOperationLang,
   type OperationLang,
   SUPPORTED_OPERATION_LANGS,
+  type WorkerSdkProtocol,
 } from "./operation-logic-scaffold.ts";
 export { loadFsmJSONFromFolders } from "./load-fsm-json.ts";
 export {
