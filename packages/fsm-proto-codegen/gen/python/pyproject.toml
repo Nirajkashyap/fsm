@@ -1,0 +1,21 @@
+# Hand-written (not generated) — see this package's README. Gives the
+# buf-generated pgfsm.{activitygateway,sidecargateway}.v1 namespace packages
+# a real installable identity, so consumers `pip install -e` this directory
+# instead of a worker-sdk's sdk.py doing a runtime sys.path.insert with a
+# relative path computed by counting `../` back to this directory — see
+# #106.
+[project]
+name = "pgfsm-proto-codegen"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = [
+  "grpcio>=1.60,<2",
+  "protobuf>=4,<8",
+]
+
+[tool.setuptools.packages.find]
+include = ["pgfsm*"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
