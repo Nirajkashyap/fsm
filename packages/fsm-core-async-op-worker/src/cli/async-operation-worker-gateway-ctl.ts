@@ -44,7 +44,7 @@ COMMANDS
 
 DESCRIPTION
   A thin debug/test client for the Activity Gateway's gRPC contract
-  (proto/activity-gateway.proto) — connects, calls one RPC, prints the
+  (proto/pgfsm/activitygateway/v1/activity_gateway.proto) — connects, calls one RPC, prints the
   result, and exits. Actor identity matches ActorPluginValidationResult /
   sidecar/protocol.ts's actorKey():
   parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage.

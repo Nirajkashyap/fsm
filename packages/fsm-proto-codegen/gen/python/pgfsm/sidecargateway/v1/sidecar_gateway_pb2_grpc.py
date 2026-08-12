@@ -14,7 +14,7 @@ class SidecarGatewayServiceStub:
     (#88). This proto is the single source of truth those copies drove from;
     see #100 for the migration.
 
-    Unlike activity-gateway.proto (the client-facing leg, #86/#87 — a client
+    Unlike activity_gateway.proto (the client-facing leg, #86/#87 — a client
     calls Invoke() and gets one response back), this leg is not unary: the
     worker initiates the connection and pushes Register once, then
     Heartbeat/InvokeResult/InvokeError as needed, while the gateway pushes
@@ -22,12 +22,10 @@ class SidecarGatewayServiceStub:
     once and serves invocations indefinitely without the gateway needing to
     reach it externally. A single bidi-streaming RPC preserves that shape.
 
-    Unlike the new proto's file layout, activity-gateway.proto predates buf
-    adoption and is exempted from several STANDARD lint rules (see that
-    package's buf.yaml) as an already-shipped contract. This file has no such
-    history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
+    Follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
     PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
-    the start.
+    the start — activity_gateway.proto only picked up the same layout later,
+    in #102, once it stopped being loaded by exact filename at runtime.
 
     Named `Session`, not the more obvious `Connect`: tonic-build always emits
     an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
@@ -60,7 +58,7 @@ class SidecarGatewayServiceServicer:
     (#88). This proto is the single source of truth those copies drove from;
     see #100 for the migration.
 
-    Unlike activity-gateway.proto (the client-facing leg, #86/#87 — a client
+    Unlike activity_gateway.proto (the client-facing leg, #86/#87 — a client
     calls Invoke() and gets one response back), this leg is not unary: the
     worker initiates the connection and pushes Register once, then
     Heartbeat/InvokeResult/InvokeError as needed, while the gateway pushes
@@ -68,12 +66,10 @@ class SidecarGatewayServiceServicer:
     once and serves invocations indefinitely without the gateway needing to
     reach it externally. A single bidi-streaming RPC preserves that shape.
 
-    Unlike the new proto's file layout, activity-gateway.proto predates buf
-    adoption and is exempted from several STANDARD lint rules (see that
-    package's buf.yaml) as an already-shipped contract. This file has no such
-    history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
+    Follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
     PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
-    the start.
+    the start — activity_gateway.proto only picked up the same layout later,
+    in #102, once it stopped being loaded by exact filename at runtime.
 
     Named `Session`, not the more obvious `Connect`: tonic-build always emits
     an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`
@@ -115,7 +111,7 @@ class SidecarGatewayService:
     (#88). This proto is the single source of truth those copies drove from;
     see #100 for the migration.
 
-    Unlike activity-gateway.proto (the client-facing leg, #86/#87 — a client
+    Unlike activity_gateway.proto (the client-facing leg, #86/#87 — a client
     calls Invoke() and gets one response back), this leg is not unary: the
     worker initiates the connection and pushes Register once, then
     Heartbeat/InvokeResult/InvokeError as needed, while the gateway pushes
@@ -123,12 +119,10 @@ class SidecarGatewayService:
     once and serves invocations indefinitely without the gateway needing to
     reach it externally. A single bidi-streaming RPC preserves that shape.
 
-    Unlike the new proto's file layout, activity-gateway.proto predates buf
-    adoption and is exempted from several STANDARD lint rules (see that
-    package's buf.yaml) as an already-shipped contract. This file has no such
-    history, so it follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
+    Follows FILE_LOWER_SNAKE_CASE, PACKAGE_DIRECTORY_MATCH,
     PACKAGE_VERSION_SUFFIX, SERVICE_SUFFIX, and RPC_REQUEST_STANDARD_NAME from
-    the start.
+    the start — activity_gateway.proto only picked up the same layout later,
+    in #102, once it stopped being loaded by exact filename at runtime.
 
     Named `Session`, not the more obvious `Connect`: tonic-build always emits
     an inherent `SidecarGatewayServiceClient::<Channel>::connect(dst)`

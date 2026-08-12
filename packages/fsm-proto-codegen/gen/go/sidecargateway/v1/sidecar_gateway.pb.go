@@ -323,7 +323,7 @@ type Invoke struct {
 	FsmVersion       string                 `protobuf:"bytes,6,opt,name=fsm_version,json=fsmVersion,proto3" json:"fsm_version,omitempty"`
 	FsmLanguage      string                 `protobuf:"bytes,7,opt,name=fsm_language,json=fsmLanguage,proto3" json:"fsm_language,omitempty"`
 	// JSON-encoded activity input — kept as an opaque string (not a typed
-	// message) the same way activity-gateway.proto's InvokeRequest.input_json
+	// message) the same way activity_gateway.proto's InvokeRequest.input_json
 	// is, since the actual shape is user-defined per actor.
 	InputJson      string `protobuf:"bytes,8,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
 	InstanceId     string `protobuf:"bytes,9,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`

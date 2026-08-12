@@ -8,7 +8,8 @@
 // promise-type work for its currently-registered actors itself.
 //
 // Ported from the polygot-lang-ipc-worker prototype's server/src/main.ts,
-// adapted to the ActivityGateway proto contract (proto/activity-gateway.proto)
+// adapted to the ActivityGatewayService proto contract
+// (proto/pgfsm/activitygateway/v1/activity_gateway.proto)
 // and to this repo's logger.
 //
 // Built on the compiler-generated Connect-ES stubs
@@ -33,7 +34,7 @@ import {
   type RegisteredActor,
   SidecarGateway,
 } from "./sidecar/gateway.ts";
-import { ActivityGateway } from "../../fsm-proto-codegen/gen/typescript/activity-gateway_connect.js";
+import { ActivityGatewayService } from "../../fsm-proto-codegen/gen/typescript/pgfsm/activitygateway/v1/activity_gateway_connect.js";
 import { startAsyncOpPollLoop } from "./asyncOpPollLoop.ts";
 
 const logger = getLogger(["@pgfsm/worker", "async-op-worker-gateway"]);
@@ -249,8 +250,10 @@ export async function startActivityGatewayServer(
 
   const routes = (router: ConnectRouter) => {
     router.service(
-      ActivityGateway,
-      serviceImpl as unknown as Partial<ServiceImpl<typeof ActivityGateway>>,
+      ActivityGatewayService,
+      serviceImpl as unknown as Partial<
+        ServiceImpl<typeof ActivityGatewayService>
+      >,
     );
   };
 

@@ -25,9 +25,9 @@ import {
 } from "@connectrpc/connect-node";
 import * as net from "node:net";
 import type { ClientSessionOptions } from "node:http2";
-import { ActivityGateway } from "../../fsm-proto-codegen/gen/typescript/activity-gateway_connect.js";
+import { ActivityGatewayService } from "../../fsm-proto-codegen/gen/typescript/pgfsm/activitygateway/v1/activity_gateway_connect.js";
 
-// Connect's `Client<typeof ActivityGateway>` utility type resolves every
+// Connect's `Client<typeof ActivityGatewayService>` utility type resolves every
 // method to `never` under `deno check` specifically (reproduced in complete
 // isolation outside this workspace/repo — a plain `tsc` with the same
 // package versions infers it correctly, so this is a Deno type-checker gap,
@@ -130,7 +130,7 @@ export class ActivityGatewayClient {
       sessionManager: this.sessionManager,
     });
     this.client = createClient(
-      ActivityGateway,
+      ActivityGatewayService,
       transport,
     ) as unknown as RawActivityGatewayClient;
   }

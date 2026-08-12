@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package pgfsm.activitygateway;
+package pgfsm.activitygateway.v1;
 
-option go_package = "github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/activitygateway";
+option go_package = "github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/activitygateway/v1";
 
 // Client-facing contract for the Activity Gateway. The orchestrator
 // (asyncOperationWorkerlet.ts) is the only intended client — it calls
@@ -15,15 +15,21 @@ option go_package = "github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/acti
 // activity contract from KB-001 §3.2, identifying the actor by its full
 // ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
 // fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
-// name/version pair — see sidecar/protocol.ts's actorKey(). fsm_language is
-// part of the identity (not just metadata) because the other five fields
-// alone aren't guaranteed unique across languages.
-service ActivityGateway {
+// name/version pair — see sidecar_gateway.proto's RegisteredActor.
+// fsm_language is part of the identity (not just metadata) because the
+// other five fields alone aren't guaranteed unique across languages.
+//
+// Originally shipped flat as activity-gateway.proto / package
+// pgfsm.activitygateway, exempted from several STANDARD buf lint rules as
+// an already-consumed contract (see #86/#87). That exemption's rationale
+// (gatewayServer.ts/gatewayClient.ts loading it by exact filename via
+// @grpc/proto-loader) no longer applies once real Connect-ES codegen
+// replaced that runtime reflection — moved to this standard layout in #102,
+// the same pass sidecar_gateway.proto (#100) already went through.
+service ActivityGatewayService {
   rpc Invoke(InvokeRequest) returns (InvokeResponse);
-  rpc ListRegisteredActors(Empty) returns (ListRegisteredActorsResponse);
+  rpc ListRegisteredActors(ListRegisteredActorsRequest) returns (ListRegisteredActorsResponse);
 }
-
-message Empty {}
 
 message InvokeRequest {
   string parent_fsm_name = 1;
@@ -45,6 +51,8 @@ message InvokeResponse {
   string error_message = 4;
   bool retriable = 5;
 }
+
+message ListRegisteredActorsRequest {}
 
 message ListRegisteredActorsResponse {
   // "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"

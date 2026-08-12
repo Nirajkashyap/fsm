@@ -6,11 +6,11 @@ only — it does not own any `.proto` source file itself.
 
 ## Why this exists
 
-`packages/fsm-core-async-op-worker/src/proto/activity-gateway.proto` (the
-Activity Gateway's client-facing gRPC contract) had no generated stubs at all:
-TypeScript used `@grpc/proto-loader` at runtime (schema reflection, no codegen),
-and there was no Python/Rust/Go client or server code for it. Rather than
-hand-writing or hand-porting stubs per language the way the old
+`packages/fsm-core-async-op-worker/src/proto/pgfsm/activitygateway/v1/activity_gateway.proto`
+(the Activity Gateway's client-facing gRPC contract) had no generated stubs at
+all: TypeScript used `@grpc/proto-loader` at runtime (schema reflection, no
+codegen), and there was no Python/Rust/Go client or server code for it. Rather
+than hand-writing or hand-porting stubs per language the way the old
 `fsm-core-async-op-worker/src/worker-sdk/` once was, this package runs one
 `.proto` file through [Buf](https://buf.build)'s plugin pipeline for all four
 languages from a single `buf generate` command.
@@ -23,9 +23,9 @@ codegen pipeline works and produces correct, runnable output.
 ## Layout
 
 - `packages/fsm-core-async-op-worker/src/proto/buf.yaml` — the proto _module_
-  config (lint/breaking-change rules). Lives next to the `.proto` file it
+  config (lint/breaking-change rules). Lives next to the `.proto` files it
   governs, not in this package — Buf modules are rooted where their source
-  lives, and the gateway package still owns that contract.
+  lives, and the gateway package still owns those contracts.
 - `buf.gen.yaml` (this package) — the codegen _plugin_ config: which plugins
   run, in which language, writing where. Points at the module above via
   `inputs: - directory: ../fsm-core-async-op-worker/src/proto` instead of
@@ -94,32 +94,25 @@ consumer's `Cargo.toml` needs `prost`, `tonic`, and `tonic-prost` all on `^0.14`
 (or all on some other later matching triple) — mixing e.g. `prost 0.13` with
 `tonic-prost 0.14` fails to compile with a "two different versions of crate
 `prost`" trait-mismatch error, since `tonic-prost` pulls its own transitive
-`prost`. Consuming code should also only `include!("pgfsm.activitygateway.rs")`
-for a language's package module — the generated message file already contains
-its own `include!("pgfsm.activitygateway.tonic.rs")` at the bottom, so including
+`prost`. Consuming code should also only
+`include!("pgfsm.activitygateway.v1.rs")` (or `pgfsm.sidecargateway.v1.rs`) for
+a language's package module — the generated message file already contains its
+own `include!("pgfsm.activitygateway.v1.tonic.rs")` at the bottom, so including
 both files separately double-defines the client/server modules.
 
 ### Go: `module=` output option
 
 `buf.gen.yaml`'s Go plugins pass `opt: module=.../gen/go` instead of the more
-common `paths=source_relative`. With `source_relative`, output mirrors the
-`.proto` file's own path — since `activity-gateway.proto` isn't nested in a
-`pgfsm/activitygateway/` directory (see below), that would put the file flat in
-`gen/go/` despite declaring `package activitygateway`. `module=` instead derives
-the output path from each file's `go_package` option relative to that module
-prefix, landing it at `gen/go/activitygateway/` — one directory per Go package,
-and what keeps working once a second `.proto` file/package is added here.
-
-## Lint exceptions
-
-`activity-gateway.proto` predates Buf adoption and is an established,
-already-consumed contract — `gatewayServer.ts`/`gatewayClient.ts` load it by its
-exact current filename via `@grpc/proto-loader`. `buf.yaml` disables the
-`STANDARD` lint rules that would require renaming the file, moving it into a
-`pgfsm/activitygateway/` directory, or adding a version suffix to the package
-name, since those are real breaking changes to a shipped contract — not
-something to do as a drive-by part of adding codegen. Revisit if/when the
-contract itself gets a deliberate versioning pass.
+common `paths=source_relative`. With `source_relative`, output mirrors each
+`.proto` file's own path relative to the module root — for
+`pgfsm/activitygateway/v1/activity_gateway.proto`, that would land at
+`gen/go/pgfsm/activitygateway/v1/`, carrying the `pgfsm/` segment from the proto
+package's directory structure into the Go import path even though neither
+`go_package` option asks for it. `module=` instead derives the output path from
+each file's own `go_package` option relative to that module prefix, landing
+Activity Gateway's stubs at `gen/go/activitygateway/v1/` and the sidecar's at
+`gen/go/sidecargateway/v1/` — idiomatic Go layout, one directory per Go package,
+independent of how the `.proto` files themselves are nested.
 
 ## Verifying a regen
 

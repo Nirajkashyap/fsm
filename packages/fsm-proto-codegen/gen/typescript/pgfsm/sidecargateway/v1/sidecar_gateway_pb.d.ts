@@ -226,7 +226,7 @@ export declare class Invoke extends Message<Invoke> {
 
   /**
    * JSON-encoded activity input — kept as an opaque string (not a typed
-   * message) the same way activity-gateway.proto's InvokeRequest.input_json
+   * message) the same way activity_gateway.proto's InvokeRequest.input_json
    * is, since the actual shape is user-defined per actor.
    *
    * @generated from field: string input_json = 8;
