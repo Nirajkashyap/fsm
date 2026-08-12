@@ -21,17 +21,7 @@
 //!   --heartbeat-ms <ms>       Heartbeat interval (default: 5000)
 //!   -h, --help                Show this help message
 
-// #[path]-included rather than a normal `mod` declaration: this crate has
-// no build.rs/prost-build step of its own, it just compiles the file
-// fsm-proto-codegen already generated and committed
-// (packages/fsm-proto-codegen/gen/rust/, from
-// proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto -- see #100). That
-// file's own `include!("pgfsm.sidecargateway.v1.tonic.rs")` resolves
-// relative to *its own* location regardless of where this `#[path]` points,
-// so the tonic client code comes along automatically.
 mod sdk;
-#[path = "../../../../../packages/fsm-proto-codegen/gen/rust/pgfsm/sidecargateway/v1/pgfsm.sidecargateway.v1.rs"]
-mod sidecar_gateway;
 
 // Fixed, compiler-generated registry -- see fsm-compiler-ts's
 // writeAggregateActorsRegistry. Regenerate with
@@ -43,8 +33,8 @@ mod sidecar_gateway;
 #[path = "../rust-actors-registry.generated.rs"]
 mod generated_registry;
 
+use pgfsm_proto_codegen::pgfsm::sidecargateway::v1::RegisteredActor;
 use sdk::{ActorHandler, ActorRegistration, ActorWorker, ActorWorkerOptions};
-use sidecar_gateway::RegisteredActor;
 use std::env;
 use std::process;
 use std::sync::Arc;

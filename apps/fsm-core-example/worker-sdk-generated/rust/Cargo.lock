@@ -416,11 +416,21 @@ name = "pgfsm-async-op-worker-sdk"
 version = "0.1.0"
 dependencies = [
  "ctrlc",
+ "pgfsm-proto-codegen",
  "prost",
  "serde",
  "serde_json",
  "tokio",
  "tokio-stream",
+ "tonic",
+ "tonic-prost",
+]
+
+[[package]]
+name = "pgfsm-proto-codegen"
+version = "0.1.0"
+dependencies = [
+ "prost",
  "tonic",
  "tonic-prost",
 ]

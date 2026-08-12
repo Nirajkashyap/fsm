@@ -726,9 +726,10 @@ export async function writeAggregateGoRegistry(
  * Bare-specifier imports for the generated
  * `pgfsm.sidecargateway.v1.SidecarGatewayService` stub — the one piece of
  * worker-sdk that's genuinely gateway-owned and never duplicated per
- * language, so generated `sdk.{ts,py}` imports it directly instead of
- * getting its own copy (unlike Rust/Go, which still speak
- * sidecar/protocol.ts's hand-ported envelope until they migrate too).
+ * language, so generated `sdk.ts` imports it directly instead of getting
+ * its own copy (same idea as Python/Rust/Go's own `GATEWAY_SIDECAR_PROTO_GEN_*`
+ * constants below, each pointing at that language's own package/module
+ * identity for the same generated stub — see #106).
  *
  * `@pgfsm/proto-codegen` is a Deno workspace-linked package (not published
  * to npm/JSR — see #103), resolved by every workspace member with no extra
@@ -744,18 +745,28 @@ const GATEWAY_SIDECAR_PROTO_CONNECT_IMPORT_PATH =
   "@pgfsm/proto-codegen/typescript/sidecargateway/v1/connect";
 const GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH =
   "@pgfsm/proto-codegen/typescript/sidecargateway/v1/pb";
-/** Directory (not a single file — Python imports a package, not a module by path) holding the generated grpc stub for Python. */
-const GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH =
+/**
+ * pip `-e` (editable install) target from
+ * `<appRoot>/worker-sdk-generated/python/` (where `requirements.txt` lives)
+ * to the `pgfsm-proto-codegen` package wrapping
+ * `packages/fsm-proto-codegen/gen/python/` — see #106. Once installed,
+ * `sdk.py` just does `from pgfsm.sidecargateway.v1 import ...` like any
+ * other installed package; no `sys.path` manipulation needed at import
+ * time the way a bare relative directory reference would require.
+ */
+const GATEWAY_SIDECAR_PROTO_GEN_PYTHON_EDITABLE_PATH =
   "../../../../packages/fsm-proto-codegen/gen/python";
 /**
- * One level deeper than the other three languages' paths (an extra `src/`
- * between `worker-sdk-generated/rust/` and the crate root) — this is the
- * file worker-sdk-main.eta's `#[path]` attribute points at directly, since
- * Rust has no package-relative import mechanism the way Python's sys.path
- * append does.
+ * Cargo `path` dependency target from `<appRoot>/worker-sdk-generated/rust/`
+ * (where `Cargo.toml` lives — same depth as the other three languages'
+ * `worker-sdk-generated/<lang>/`) to the `pgfsm-proto-codegen` crate
+ * wrapping `packages/fsm-proto-codegen/gen/rust/` — see #106. Replaced a
+ * `#[path]`-included generated file at one extra `../` of depth (accounting
+ * for `main.rs` living under `src/`), since Rust now has a real crate
+ * boundary instead.
  */
-const GATEWAY_SIDECAR_PROTO_GEN_RUST_REL_PATH =
-  "../../../../../packages/fsm-proto-codegen/gen/rust/pgfsm/sidecargateway/v1/pgfsm.sidecargateway.v1.rs";
+const GATEWAY_SIDECAR_PROTO_GEN_RUST_CRATE_PATH =
+  "../../../../packages/fsm-proto-codegen/gen/rust";
 /**
  * Go module path (matching sidecar_gateway.proto's `go_package` option) and
  * relative `replace` target for the generated grpc-go stub
@@ -874,15 +885,13 @@ export async function writeWorkerSdk(
         renderPyWorkerSdkRequirementsLegacy({}),
       );
     } else {
-      await Deno.writeTextFile(
-        `${dir}/sdk.py`,
-        renderPyWorkerSdkSdk({
-          protoGenPythonRelPath: GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH,
-        }),
-      );
+      await Deno.writeTextFile(`${dir}/sdk.py`, renderPyWorkerSdkSdk({}));
       await Deno.writeTextFile(
         `${dir}/requirements.txt`,
-        renderPyWorkerSdkRequirements({}),
+        renderPyWorkerSdkRequirements({
+          protoGenPythonEditablePath:
+            GATEWAY_SIDECAR_PROTO_GEN_PYTHON_EDITABLE_PATH,
+        }),
       );
     }
   }
@@ -916,7 +925,6 @@ export async function writeWorkerSdk(
         mainFile,
         renderRustWorkerSdkMain({
           registryRelativePath: "../rust-actors-registry.generated.rs",
-          protoGenRustRelPath: GATEWAY_SIDECAR_PROTO_GEN_RUST_REL_PATH,
         }),
       );
       await formatRustFileBestEffort(mainFile);
@@ -924,7 +932,9 @@ export async function writeWorkerSdk(
       await formatRustFileBestEffort(sdkFile);
       await Deno.writeTextFile(
         `${dir}/Cargo.toml`,
-        renderRustWorkerSdkCargoToml({}),
+        renderRustWorkerSdkCargoToml({
+          protoGenRustCratePath: GATEWAY_SIDECAR_PROTO_GEN_RUST_CRATE_PATH,
+        }),
       );
     }
     await Deno.writeTextFile(
