@@ -2,10 +2,10 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import activity_gateway_pb2 as activity__gateway__pb2
+from pgfsm.activitygateway.v1 import activity_gateway_pb2 as pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2
 
 
-class ActivityGatewayStub:
+class ActivityGatewayServiceStub:
     """Client-facing contract for the Activity Gateway. The orchestrator
     (asyncOperationWorkerlet.ts) is the only intended client — it calls
     Invoke() once per claimed PGMQ message for a compiled-language actor,
@@ -17,9 +17,17 @@ class ActivityGatewayStub:
     activity contract from KB-001 §3.2, identifying the actor by its full
     ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
     fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
-    name/version pair — see sidecar/protocol.ts's actorKey(). fsm_language is
-    part of the identity (not just metadata) because the other five fields
-    alone aren't guaranteed unique across languages.
+    name/version pair — see sidecar_gateway.proto's RegisteredActor.
+    fsm_language is part of the identity (not just metadata) because the
+    other five fields alone aren't guaranteed unique across languages.
+
+    Originally shipped flat as activity-gateway.proto / package
+    pgfsm.activitygateway, exempted from several STANDARD buf lint rules as
+    an already-consumed contract (see #86/#87). That exemption's rationale
+    (gatewayServer.ts/gatewayClient.ts loading it by exact filename via
+    @grpc/proto-loader) no longer applies once real Connect-ES codegen
+    replaced that runtime reflection — moved to this standard layout in #102,
+    the same pass sidecar_gateway.proto (#100) already went through.
     """
 
     def __init__(self, channel):
@@ -29,18 +37,18 @@ class ActivityGatewayStub:
             channel: A grpc.Channel.
         """
         self.Invoke = channel.unary_unary(
-                '/pgfsm.activitygateway.ActivityGateway/Invoke',
-                request_serializer=activity__gateway__pb2.InvokeRequest.SerializeToString,
-                response_deserializer=activity__gateway__pb2.InvokeResponse.FromString,
+                '/pgfsm.activitygateway.v1.ActivityGatewayService/Invoke',
+                request_serializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeRequest.SerializeToString,
+                response_deserializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeResponse.FromString,
                 _registered_method=True)
         self.ListRegisteredActors = channel.unary_unary(
-                '/pgfsm.activitygateway.ActivityGateway/ListRegisteredActors',
-                request_serializer=activity__gateway__pb2.Empty.SerializeToString,
-                response_deserializer=activity__gateway__pb2.ListRegisteredActorsResponse.FromString,
+                '/pgfsm.activitygateway.v1.ActivityGatewayService/ListRegisteredActors',
+                request_serializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsRequest.SerializeToString,
+                response_deserializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsResponse.FromString,
                 _registered_method=True)
 
 
-class ActivityGatewayServicer:
+class ActivityGatewayServiceServicer:
     """Client-facing contract for the Activity Gateway. The orchestrator
     (asyncOperationWorkerlet.ts) is the only intended client — it calls
     Invoke() once per claimed PGMQ message for a compiled-language actor,
@@ -52,9 +60,17 @@ class ActivityGatewayServicer:
     activity contract from KB-001 §3.2, identifying the actor by its full
     ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
     fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
-    name/version pair — see sidecar/protocol.ts's actorKey(). fsm_language is
-    part of the identity (not just metadata) because the other five fields
-    alone aren't guaranteed unique across languages.
+    name/version pair — see sidecar_gateway.proto's RegisteredActor.
+    fsm_language is part of the identity (not just metadata) because the
+    other five fields alone aren't guaranteed unique across languages.
+
+    Originally shipped flat as activity-gateway.proto / package
+    pgfsm.activitygateway, exempted from several STANDARD buf lint rules as
+    an already-consumed contract (see #86/#87). That exemption's rationale
+    (gatewayServer.ts/gatewayClient.ts loading it by exact filename via
+    @grpc/proto-loader) no longer applies once real Connect-ES codegen
+    replaced that runtime reflection — moved to this standard layout in #102,
+    the same pass sidecar_gateway.proto (#100) already went through.
     """
 
     def Invoke(self, request, context):
@@ -70,27 +86,27 @@ class ActivityGatewayServicer:
         raise NotImplementedError('Method not implemented!')
 
 
-def add_ActivityGatewayServicer_to_server(servicer, server):
+def add_ActivityGatewayServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Invoke': grpc.unary_unary_rpc_method_handler(
                     servicer.Invoke,
-                    request_deserializer=activity__gateway__pb2.InvokeRequest.FromString,
-                    response_serializer=activity__gateway__pb2.InvokeResponse.SerializeToString,
+                    request_deserializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeRequest.FromString,
+                    response_serializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeResponse.SerializeToString,
             ),
             'ListRegisteredActors': grpc.unary_unary_rpc_method_handler(
                     servicer.ListRegisteredActors,
-                    request_deserializer=activity__gateway__pb2.Empty.FromString,
-                    response_serializer=activity__gateway__pb2.ListRegisteredActorsResponse.SerializeToString,
+                    request_deserializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsRequest.FromString,
+                    response_serializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'pgfsm.activitygateway.ActivityGateway', rpc_method_handlers)
+            'pgfsm.activitygateway.v1.ActivityGatewayService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('pgfsm.activitygateway.ActivityGateway', rpc_method_handlers)
+    server.add_registered_method_handlers('pgfsm.activitygateway.v1.ActivityGatewayService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class ActivityGateway:
+class ActivityGatewayService:
     """Client-facing contract for the Activity Gateway. The orchestrator
     (asyncOperationWorkerlet.ts) is the only intended client — it calls
     Invoke() once per claimed PGMQ message for a compiled-language actor,
@@ -102,9 +118,17 @@ class ActivityGateway:
     activity contract from KB-001 §3.2, identifying the actor by its full
     ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
     fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
-    name/version pair — see sidecar/protocol.ts's actorKey(). fsm_language is
-    part of the identity (not just metadata) because the other five fields
-    alone aren't guaranteed unique across languages.
+    name/version pair — see sidecar_gateway.proto's RegisteredActor.
+    fsm_language is part of the identity (not just metadata) because the
+    other five fields alone aren't guaranteed unique across languages.
+
+    Originally shipped flat as activity-gateway.proto / package
+    pgfsm.activitygateway, exempted from several STANDARD buf lint rules as
+    an already-consumed contract (see #86/#87). That exemption's rationale
+    (gatewayServer.ts/gatewayClient.ts loading it by exact filename via
+    @grpc/proto-loader) no longer applies once real Connect-ES codegen
+    replaced that runtime reflection — moved to this standard layout in #102,
+    the same pass sidecar_gateway.proto (#100) already went through.
     """
 
     @staticmethod
@@ -121,9 +145,9 @@ class ActivityGateway:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/pgfsm.activitygateway.ActivityGateway/Invoke',
-            activity__gateway__pb2.InvokeRequest.SerializeToString,
-            activity__gateway__pb2.InvokeResponse.FromString,
+            '/pgfsm.activitygateway.v1.ActivityGatewayService/Invoke',
+            pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeRequest.SerializeToString,
+            pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -148,9 +172,9 @@ class ActivityGateway:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/pgfsm.activitygateway.ActivityGateway/ListRegisteredActors',
-            activity__gateway__pb2.Empty.SerializeToString,
-            activity__gateway__pb2.ListRegisteredActorsResponse.FromString,
+            '/pgfsm.activitygateway.v1.ActivityGatewayService/ListRegisteredActors',
+            pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsRequest.SerializeToString,
+            pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsResponse.FromString,
             options,
             channel_credentials,
             insecure,

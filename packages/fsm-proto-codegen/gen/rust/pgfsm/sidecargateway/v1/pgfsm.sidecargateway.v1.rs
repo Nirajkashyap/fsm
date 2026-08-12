@@ -75,7 +75,7 @@ pub struct Invoke {
     #[prost(string, tag="7")]
     pub fsm_language: ::prost::alloc::string::String,
     /// JSON-encoded activity input — kept as an opaque string (not a typed
-    /// message) the same way activity-gateway.proto's InvokeRequest.input_json
+    /// message) the same way activity_gateway.proto's InvokeRequest.input_json
     /// is, since the actual shape is user-defined per actor.
     #[prost(string, tag="8")]
     pub input_json: ::prost::alloc::string::String,

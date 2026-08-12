@@ -1,6 +1,6 @@
 // @generated
 /// Generated client implementations.
-pub mod activity_gateway_client {
+pub mod activity_gateway_service_client {
     #![allow(
         unused_variables,
         dead_code,
@@ -11,10 +11,10 @@ pub mod activity_gateway_client {
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct ActivityGatewayClient<T> {
+    pub struct ActivityGatewayServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl ActivityGatewayClient<tonic::transport::Channel> {
+    impl ActivityGatewayServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -25,7 +25,7 @@ pub mod activity_gateway_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> ActivityGatewayClient<T>
+    impl<T> ActivityGatewayServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::Body>,
         T::Error: Into<StdError>,
@@ -43,7 +43,7 @@ pub mod activity_gateway_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> ActivityGatewayClient<InterceptedService<T, F>>
+        ) -> ActivityGatewayServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -57,7 +57,9 @@ pub mod activity_gateway_client {
                 http::Request<tonic::body::Body>,
             >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
-            ActivityGatewayClient::new(InterceptedService::new(inner, interceptor))
+            ActivityGatewayServiceClient::new(
+                InterceptedService::new(inner, interceptor),
+            )
         }
         /// Compress requests with the given encoding.
         ///
@@ -104,18 +106,21 @@ pub mod activity_gateway_client {
                 })?;
             let codec = tonic_prost::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/pgfsm.activitygateway.ActivityGateway/Invoke",
+                "/pgfsm.activitygateway.v1.ActivityGatewayService/Invoke",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
-                    GrpcMethod::new("pgfsm.activitygateway.ActivityGateway", "Invoke"),
+                    GrpcMethod::new(
+                        "pgfsm.activitygateway.v1.ActivityGatewayService",
+                        "Invoke",
+                    ),
                 );
             self.inner.unary(req, path, codec).await
         }
         pub async fn list_registered_actors(
             &mut self,
-            request: impl tonic::IntoRequest<super::Empty>,
+            request: impl tonic::IntoRequest<super::ListRegisteredActorsRequest>,
         ) -> std::result::Result<
             tonic::Response<super::ListRegisteredActorsResponse>,
             tonic::Status,
@@ -130,13 +135,13 @@ pub mod activity_gateway_client {
                 })?;
             let codec = tonic_prost::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/pgfsm.activitygateway.ActivityGateway/ListRegisteredActors",
+                "/pgfsm.activitygateway.v1.ActivityGatewayService/ListRegisteredActors",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "pgfsm.activitygateway.ActivityGateway",
+                        "pgfsm.activitygateway.v1.ActivityGatewayService",
                         "ListRegisteredActors",
                     ),
                 );
@@ -145,7 +150,7 @@ pub mod activity_gateway_client {
     }
 }
 /// Generated server implementations.
-pub mod activity_gateway_server {
+pub mod activity_gateway_service_server {
     #![allow(
         unused_variables,
         dead_code,
@@ -154,30 +159,30 @@ pub mod activity_gateway_server {
         clippy::let_unit_value,
     )]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with ActivityGatewayServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with ActivityGatewayServiceServer.
     #[async_trait]
-    pub trait ActivityGateway: std::marker::Send + std::marker::Sync + 'static {
+    pub trait ActivityGatewayService: std::marker::Send + std::marker::Sync + 'static {
         async fn invoke(
             &self,
             request: tonic::Request<super::InvokeRequest>,
         ) -> std::result::Result<tonic::Response<super::InvokeResponse>, tonic::Status>;
         async fn list_registered_actors(
             &self,
-            request: tonic::Request<super::Empty>,
+            request: tonic::Request<super::ListRegisteredActorsRequest>,
         ) -> std::result::Result<
             tonic::Response<super::ListRegisteredActorsResponse>,
             tonic::Status,
         >;
     }
     #[derive(Debug)]
-    pub struct ActivityGatewayServer<T> {
+    pub struct ActivityGatewayServiceServer<T> {
         inner: Arc<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
         max_decoding_message_size: Option<usize>,
         max_encoding_message_size: Option<usize>,
     }
-    impl<T> ActivityGatewayServer<T> {
+    impl<T> ActivityGatewayServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -228,9 +233,10 @@ pub mod activity_gateway_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for ActivityGatewayServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>>
+    for ActivityGatewayServiceServer<T>
     where
-        T: ActivityGateway,
+        T: ActivityGatewayService,
         B: Body + std::marker::Send + 'static,
         B::Error: Into<StdError> + std::marker::Send + 'static,
     {
@@ -245,11 +251,11 @@ pub mod activity_gateway_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/pgfsm.activitygateway.ActivityGateway/Invoke" => {
+                "/pgfsm.activitygateway.v1.ActivityGatewayService/Invoke" => {
                     #[allow(non_camel_case_types)]
-                    struct InvokeSvc<T: ActivityGateway>(pub Arc<T>);
+                    struct InvokeSvc<T: ActivityGatewayService>(pub Arc<T>);
                     impl<
-                        T: ActivityGateway,
+                        T: ActivityGatewayService,
                     > tonic::server::UnaryService<super::InvokeRequest>
                     for InvokeSvc<T> {
                         type Response = super::InvokeResponse;
@@ -263,7 +269,7 @@ pub mod activity_gateway_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ActivityGateway>::invoke(&inner, request).await
+                                <T as ActivityGatewayService>::invoke(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -290,10 +296,14 @@ pub mod activity_gateway_server {
                     };
                     Box::pin(fut)
                 }
-                "/pgfsm.activitygateway.ActivityGateway/ListRegisteredActors" => {
+                "/pgfsm.activitygateway.v1.ActivityGatewayService/ListRegisteredActors" => {
                     #[allow(non_camel_case_types)]
-                    struct ListRegisteredActorsSvc<T: ActivityGateway>(pub Arc<T>);
-                    impl<T: ActivityGateway> tonic::server::UnaryService<super::Empty>
+                    struct ListRegisteredActorsSvc<T: ActivityGatewayService>(
+                        pub Arc<T>,
+                    );
+                    impl<
+                        T: ActivityGatewayService,
+                    > tonic::server::UnaryService<super::ListRegisteredActorsRequest>
                     for ListRegisteredActorsSvc<T> {
                         type Response = super::ListRegisteredActorsResponse;
                         type Future = BoxFuture<
@@ -302,11 +312,11 @@ pub mod activity_gateway_server {
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::Empty>,
+                            request: tonic::Request<super::ListRegisteredActorsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ActivityGateway>::list_registered_actors(
+                                <T as ActivityGatewayService>::list_registered_actors(
                                         &inner,
                                         request,
                                     )
@@ -359,7 +369,7 @@ pub mod activity_gateway_server {
             }
         }
     }
-    impl<T> Clone for ActivityGatewayServer<T> {
+    impl<T> Clone for ActivityGatewayServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -372,8 +382,8 @@ pub mod activity_gateway_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "pgfsm.activitygateway.ActivityGateway";
-    impl<T> tonic::server::NamedService for ActivityGatewayServer<T> {
+    pub const SERVICE_NAME: &str = "pgfsm.activitygateway.v1.ActivityGatewayService";
+    impl<T> tonic::server::NamedService for ActivityGatewayServiceServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }
 }

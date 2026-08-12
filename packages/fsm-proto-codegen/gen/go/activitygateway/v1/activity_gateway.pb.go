@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        (unknown)
-// source: activity-gateway.proto
+// source: pgfsm/activitygateway/v1/activity_gateway.proto
 
-package activitygateway
+package v1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -20,42 +20,6 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
-
-type Empty struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Empty) Reset() {
-	*x = Empty{}
-	mi := &file_activity_gateway_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Empty) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Empty) ProtoMessage() {}
-
-func (x *Empty) ProtoReflect() protoreflect.Message {
-	mi := &file_activity_gateway_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Empty.ProtoReflect.Descriptor instead.
-func (*Empty) Descriptor() ([]byte, []int) {
-	return file_activity_gateway_proto_rawDescGZIP(), []int{0}
-}
 
 type InvokeRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
@@ -75,7 +39,7 @@ type InvokeRequest struct {
 
 func (x *InvokeRequest) Reset() {
 	*x = InvokeRequest{}
-	mi := &file_activity_gateway_proto_msgTypes[1]
+	mi := &file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -87,7 +51,7 @@ func (x *InvokeRequest) String() string {
 func (*InvokeRequest) ProtoMessage() {}
 
 func (x *InvokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_activity_gateway_proto_msgTypes[1]
+	mi := &file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -100,7 +64,7 @@ func (x *InvokeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvokeRequest.ProtoReflect.Descriptor instead.
 func (*InvokeRequest) Descriptor() ([]byte, []int) {
-	return file_activity_gateway_proto_rawDescGZIP(), []int{1}
+	return file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *InvokeRequest) GetParentFsmName() string {
@@ -186,7 +150,7 @@ type InvokeResponse struct {
 
 func (x *InvokeResponse) Reset() {
 	*x = InvokeResponse{}
-	mi := &file_activity_gateway_proto_msgTypes[2]
+	mi := &file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -198,7 +162,7 @@ func (x *InvokeResponse) String() string {
 func (*InvokeResponse) ProtoMessage() {}
 
 func (x *InvokeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_activity_gateway_proto_msgTypes[2]
+	mi := &file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -211,7 +175,7 @@ func (x *InvokeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvokeResponse.ProtoReflect.Descriptor instead.
 func (*InvokeResponse) Descriptor() ([]byte, []int) {
-	return file_activity_gateway_proto_rawDescGZIP(), []int{2}
+	return file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *InvokeResponse) GetOk() bool {
@@ -249,6 +213,42 @@ func (x *InvokeResponse) GetRetriable() bool {
 	return false
 }
 
+type ListRegisteredActorsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRegisteredActorsRequest) Reset() {
+	*x = ListRegisteredActorsRequest{}
+	mi := &file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRegisteredActorsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRegisteredActorsRequest) ProtoMessage() {}
+
+func (x *ListRegisteredActorsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRegisteredActorsRequest.ProtoReflect.Descriptor instead.
+func (*ListRegisteredActorsRequest) Descriptor() ([]byte, []int) {
+	return file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescGZIP(), []int{2}
+}
+
 type ListRegisteredActorsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
@@ -260,7 +260,7 @@ type ListRegisteredActorsResponse struct {
 
 func (x *ListRegisteredActorsResponse) Reset() {
 	*x = ListRegisteredActorsResponse{}
-	mi := &file_activity_gateway_proto_msgTypes[3]
+	mi := &file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -272,7 +272,7 @@ func (x *ListRegisteredActorsResponse) String() string {
 func (*ListRegisteredActorsResponse) ProtoMessage() {}
 
 func (x *ListRegisteredActorsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_activity_gateway_proto_msgTypes[3]
+	mi := &file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -285,7 +285,7 @@ func (x *ListRegisteredActorsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRegisteredActorsResponse.ProtoReflect.Descriptor instead.
 func (*ListRegisteredActorsResponse) Descriptor() ([]byte, []int) {
-	return file_activity_gateway_proto_rawDescGZIP(), []int{3}
+	return file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListRegisteredActorsResponse) GetActorKeys() []string {
@@ -295,12 +295,11 @@ func (x *ListRegisteredActorsResponse) GetActorKeys() []string {
 	return nil
 }
 
-var File_activity_gateway_proto protoreflect.FileDescriptor
+var File_pgfsm_activitygateway_v1_activity_gateway_proto protoreflect.FileDescriptor
 
-const file_activity_gateway_proto_rawDesc = "" +
+const file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDesc = "" +
 	"\n" +
-	"\x16activity-gateway.proto\x12\x15pgfsm.activitygateway\"\a\n" +
-	"\x05Empty\"\xe5\x02\n" +
+	"/pgfsm/activitygateway/v1/activity_gateway.proto\x12\x18pgfsm.activitygateway.v1\"\xe5\x02\n" +
 	"\rInvokeRequest\x12&\n" +
 	"\x0fparent_fsm_name\x18\x01 \x01(\tR\rparentFsmName\x12,\n" +
 	"\x12parent_fsm_version\x18\x02 \x01(\tR\x10parentFsmVersion\x12\x19\n" +
@@ -324,39 +323,40 @@ const file_activity_gateway_proto_rawDesc = "" +
 	"\n" +
 	"error_code\x18\x03 \x01(\tR\terrorCode\x12#\n" +
 	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\x12\x1c\n" +
-	"\tretriable\x18\x05 \x01(\bR\tretriable\"=\n" +
+	"\tretriable\x18\x05 \x01(\bR\tretriable\"\x1d\n" +
+	"\x1bListRegisteredActorsRequest\"=\n" +
 	"\x1cListRegisteredActorsResponse\x12\x1d\n" +
 	"\n" +
-	"actor_keys\x18\x01 \x03(\tR\tactorKeys2\xd3\x01\n" +
-	"\x0fActivityGateway\x12U\n" +
-	"\x06Invoke\x12$.pgfsm.activitygateway.InvokeRequest\x1a%.pgfsm.activitygateway.InvokeResponse\x12i\n" +
-	"\x14ListRegisteredActors\x12\x1c.pgfsm.activitygateway.Empty\x1a3.pgfsm.activitygateway.ListRegisteredActorsResponseB\xee\x01\n" +
-	"\x19com.pgfsm.activitygatewayB\x14ActivityGatewayProtoP\x01ZFgithub.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/activitygateway\xa2\x02\x03PAX\xaa\x02\x15Pgfsm.Activitygateway\xca\x02\x15Pgfsm\\Activitygateway\xe2\x02!Pgfsm\\Activitygateway\\GPBMetadata\xea\x02\x16Pgfsm::Activitygatewayb\x06proto3"
+	"actor_keys\x18\x01 \x03(\tR\tactorKeys2\xfd\x01\n" +
+	"\x16ActivityGatewayService\x12[\n" +
+	"\x06Invoke\x12'.pgfsm.activitygateway.v1.InvokeRequest\x1a(.pgfsm.activitygateway.v1.InvokeResponse\x12\x85\x01\n" +
+	"\x14ListRegisteredActors\x125.pgfsm.activitygateway.v1.ListRegisteredActorsRequest\x1a6.pgfsm.activitygateway.v1.ListRegisteredActorsResponseB\x81\x02\n" +
+	"\x1ccom.pgfsm.activitygateway.v1B\x14ActivityGatewayProtoP\x01ZIgithub.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/activitygateway/v1\xa2\x02\x03PAX\xaa\x02\x18Pgfsm.Activitygateway.V1\xca\x02\x18Pgfsm\\Activitygateway\\V1\xe2\x02$Pgfsm\\Activitygateway\\V1\\GPBMetadata\xea\x02\x1aPgfsm::Activitygateway::V1b\x06proto3"
 
 var (
-	file_activity_gateway_proto_rawDescOnce sync.Once
-	file_activity_gateway_proto_rawDescData []byte
+	file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescOnce sync.Once
+	file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescData []byte
 )
 
-func file_activity_gateway_proto_rawDescGZIP() []byte {
-	file_activity_gateway_proto_rawDescOnce.Do(func() {
-		file_activity_gateway_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_activity_gateway_proto_rawDesc), len(file_activity_gateway_proto_rawDesc)))
+func file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescGZIP() []byte {
+	file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescOnce.Do(func() {
+		file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDesc), len(file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDesc)))
 	})
-	return file_activity_gateway_proto_rawDescData
+	return file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDescData
 }
 
-var file_activity_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_activity_gateway_proto_goTypes = []any{
-	(*Empty)(nil),                        // 0: pgfsm.activitygateway.Empty
-	(*InvokeRequest)(nil),                // 1: pgfsm.activitygateway.InvokeRequest
-	(*InvokeResponse)(nil),               // 2: pgfsm.activitygateway.InvokeResponse
-	(*ListRegisteredActorsResponse)(nil), // 3: pgfsm.activitygateway.ListRegisteredActorsResponse
+var file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_pgfsm_activitygateway_v1_activity_gateway_proto_goTypes = []any{
+	(*InvokeRequest)(nil),                // 0: pgfsm.activitygateway.v1.InvokeRequest
+	(*InvokeResponse)(nil),               // 1: pgfsm.activitygateway.v1.InvokeResponse
+	(*ListRegisteredActorsRequest)(nil),  // 2: pgfsm.activitygateway.v1.ListRegisteredActorsRequest
+	(*ListRegisteredActorsResponse)(nil), // 3: pgfsm.activitygateway.v1.ListRegisteredActorsResponse
 }
-var file_activity_gateway_proto_depIdxs = []int32{
-	1, // 0: pgfsm.activitygateway.ActivityGateway.Invoke:input_type -> pgfsm.activitygateway.InvokeRequest
-	0, // 1: pgfsm.activitygateway.ActivityGateway.ListRegisteredActors:input_type -> pgfsm.activitygateway.Empty
-	2, // 2: pgfsm.activitygateway.ActivityGateway.Invoke:output_type -> pgfsm.activitygateway.InvokeResponse
-	3, // 3: pgfsm.activitygateway.ActivityGateway.ListRegisteredActors:output_type -> pgfsm.activitygateway.ListRegisteredActorsResponse
+var file_pgfsm_activitygateway_v1_activity_gateway_proto_depIdxs = []int32{
+	0, // 0: pgfsm.activitygateway.v1.ActivityGatewayService.Invoke:input_type -> pgfsm.activitygateway.v1.InvokeRequest
+	2, // 1: pgfsm.activitygateway.v1.ActivityGatewayService.ListRegisteredActors:input_type -> pgfsm.activitygateway.v1.ListRegisteredActorsRequest
+	1, // 2: pgfsm.activitygateway.v1.ActivityGatewayService.Invoke:output_type -> pgfsm.activitygateway.v1.InvokeResponse
+	3, // 3: pgfsm.activitygateway.v1.ActivityGatewayService.ListRegisteredActors:output_type -> pgfsm.activitygateway.v1.ListRegisteredActorsResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -364,26 +364,26 @@ var file_activity_gateway_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_activity_gateway_proto_init() }
-func file_activity_gateway_proto_init() {
-	if File_activity_gateway_proto != nil {
+func init() { file_pgfsm_activitygateway_v1_activity_gateway_proto_init() }
+func file_pgfsm_activitygateway_v1_activity_gateway_proto_init() {
+	if File_pgfsm_activitygateway_v1_activity_gateway_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_activity_gateway_proto_rawDesc), len(file_activity_gateway_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDesc), len(file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_activity_gateway_proto_goTypes,
-		DependencyIndexes: file_activity_gateway_proto_depIdxs,
-		MessageInfos:      file_activity_gateway_proto_msgTypes,
+		GoTypes:           file_pgfsm_activitygateway_v1_activity_gateway_proto_goTypes,
+		DependencyIndexes: file_pgfsm_activitygateway_v1_activity_gateway_proto_depIdxs,
+		MessageInfos:      file_pgfsm_activitygateway_v1_activity_gateway_proto_msgTypes,
 	}.Build()
-	File_activity_gateway_proto = out.File
-	file_activity_gateway_proto_goTypes = nil
-	file_activity_gateway_proto_depIdxs = nil
+	File_pgfsm_activitygateway_v1_activity_gateway_proto = out.File
+	file_pgfsm_activitygateway_v1_activity_gateway_proto_goTypes = nil
+	file_pgfsm_activitygateway_v1_activity_gateway_proto_depIdxs = nil
 }

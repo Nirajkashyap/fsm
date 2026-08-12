@@ -6,10 +6,6 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class Empty(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
-
 class InvokeRequest(_message.Message):
     __slots__ = ("parent_fsm_name", "parent_fsm_version", "fsm_type", "fsm_name", "fsm_version", "fsm_language", "input_json", "instance_id", "correlation_id", "timeout_ms")
     PARENT_FSM_NAME_FIELD_NUMBER: _ClassVar[int]
@@ -47,6 +43,10 @@ class InvokeResponse(_message.Message):
     error_message: str
     retriable: bool
     def __init__(self, ok: _Optional[bool] = ..., output_json: _Optional[str] = ..., error_code: _Optional[str] = ..., error_message: _Optional[str] = ..., retriable: _Optional[bool] = ...) -> None: ...
+
+class ListRegisteredActorsRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
 
 class ListRegisteredActorsResponse(_message.Message):
     __slots__ = ("actor_keys",)
