@@ -832,13 +832,13 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
     const tsSdk = await Deno.readTextFile(`${base}/typescript/sdk.ts`);
     assertEquals(
       tsSdk.includes(
-        'from "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";',
+        'from "@pgfsm/proto-codegen/typescript/sidecargateway/v1/connect";',
       ),
       true,
     );
     assertEquals(
       tsSdk.includes(
-        'from "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";',
+        'from "@pgfsm/proto-codegen/typescript/sidecargateway/v1/pb";',
       ),
       true,
     );

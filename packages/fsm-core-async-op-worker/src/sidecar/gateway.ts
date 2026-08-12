@@ -7,9 +7,10 @@
 //
 // Replaces the hand-rolled length-prefixed-JSON envelope this class used to
 // speak (sidecar/protocol.ts's readFrame/writeFrame/makeEnvelope) with the
-// generated pgfsm.sidecargateway.v1.SidecarGatewayService stub
-// (packages/fsm-proto-codegen/gen/typescript/, from
-// proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto) — see #100. The
+// generated pgfsm.sidecargateway.v1.SidecarGatewayService stub, from
+// proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto — see #100. Imported
+// as @pgfsm/proto-codegen (a Deno workspace-linked package, not published —
+// see #103), not a relative path into fsm-proto-codegen/gen/. The
 // connection/registration/pending-invoke bookkeeping is otherwise unchanged
 // from the protocol.ts-based version, which was itself ported from the
 // polygot-lang-ipc-worker prototype's server/src/sidecar/gateway.ts; routing
@@ -30,14 +31,14 @@ import {
   type ServiceImpl,
 } from "@connectrpc/connect";
 import * as http2 from "node:http2";
-import { SidecarGatewayService } from "../../../fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";
+import { SidecarGatewayService } from "@pgfsm/proto-codegen/typescript/sidecargateway/v1/connect";
 import {
   Invoke,
   type Register,
   RegisterAck,
   type SessionRequest,
   SessionResponse,
-} from "../../../fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";
+} from "@pgfsm/proto-codegen/typescript/sidecargateway/v1/pb";
 
 const logger = getLogger([
   "@pgfsm/worker",

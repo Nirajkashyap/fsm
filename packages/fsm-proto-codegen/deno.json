@@ -1,4 +1,12 @@
 {
+  "name": "@pgfsm/proto-codegen",
+  "version": "0.1.0",
+  "exports": {
+    "./typescript/activitygateway/v1/connect": "./gen/typescript/pgfsm/activitygateway/v1/activity_gateway_connect.js",
+    "./typescript/activitygateway/v1/pb": "./gen/typescript/pgfsm/activitygateway/v1/activity_gateway_pb.js",
+    "./typescript/sidecargateway/v1/connect": "./gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js",
+    "./typescript/sidecargateway/v1/pb": "./gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js"
+  },
   "tasks": {
     "generate": "PATH=\"$PWD/node_modules/.bin:$PATH\" buf generate"
   },

@@ -723,22 +723,27 @@ export async function writeAggregateGoRegistry(
 }
 
 /**
- * Fixed relative paths from `<appRoot>/worker-sdk-generated/<lang>/` to the
- * generated `pgfsm.sidecargateway.v1.SidecarGatewayService` stub
- * (`packages/fsm-proto-codegen/gen/<lang>/`, from
- * `proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto` — see #100) — the
- * one piece of worker-sdk that's genuinely gateway-owned and never
- * duplicated per language, so generated `sdk.{ts,py}` imports it directly
- * instead of getting its own copy (unlike Rust/Go, which still speak
+ * Bare-specifier imports for the generated
+ * `pgfsm.sidecargateway.v1.SidecarGatewayService` stub — the one piece of
+ * worker-sdk that's genuinely gateway-owned and never duplicated per
+ * language, so generated `sdk.{ts,py}` imports it directly instead of
+ * getting its own copy (unlike Rust/Go, which still speak
  * sidecar/protocol.ts's hand-ported envelope until they migrate too).
- * Hardcoded, consumer-aware paths by design — see
- * `writeAggregateGoRegistry`'s doc comment for the same tradeoff elsewhere
- * in this file.
+ *
+ * `@pgfsm/proto-codegen` is a Deno workspace-linked package (not published
+ * to npm/JSR — see #103), resolved by every workspace member with no extra
+ * `deno.json` config, the same way `fsm-core-async-op-worker` already
+ * consumes `@pgfsm/db`. This replaced a relative path computed by counting
+ * `../` back to `packages/fsm-proto-codegen/gen/typescript/` — a count that
+ * had to vary per language purely because of how deeply each worker-sdk's
+ * own generated output happened to be nested (Rust needed one more `../`
+ * than TS/Python/Go, for exactly that reason). Bare specifiers make that
+ * bookkeeping moot.
  */
 const GATEWAY_SIDECAR_PROTO_CONNECT_IMPORT_PATH =
-  "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js";
+  "@pgfsm/proto-codegen/typescript/sidecargateway/v1/connect";
 const GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH =
-  "../../../../packages/fsm-proto-codegen/gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js";
+  "@pgfsm/proto-codegen/typescript/sidecargateway/v1/pb";
 /** Directory (not a single file — Python imports a package, not a module by path) holding the generated grpc stub for Python. */
 const GATEWAY_SIDECAR_PROTO_GEN_PYTHON_REL_PATH =
   "../../../../packages/fsm-proto-codegen/gen/python";

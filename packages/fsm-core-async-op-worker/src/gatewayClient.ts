@@ -6,9 +6,9 @@
 // The orchestrator keeps owning PGMQ poll/claim/archive; this client is only
 // the invocation leg, one call per claimed message.
 //
-// Built on the compiler-generated Connect-ES stubs
-// (packages/fsm-proto-codegen/gen/typescript/, see that package's README)
-// instead of @grpc/proto-loader's runtime reflection — real generated types,
+// Built on the compiler-generated Connect-ES stubs (imported as
+// @pgfsm/proto-codegen, a Deno workspace-linked package, not published —
+// see #103) instead of @grpc/proto-loader's runtime reflection — real generated types,
 // no schema loaded off disk at startup. gatewayServer.ts made the same move
 // server-side, via connectNodeAdapter. connect-node's transport speaks
 // HTTP/2 over a URL authority, with no native "unix:" scheme the way
@@ -25,7 +25,7 @@ import {
 } from "@connectrpc/connect-node";
 import * as net from "node:net";
 import type { ClientSessionOptions } from "node:http2";
-import { ActivityGatewayService } from "../../fsm-proto-codegen/gen/typescript/pgfsm/activitygateway/v1/activity_gateway_connect.js";
+import { ActivityGatewayService } from "@pgfsm/proto-codegen/typescript/activitygateway/v1/connect";
 
 // Connect's `Client<typeof ActivityGatewayService>` utility type resolves every
 // method to `never` under `deno check` specifically (reproduced in complete
