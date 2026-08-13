@@ -37,9 +37,14 @@ codegen pipeline works and produces correct, runnable output.
 - `gen/{typescript,python,rust,go}/` — generated output, committed (same
   convention as `apps/fsm-core-example/worker-sdk-generated/`) so consumers
   don't need Buf installed just to build against it.
-- `package.json` / `node_modules/` — **not** app dependencies. Only the two
-  `protoc-gen-*` binaries `buf generate` needs on `PATH` for TypeScript's
-  `local:` plugins (see below). Nothing here is imported by any TS source file.
+- `package.json` / `node_modules/` — **not** app dependencies. The npm-managed
+  half of the toolchain: the `buf` CLI itself plus the two `protoc-gen-*`
+  binaries needed on `PATH` for TypeScript's `local:` plugins (see below), run
+  via `npm run generate:local` / `npm run generate:remote`. Nothing here is
+  imported by any TS source file — that's `deno.json`'s job (next bullet).
+- `deno.json` — exposes the generated TypeScript under `gen/typescript/` to
+  Deno/Node consumers via its `exports` map. Not involved in generation at all;
+  that's entirely `package.json`'s npm scripts.
 
 ### Adding a new service's contracts
 
@@ -49,8 +54,8 @@ codegen pipeline works and produces correct, runnable output.
    `inputs:` list pointing at that directory — the existing `plugins:` list in
    each applies to every input, so no other change is needed to generate all
    four languages for it too.
-3. `deno task generate:local` (see [Regenerating](#regenerating)), then commit
-   the new `proto/<service-name>/` and its `gen/` output together.
+3. `npm run generate:local` (see [Regenerating](#regenerating)), then commit the
+   new `proto/<service-name>/` and its `gen/` output together.
 
 The service itself still implements and calls its contract as before — only the
 `.proto` source and its buf module move here.
@@ -64,21 +69,16 @@ to actually run:
 ```sh
 cd packages/fsm-proto-codegen
 npm install                          # once, or after pulling a version bump
-export PATH="$PWD/node_modules/.bin:$PATH"
 
-buf generate --template local.buf.gen.yaml   # recommended — see below
-buf generate --template remote.buf.gen.yaml  # BSR only, TS output is broken
+npm run generate:local               # recommended — see below
+npm run generate:remote              # BSR only, TS output is broken
 ```
 
-`deno task generate:local` / `deno task generate:remote` from this directory run
-the same two commands, with `node_modules/.bin` already on `PATH` for the
-TypeScript plugins.
-
-Requires the `buf` CLI (`brew install bufbuild/buf/buf`, or see
-[buf.build/docs/installation](https://buf.build/docs/installation)); not pinned
-via this repo's `.prototools` since `proto` (moonrepo) has no buf plugin.
-`local.buf.gen.yaml` additionally needs each language's local plugin binary on
-`PATH` — see [Local plugin install](#local-plugin-install).
+Both are plain `npm run` scripts (`package.json`'s `scripts:`), so `buf` itself
+and TypeScript's two `protoc-gen-*` plugins resolve automatically from
+`node_modules/.bin` — no manual `PATH` export needed. `local.buf.gen.yaml`
+additionally needs Python/Rust/Go's local plugin binaries on `PATH` — those
+aren't npm packages, see [Local plugin install](#local-plugin-install).
 
 ## Plugins, per language
 

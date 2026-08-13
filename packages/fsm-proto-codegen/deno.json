@@ -7,10 +7,6 @@
     "./typescript/sidecargateway/v1/connect": "./gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_connect.js",
     "./typescript/sidecargateway/v1/pb": "./gen/typescript/pgfsm/sidecargateway/v1/sidecar_gateway_pb.js"
   },
-  "tasks": {
-    "generate:local": "PATH=\"$PWD/node_modules/.bin:$PATH\" buf generate --template local.buf.gen.yaml",
-    "generate:remote": "buf generate --template remote.buf.gen.yaml"
-  },
   "imports": {
     "@bufbuild/protobuf": "npm:@bufbuild/protobuf@^1.10.1"
   },
