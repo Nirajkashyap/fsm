@@ -4,7 +4,7 @@ import { Pool } from "pg";
 
 import machineConfig from "./machine.ts";
 import { resolveStateValue } from "@pgfsm/db";
-import { macrostep_v2 } from "../../../../fsm-core-ts-hono-deno/worker/fsmworker-helper.ts";
+import { macrostepV2 as macrostep_v2 } from "@pgfsm/sync-worker";
 import {
   replaceSpacesWithUnderscores,
   replaceUnderscoresWithSpaces,
