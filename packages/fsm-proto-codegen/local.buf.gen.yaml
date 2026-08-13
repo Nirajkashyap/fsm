@@ -5,18 +5,14 @@ inputs:
   - directory: proto/fsm-core-async-op-worker
 plugins:
   # TypeScript — protobuf-es (message types) + Connect (client/server RPC
-  # stubs). Local, not remote: BSR's connect-es plugin (both under bufbuild/
-  # and connectrpc/) is stuck on old releases (v0.13, v1.6.1) built against
-  # protobuf-es v1's output shape -- paired with the remote protobuf-es v2
-  # message plugin, the generated connect stub imports names (Empty,
-  # InvokeRequest, ...) as values that the v2 message file only exports as
-  # types, which is a real runtime failure (TS hides it -- type imports get
-  # erased -- but Deno/Node crash on the unresolved import). protoc-gen-es and
-  # protoc-gen-connect-es haven't published a matching v2 pair yet, so both
-  # plugins are pinned here to the last mutually-compatible v1 line (`npm ls`
-  # in this package) instead. See README's "TypeScript: why local, not remote
-  # plugins" for the full writeup -- this is the only language where "local"
-  # isn't a choice, it's the only option that actually works.
+  # stubs). protoc-gen-es and protoc-gen-connect-es haven't published a
+  # matching v2 pair to any registry yet, so both are pinned here to the last
+  # mutually-compatible v1 line (`npm ls` in this package) instead --
+  # remote.buf.gen.yaml pins the equivalent versions from BSR, but exact
+  # version control (not whatever BSR last published under a tag) is why this
+  # file stays the day-to-day default. See README's "TypeScript: local is
+  # preferred, but remote is pinned to match" for the full writeup, including
+  # what breaks if either plugin here is left unpinned.
   - local: protoc-gen-es
     out: gen/typescript
   - local: protoc-gen-connect-es

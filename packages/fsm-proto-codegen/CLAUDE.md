@@ -4,7 +4,7 @@ Scoped guidance for `@pgfsm/proto-codegen-plugins`. Repo-wide conventions and
 session protocol live in the root `CLAUDE.md` / `AGENTS.md`. Full docs (why this
 exists, the plugin table, per-language gotchas) are in this package's
 `README.md` — read it before touching `local.buf.gen.yaml` /
-`remote.buf.gen.yaml` or regenerating.
+`remote.buf.gen.yaml` / `hybrid.buf.gen.yaml` or regenerating.
 
 ## Commands
 
@@ -12,7 +12,9 @@ exists, the plugin table, per-language gotchas) are in this package's
 cd packages/fsm-proto-codegen
 npm install                          # once, or after a plugin version bump
 npm run generate:local               # buf generate --template local.buf.gen.yaml (recommended)
-npm run generate:remote              # buf generate --template remote.buf.gen.yaml (TS output is broken)
+npm run generate:remote              # buf generate --template remote.buf.gen.yaml (works, but prefer local)
+npm run generate:hybrid              # buf generate --template hybrid.buf.gen.yaml (TS local + rest remote)
+npm run generate:local:docker        # local.buf.gen.yaml, containerized -- no host toolchain installs
 ```
 
 `buf` itself and TypeScript's two `protoc-gen-*` plugins come from
@@ -20,6 +22,9 @@ npm run generate:remote              # buf generate --template remote.buf.gen.ya
 `generate:local` additionally needs `protoc`, `grpc_python_plugin`,
 `protoc-gen-go`, `protoc-gen-go-grpc`, `protoc-gen-prost`, `protoc-gen-tonic` on
 `PATH` (not npm-managed) — see README's "Local plugin install".
+`generate:local:docker` needs none of that on the host, just Docker — see
+README's "Regenerating with Docker" for the one output caveat
+(`grpc_python_plugin`'s style, not byte-identical to committed `gen/python/`).
 
 ## What it does
 

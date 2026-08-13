@@ -5,24 +5,17 @@ inputs:
   - directory: proto/fsm-core-async-op-worker
 plugins:
   # TypeScript — protobuf-es (message types) + Connect (client/server RPC
-  # stubs), both resolved from BSR. Pinned to matching v1 releases, not
-  # `remote:`'s unversioned "latest": BSR's connectrpc/es plugin has never
-  # published past v1.6.1 (still v1's output shape), so leaving bufbuild/es
-  # unpinned resolves "latest" to v2.13.0 -- a real runtime failure, since the
-  # v1.6.1 connect stub then imports names (Empty, InvokeRequest, ...) as
-  # values that the v2 message file only exports as types (TS hides it --
-  # type imports get erased -- but Deno/Node crash on the unresolved import).
-  # Pinning bufbuild/es to v1.10.0 (BSR's newest available v1-shaped release;
-  # v1.10.1, the exact version local.buf.gen.yaml uses, isn't published to
-  # BSR) keeps both plugins on the same v1 shape and produces output
-  # equivalent to local.buf.gen.yaml's, modulo the generator-version banner
-  # comment. Still prefer local.buf.gen.yaml day to day: it pins the exact
-  # versions this repo tests against via npm, not whatever BSR happens to
-  # have last published under a given tag. See README's "TypeScript: local
-  # is preferred, but remote is pinned to match".
-  - remote: buf.build/bufbuild/es:v1.10.0
+  # stubs), local: not remote:. protoc-gen-es and protoc-gen-connect-es
+  # haven't published a matching v2 pair to any registry, so both are pinned
+  # to the last mutually-compatible v1 line (v1.10.1 / v1.7.0, `npm ls` in
+  # this package) and run as local: plugins -- same as local.buf.gen.yaml,
+  # and unlike remote.buf.gen.yaml, which pins the equivalent versions from
+  # BSR (a version behind: BSR's newest is v1.10.0 / v1.6.1) rather than
+  # exactly what this repo tests against. See README's "TypeScript: local is
+  # preferred, but remote is pinned to match".
+  - local: protoc-gen-es
     out: gen/typescript
-  - remote: buf.build/connectrpc/es:v1.6.1
+  - local: protoc-gen-connect-es
     out: gen/typescript
 
   # Python — base message classes, .pyi type stubs, gRPC service stubs.
