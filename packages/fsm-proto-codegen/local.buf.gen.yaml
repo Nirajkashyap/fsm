@@ -1,0 +1,61 @@
+version: v2
+managed:
+  enabled: true
+inputs:
+  - directory: proto/fsm-core-async-op-worker
+plugins:
+  # TypeScript — protobuf-es (message types) + Connect (client/server RPC
+  # stubs). Local, not remote: BSR's connect-es plugin (both under bufbuild/
+  # and connectrpc/) is stuck on old releases (v0.13, v1.6.1) built against
+  # protobuf-es v1's output shape -- paired with the remote protobuf-es v2
+  # message plugin, the generated connect stub imports names (Empty,
+  # InvokeRequest, ...) as values that the v2 message file only exports as
+  # types, which is a real runtime failure (TS hides it -- type imports get
+  # erased -- but Deno/Node crash on the unresolved import). protoc-gen-es and
+  # protoc-gen-connect-es haven't published a matching v2 pair yet, so both
+  # plugins are pinned here to the last mutually-compatible v1 line (`npm ls`
+  # in this package) instead. See README's "TypeScript: why local, not remote
+  # plugins" for the full writeup -- this is the only language where "local"
+  # isn't a choice, it's the only option that actually works.
+  - local: protoc-gen-es
+    out: gen/typescript
+  - local: protoc-gen-connect-es
+    out: gen/typescript
+
+  # Python — protoc's own built-in generators for message classes and .pyi
+  # stubs (no separate plugin binary; `protoc_builtin` shells out to `protoc
+  # --python_out=`/`--pyi_out=` directly), plus the grpc project's own
+  # protoc-gen-grpc_python plugin for service stubs. `brew install protobuf
+  # grpc` puts `protoc` and `grpc_python_plugin` on PATH -- see README.
+  - protoc_builtin: python
+    out: gen/python
+  - protoc_builtin: pyi
+    out: gen/python
+  - local: grpc_python_plugin
+    out: gen/python
+
+  # Rust — prost (message types) + tonic (gRPC client/server stubs), the same
+  # neoeinstein/protoc-gen-prost source BSR's community/neoeinstein-{prost,
+  # tonic} remote plugins wrap. `cargo install protoc-gen-prost
+  # protoc-gen-tonic` -- pin to a version pair whose prost-build/tonic-build
+  # dependency matches this package's committed gen/rust/Cargo.toml
+  # (prost/tonic/tonic-prost `^0.14`) -- see README.
+  - local: protoc-gen-prost
+    out: gen/rust
+  - local: protoc-gen-tonic
+    out: gen/rust
+
+  # Go — base message types + gRPC service stubs, `go install`ed and pinned to
+  # match the versions recorded in the generated file headers under gen/go/
+  # (see README). `module=` (rather than paths=source_relative) places output
+  # at a path derived from each file's `go_package` option relative to that
+  # module prefix, so e.g. activity-gateway.proto's go_package
+  # (.../gen/go/activitygateway) lands at gen/go/activitygateway/ -- one
+  # directory per Go package, the idiomatic layout, and what keeps working
+  # once a second .proto file/package is added.
+  - local: protoc-gen-go
+    out: gen/go
+    opt: module=github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go
+  - local: protoc-gen-go-grpc
+    out: gen/go
+    opt: module=github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go

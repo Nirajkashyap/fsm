@@ -1,7 +1,7 @@
 {
   "name": "@pgfsm/proto-codegen-plugins",
   "private": true,
-  "description": "protoc-gen-* binaries buf.gen.yaml invokes as `local:` plugins for TypeScript output. Not a runtime dependency of any app -- only needed on PATH when running `buf generate` in this package.",
+  "description": "protoc-gen-* binaries local.buf.gen.yaml invokes as `local:` plugins for TypeScript output. Not a runtime dependency of any app -- only needed on PATH when running `buf generate --template local.buf.gen.yaml` in this package.",
   "devDependencies": {
     "@bufbuild/protoc-gen-es": "1.10.1",
     "@connectrpc/protoc-gen-connect-es": "1.7.0"

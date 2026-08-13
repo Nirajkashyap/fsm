@@ -5,20 +5,20 @@ inputs:
   - directory: proto/fsm-core-async-op-worker
 plugins:
   # TypeScript — protobuf-es (message types) + Connect (client/server RPC
-  # stubs). Replaces the current runtime-only @grpc/proto-loader reflection
-  # with real generated types. Local, not remote: BSR's connect-es plugin
-  # (both under bufbuild/ and connectrpc/) is stuck on old releases (v0.13,
-  # v1.6.1) built against protobuf-es v1's output shape -- paired with the
-  # remote protobuf-es v2 message plugin, the generated connect stub imports
-  # names (Empty, InvokeRequest, ...) as values that the v2 message file only
-  # exports as types, which is a real runtime failure (TS hides it -- type
-  # imports get erased -- but Deno/Node crash on the unresolved import).
-  # protoc-gen-es and protoc-gen-connect-es haven't published a matching v2
-  # pair yet, so both plugins are pinned here to the last mutually-compatible
-  # v1 line (`npm ls` in this package) instead.
-  - local: protoc-gen-es
+  # stubs), both resolved from BSR. KNOWN BROKEN, kept only for parity with
+  # the other three languages: BSR's connect-es plugin (both under bufbuild/
+  # and connectrpc/) is stuck on old releases (v0.13, v1.6.1) built against
+  # protobuf-es v1's output shape -- paired with the remote protobuf-es v2
+  # message plugin (which `remote:` here resolves to, since no version is
+  # pinned), the generated connect stub imports names (Empty, InvokeRequest,
+  # ...) as values that the v2 message file only exports as types, which is a
+  # real runtime failure (TS hides it -- type imports get erased -- but
+  # Deno/Node crash on the unresolved import). Do not regenerate TypeScript
+  # from this file -- use local.buf.gen.yaml instead. See README's
+  # "TypeScript: why local, not remote plugins".
+  - remote: buf.build/bufbuild/es
     out: gen/typescript
-  - local: protoc-gen-connect-es
+  - remote: buf.build/bufbuild/connect-es
     out: gen/typescript
 
   # Python — base message classes, .pyi type stubs, gRPC service stubs.

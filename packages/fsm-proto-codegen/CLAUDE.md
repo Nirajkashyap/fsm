@@ -3,17 +3,22 @@
 Scoped guidance for `@pgfsm/proto-codegen-plugins`. Repo-wide conventions and
 session protocol live in the root `CLAUDE.md` / `AGENTS.md`. Full docs (why this
 exists, the plugin table, per-language gotchas) are in this package's
-`README.md` — read it before touching `buf.gen.yaml` or regenerating.
+`README.md` — read it before touching `local.buf.gen.yaml` /
+`remote.buf.gen.yaml` or regenerating.
 
 ## Commands
 
 ```bash
 cd packages/fsm-proto-codegen
 npm install                          # once, or after a plugin version bump
-deno task generate                   # buf generate, with node_modules/.bin on PATH
+deno task generate:local             # buf generate --template local.buf.gen.yaml (recommended)
+deno task generate:remote            # buf generate --template remote.buf.gen.yaml (TS output is broken)
 ```
 
 Requires the `buf` CLI on `PATH` (not proto-pinned — see README).
+`generate:local` also needs `protoc`, `grpc_python_plugin`, `protoc-gen-go`,
+`protoc-gen-go-grpc`, `protoc-gen-prost`, `protoc-gen-tonic` on `PATH` — see
+README's "Local plugin install".
 
 ## What it does
 
