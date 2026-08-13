@@ -2,7 +2,8 @@
 // TypeScript worker SDK: connects to the gateway's sidecar Unix socket via
 // the generated pgfsm.sidecargateway.v1.SidecarGatewayService bidi-streaming
 // client (@pgfsm/proto-codegen, a Deno workspace-linked package — see #103 —
-// from proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto, #100), registers
+// from packages/fsm-proto-codegen/proto/fsm-core-async-op-worker/pgfsm/sidecargateway/v1/sidecar_gateway.proto,
+// #100), registers
 // actors from a compiler-generated registry, and serves invoke requests.
 //
 // Actor discovery is no longer a runtime folder scan + dynamic `import()` —

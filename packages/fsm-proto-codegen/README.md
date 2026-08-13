@@ -1,19 +1,19 @@
 # @pgfsm/proto-codegen
 
 Buf-driven `.proto` → multi-language stub generation for this repo's four
-polyglot actor languages (TypeScript, Python, Rust, Go). Owns codegen _config_
-only — it does not own any `.proto` source file itself.
+polyglot actor languages (TypeScript, Python, Rust, Go), and the source-of-truth
+home for the `.proto` contracts themselves (see
+[SPEC-002](../../docs/specs/spec-002-proto-contracts-in-codegen-package.md)).
 
 ## Why this exists
 
-`packages/fsm-core-async-op-worker/src/proto/pgfsm/activitygateway/v1/activity_gateway.proto`
-(the Activity Gateway's client-facing gRPC contract) had no generated stubs at
-all: TypeScript used `@grpc/proto-loader` at runtime (schema reflection, no
-codegen), and there was no Python/Rust/Go client or server code for it. Rather
-than hand-writing or hand-porting stubs per language the way the old
-`fsm-core-async-op-worker/src/worker-sdk/` once was, this package runs one
-`.proto` file through [Buf](https://buf.build)'s plugin pipeline for all four
-languages from a single `buf generate` command.
+`activity_gateway.proto` (the Activity Gateway's client-facing gRPC contract)
+had no generated stubs at all: TypeScript used `@grpc/proto-loader` at runtime
+(schema reflection, no codegen), and there was no Python/Rust/Go client or
+server code for it. Rather than hand-writing or hand-porting stubs per language
+the way the old `fsm-core-async-op-worker/src/worker-sdk/` once was, this
+package runs each service's `.proto` files through [Buf](https://buf.build)'s
+plugin pipeline for all four languages from a single `buf generate` command.
 
 Wiring the generated stubs into the actual gateway/worker code (replacing
 `@grpc/proto-loader` etc.) is deliberately **not** part of this package — see
@@ -22,20 +22,36 @@ codegen pipeline works and produces correct, runnable output.
 
 ## Layout
 
-- `packages/fsm-core-async-op-worker/src/proto/buf.yaml` — the proto _module_
-  config (lint/breaking-change rules). Lives next to the `.proto` files it
-  governs, not in this package — Buf modules are rooted where their source
-  lives, and the gateway package still owns those contracts.
+- `proto/<service>/` — one directory per service that defines `.proto`
+  contracts, e.g. `proto/fsm-core-async-op-worker/` for the Activity Gateway and
+  Sidecar Gateway contracts. Each is its own independent Buf module: its own
+  `buf.yaml` (lint/breaking-change policy), scoped to that service alone.
+  Centralizing here is about _location_, not _governance_ — one service's lint
+  exceptions or breaking-change policy never leak onto another's. See
+  [SPEC-002](../../docs/specs/spec-002-proto-contracts-in-codegen-package.md)
+  for the full rationale and the "one shared module" alternative it rejects.
 - `buf.gen.yaml` (this package) — the codegen _plugin_ config: which plugins
-  run, in which language, writing where. Points at the module above via
-  `inputs: - directory: ../fsm-core-async-op-worker/src/proto` instead of
-  requiring a `buf.yaml` in this package.
+  run, in which language, writing where. `inputs:` lists one entry per service
+  directory above.
 - `gen/{typescript,python,rust,go}/` — generated output, committed (same
   convention as `apps/fsm-core-example/worker-sdk-generated/`) so consumers
   don't need Buf installed just to build against it.
 - `package.json` / `node_modules/` — **not** app dependencies. Only the two
   `protoc-gen-*` binaries `buf generate` needs on `PATH` for TypeScript (see
   below). Nothing here is imported by any TS source file.
+
+### Adding a new service's contracts
+
+1. Create `proto/<service-name>/` with its own `buf.yaml` (copy an existing
+   service's as a starting point) and `.proto` files under it.
+2. Add an entry to `buf.gen.yaml`'s `inputs:` list pointing at that directory —
+   the existing `plugins:` list applies to every input, so no other change is
+   needed to generate all four languages for it too.
+3. `deno task generate`, then commit the new `proto/<service-name>/` and its
+   `gen/` output together.
+
+The service itself still implements and calls its contract as before — only the
+`.proto` source and its buf module move here.
 
 ## Regenerating
 

@@ -17,13 +17,13 @@ Requires the `buf` CLI on `PATH` (not proto-pinned — see README).
 
 ## What it does
 
-Runs every `.proto` file under `packages/fsm-core-async-op-worker/src/proto/`
-(the Activity Gateway's client-facing `activity_gateway.proto` and worker-facing
-`sidecar_gateway.proto`) through Buf's plugin pipeline to produce stubs for all
-four polyglot actor languages (TypeScript, Python, Rust, Go), committed under
-`gen/`. Owns codegen _config_ only — the `.proto` sources and their shared
-`buf.yaml` module config live with the gateway package that owns the contracts,
-not here.
+Owns both the `.proto` contract sources (one directory per defining service
+under `proto/<service>/`, each its own independent Buf module — see README's
+Layout section) and the codegen config that runs every one of them through Buf's
+plugin pipeline to produce stubs for all four polyglot actor languages
+(TypeScript, Python, Rust, Go), committed under `gen/`. Today that's
+`proto/fsm-core-async-op-worker/` — the Activity Gateway's client-facing
+`activity_gateway.proto` and worker-facing `sidecar_gateway.proto`.
 
 `package.json` / `node_modules/` here are not app dependencies — just the
 `protoc-gen-es` / `protoc-gen-connect-es` binaries `buf generate` needs on

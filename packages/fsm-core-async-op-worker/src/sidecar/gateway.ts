@@ -8,8 +8,8 @@
 // Replaces the hand-rolled length-prefixed-JSON envelope this class used to
 // speak (sidecar/protocol.ts's readFrame/writeFrame/makeEnvelope) with the
 // generated pgfsm.sidecargateway.v1.SidecarGatewayService stub, from
-// proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto — see #100. Imported
-// as @pgfsm/proto-codegen (a Deno workspace-linked package, not published —
+// packages/fsm-proto-codegen/proto/fsm-core-async-op-worker/pgfsm/sidecargateway/v1/sidecar_gateway.proto
+// — see #100. Imported as @pgfsm/proto-codegen (a Deno workspace-linked package, not published —
 // see #103), not a relative path into fsm-proto-codegen/gen/. The
 // connection/registration/pending-invoke bookkeeping is otherwise unchanged
 // from the protocol.ts-based version, which was itself ported from the

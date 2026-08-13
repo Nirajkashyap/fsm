@@ -147,8 +147,8 @@ register their actors against, then polls Postgres directly on its own interval
 to claim and dispatch work — no separate scheduler process, no `pg_notify`.
 
 The gateway's client-facing gRPC contract
-(`packages/fsm-core-async-op-worker/src/proto/activity-gateway.proto`) is
-compiled to real TypeScript/Python/Rust/Go stubs by
+(`packages/fsm-proto-codegen/proto/fsm-core-async-op-worker/pgfsm/activitygateway/v1/activity_gateway.proto`)
+is compiled to real TypeScript/Python/Rust/Go stubs by
 [`fsm-proto-codegen`](./packages/fsm-proto-codegen/) via `buf generate`,
 committed under `packages/fsm-proto-codegen/gen/<lang>/` — not loaded from the
 `.proto` file at runtime. Regenerate after changing the contract; see that
