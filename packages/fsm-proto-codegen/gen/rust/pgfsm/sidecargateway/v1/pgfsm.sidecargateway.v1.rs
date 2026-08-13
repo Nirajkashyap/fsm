@@ -8,113 +8,113 @@
 /// unique across languages.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct RegisteredActor {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub parent_fsm_name: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub parent_fsm_version: ::prost::alloc::string::String,
-    #[prost(string, tag="3")]
+    #[prost(string, tag = "3")]
     pub fsm_type: ::prost::alloc::string::String,
-    #[prost(string, tag="4")]
+    #[prost(string, tag = "4")]
     pub fsm_name: ::prost::alloc::string::String,
-    #[prost(string, tag="5")]
+    #[prost(string, tag = "5")]
     pub fsm_version: ::prost::alloc::string::String,
-    #[prost(string, tag="6")]
+    #[prost(string, tag = "6")]
     pub fsm_language: ::prost::alloc::string::String,
-    #[prost(uint32, tag="7")]
+    #[prost(uint32, tag = "7")]
     pub timeout_ms: u32,
-    #[prost(string, tag="8")]
+    #[prost(string, tag = "8")]
     pub description: ::prost::alloc::string::String,
 }
 /// First message a worker sends on a new Session stream.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Register {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub worker_id: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub language: ::prost::alloc::string::String,
-    #[prost(string, tag="3")]
+    #[prost(string, tag = "3")]
     pub protocol_version: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag="4")]
+    #[prost(message, repeated, tag = "4")]
     pub actors: ::prost::alloc::vec::Vec<RegisteredActor>,
 }
 /// The gateway's reply to Register, sent once as the first SessionResponse.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct RegisterAck {
-    #[prost(bool, tag="1")]
+    #[prost(bool, tag = "1")]
     pub accepted: bool,
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub gateway_protocol_version: ::prost::alloc::string::String,
     /// "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
     /// keys, mirroring sidecar/protocol.ts's actorKey().
-    #[prost(string, repeated, tag="3")]
+    #[prost(string, repeated, tag = "3")]
     pub registered_actors: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    #[prost(string, repeated, tag="4")]
+    #[prost(string, repeated, tag = "4")]
     pub rejected_actors: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// Sent periodically by the worker to keep its registration alive.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Heartbeat {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub worker_id: ::prost::alloc::string::String,
 }
 /// Pushed by the gateway, unsolicited, once per activity invocation.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Invoke {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub invoke_id: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub parent_fsm_name: ::prost::alloc::string::String,
-    #[prost(string, tag="3")]
+    #[prost(string, tag = "3")]
     pub parent_fsm_version: ::prost::alloc::string::String,
-    #[prost(string, tag="4")]
+    #[prost(string, tag = "4")]
     pub fsm_type: ::prost::alloc::string::String,
-    #[prost(string, tag="5")]
+    #[prost(string, tag = "5")]
     pub fsm_name: ::prost::alloc::string::String,
-    #[prost(string, tag="6")]
+    #[prost(string, tag = "6")]
     pub fsm_version: ::prost::alloc::string::String,
-    #[prost(string, tag="7")]
+    #[prost(string, tag = "7")]
     pub fsm_language: ::prost::alloc::string::String,
     /// JSON-encoded activity input — kept as an opaque string (not a typed
     /// message) the same way activity_gateway.proto's InvokeRequest.input_json
     /// is, since the actual shape is user-defined per actor.
-    #[prost(string, tag="8")]
+    #[prost(string, tag = "8")]
     pub input_json: ::prost::alloc::string::String,
-    #[prost(string, tag="9")]
+    #[prost(string, tag = "9")]
     pub instance_id: ::prost::alloc::string::String,
-    #[prost(string, tag="10")]
+    #[prost(string, tag = "10")]
     pub correlation_id: ::prost::alloc::string::String,
-    #[prost(uint32, tag="11")]
+    #[prost(uint32, tag = "11")]
     pub timeout_ms: u32,
-    #[prost(int64, tag="12")]
+    #[prost(int64, tag = "12")]
     pub deadline_unix_ms: i64,
 }
 /// Sent by the worker after a successful Invoke.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct InvokeResult {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub invoke_id: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub output_json: ::prost::alloc::string::String,
-    #[prost(uint32, tag="3")]
+    #[prost(uint32, tag = "3")]
     pub duration_ms: u32,
 }
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct InvokeErrorDetail {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub code: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
+    #[prost(string, tag = "2")]
     pub message: ::prost::alloc::string::String,
-    #[prost(bool, tag="3")]
+    #[prost(bool, tag = "3")]
     pub retriable: bool,
 }
 /// Sent by the worker after a failed Invoke.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct InvokeError {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub invoke_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="2")]
+    #[prost(message, optional, tag = "2")]
     pub error: ::core::option::Option<InvokeErrorDetail>,
-    #[prost(uint32, tag="3")]
+    #[prost(uint32, tag = "3")]
     pub duration_ms: u32,
 }
 /// Pushed by the gateway to ask a worker to abandon an in-flight invoke.
@@ -124,51 +124,51 @@ pub struct InvokeError {
 /// breaking change once that lands.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Cancel {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub invoke_id: ::prost::alloc::string::String,
 }
 /// Sent by the worker to end registration gracefully before closing the
 /// stream.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct Unregister {
-    #[prost(string, tag="1")]
+    #[prost(string, tag = "1")]
     pub worker_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SessionRequest {
-    #[prost(oneof="session_request::Payload", tags="1, 2, 3, 4, 5")]
+    #[prost(oneof = "session_request::Payload", tags = "1, 2, 3, 4, 5")]
     pub payload: ::core::option::Option<session_request::Payload>,
 }
 /// Nested message and enum types in `SessionRequest`.
 pub mod session_request {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Payload {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         Register(super::Register),
-        #[prost(message, tag="2")]
+        #[prost(message, tag = "2")]
         Heartbeat(super::Heartbeat),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         InvokeResult(super::InvokeResult),
-        #[prost(message, tag="4")]
+        #[prost(message, tag = "4")]
         InvokeError(super::InvokeError),
-        #[prost(message, tag="5")]
+        #[prost(message, tag = "5")]
         Unregister(super::Unregister),
     }
 }
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct SessionResponse {
-    #[prost(oneof="session_response::Payload", tags="1, 2, 3")]
+    #[prost(oneof = "session_response::Payload", tags = "1, 2, 3")]
     pub payload: ::core::option::Option<session_response::Payload>,
 }
 /// Nested message and enum types in `SessionResponse`.
 pub mod session_response {
     #[derive(Clone, PartialEq, Eq, Hash, ::prost::Oneof)]
     pub enum Payload {
-        #[prost(message, tag="1")]
+        #[prost(message, tag = "1")]
         RegisterAck(super::RegisterAck),
-        #[prost(message, tag="2")]
+        #[prost(message, tag = "2")]
         Invoke(super::Invoke),
-        #[prost(message, tag="3")]
+        #[prost(message, tag = "3")]
         Cancel(super::Cancel),
     }
 }

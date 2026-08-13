@@ -5,20 +5,24 @@ inputs:
   - directory: proto/fsm-core-async-op-worker
 plugins:
   # TypeScript — protobuf-es (message types) + Connect (client/server RPC
-  # stubs). Replaces the current runtime-only @grpc/proto-loader reflection
-  # with real generated types. Local, not remote: BSR's connect-es plugin
-  # (both under bufbuild/ and connectrpc/) is stuck on old releases (v0.13,
-  # v1.6.1) built against protobuf-es v1's output shape -- paired with the
-  # remote protobuf-es v2 message plugin, the generated connect stub imports
-  # names (Empty, InvokeRequest, ...) as values that the v2 message file only
-  # exports as types, which is a real runtime failure (TS hides it -- type
-  # imports get erased -- but Deno/Node crash on the unresolved import).
-  # protoc-gen-es and protoc-gen-connect-es haven't published a matching v2
-  # pair yet, so both plugins are pinned here to the last mutually-compatible
-  # v1 line (`npm ls` in this package) instead.
-  - local: protoc-gen-es
+  # stubs), both resolved from BSR. Pinned to matching v1 releases, not
+  # `remote:`'s unversioned "latest": BSR's connectrpc/es plugin has never
+  # published past v1.6.1 (still v1's output shape), so leaving bufbuild/es
+  # unpinned resolves "latest" to v2.13.0 -- a real runtime failure, since the
+  # v1.6.1 connect stub then imports names (Empty, InvokeRequest, ...) as
+  # values that the v2 message file only exports as types (TS hides it --
+  # type imports get erased -- but Deno/Node crash on the unresolved import).
+  # Pinning bufbuild/es to v1.10.0 (BSR's newest available v1-shaped release;
+  # v1.10.1, the exact version local.buf.gen.yaml uses, isn't published to
+  # BSR) keeps both plugins on the same v1 shape and produces output
+  # equivalent to local.buf.gen.yaml's, modulo the generator-version banner
+  # comment. Still prefer local.buf.gen.yaml day to day: it pins the exact
+  # versions this repo tests against via npm, not whatever BSR happens to
+  # have last published under a given tag. See README's "TypeScript: local
+  # is preferred, but remote is pinned to match".
+  - remote: buf.build/bufbuild/es:v1.10.0
     out: gen/typescript
-  - local: protoc-gen-connect-es
+  - remote: buf.build/connectrpc/es:v1.6.1
     out: gen/typescript
 
   # Python — base message classes, .pyi type stubs, gRPC service stubs.

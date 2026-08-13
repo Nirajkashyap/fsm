@@ -1,0 +1,46 @@
+version: v2
+managed:
+  enabled: true
+inputs:
+  - directory: proto/fsm-core-async-op-worker
+plugins:
+  # TypeScript — protobuf-es (message types) + Connect (client/server RPC
+  # stubs), local: not remote:. protoc-gen-es and protoc-gen-connect-es
+  # haven't published a matching v2 pair to any registry, so both are pinned
+  # to the last mutually-compatible v1 line (v1.10.1 / v1.7.0, `npm ls` in
+  # this package) and run as local: plugins -- same as local.buf.gen.yaml,
+  # and unlike remote.buf.gen.yaml, which pins the equivalent versions from
+  # BSR (a version behind: BSR's newest is v1.10.0 / v1.6.1) rather than
+  # exactly what this repo tests against. See README's "TypeScript: local is
+  # preferred, but remote is pinned to match".
+  - local: protoc-gen-es
+    out: gen/typescript
+  - local: protoc-gen-connect-es
+    out: gen/typescript
+
+  # Python — base message classes, .pyi type stubs, gRPC service stubs.
+  - remote: buf.build/protocolbuffers/python
+    out: gen/python
+  - remote: buf.build/protocolbuffers/pyi
+    out: gen/python
+  - remote: buf.build/grpc/python
+    out: gen/python
+
+  # Rust — prost (message types) + tonic (gRPC client/server stubs).
+  - remote: buf.build/community/neoeinstein-prost
+    out: gen/rust
+  - remote: buf.build/community/neoeinstein-tonic
+    out: gen/rust
+
+  # Go — base message types + gRPC service stubs. `module=` (rather than
+  # paths=source_relative) places output at a path derived from each file's
+  # `go_package` option relative to that module prefix, so e.g.
+  # activity-gateway.proto's go_package (.../gen/go/activitygateway) lands at
+  # gen/go/activitygateway/ -- one directory per Go package, the idiomatic
+  # layout, and what keeps working once a second .proto file/package is added.
+  - remote: buf.build/protocolbuffers/go
+    out: gen/go
+    opt: module=github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go
+  - remote: buf.build/grpc/go
+    out: gen/go
+    opt: module=github.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go
