@@ -1,0 +1,23 @@
+{
+  "name": "@pgfsm/proto-codegen",
+  "version": "0.1.0",
+  "exports": {
+    "./activitygateway/v1/connect": "./pgfsm/activitygateway/v1/activity_gateway_connect.js",
+    "./activitygateway/v1/pb": "./pgfsm/activitygateway/v1/activity_gateway_pb.js",
+    "./sidecargateway/v1/connect": "./pgfsm/sidecargateway/v1/sidecar_gateway_connect.js",
+    "./sidecargateway/v1/pb": "./pgfsm/sidecargateway/v1/sidecar_gateway_pb.js"
+  },
+  "imports": {
+    "@bufbuild/protobuf": "npm:@bufbuild/protobuf@^1.10.1"
+  },
+  "fmt": {
+    "exclude": [
+      "pgfsm/"
+    ]
+  },
+  "lint": {
+    "exclude": [
+      "pgfsm/"
+    ]
+  }
+}

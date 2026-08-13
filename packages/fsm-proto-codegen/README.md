@@ -36,15 +36,19 @@ codegen pipeline works and produces correct, runnable output.
   service directory above.
 - `gen/{typescript,python,rust,go}/` — generated output, committed (same
   convention as `apps/fsm-core-example/worker-sdk-generated/`) so consumers
-  don't need Buf installed just to build against it.
-- `package.json` / `node_modules/` — **not** app dependencies. The npm-managed
-  half of the toolchain: the `buf` CLI itself plus the two `protoc-gen-*`
-  binaries needed on `PATH` for TypeScript's `local:` plugins (see below), run
-  via `npm run generate:local` / `npm run generate:remote`. Nothing here is
-  imported by any TS source file — that's `deno.json`'s job (next bullet).
-- `deno.json` — exposes the generated TypeScript under `gen/typescript/` to
-  Deno/Node consumers via its `exports` map. Not involved in generation at all;
-  that's entirely `package.json`'s npm scripts.
+  don't need Buf installed just to build against it. Each carries its own
+  hand-written package manifest giving the generated stubs a real package
+  identity for that language's toolchain — `gen/typescript/deno.json` (`exports`
+  map + the `imports` map generated code needs to resolve `@bufbuild/protobuf`
+  at runtime), `gen/rust/Cargo.toml`, `gen/python/pyproject.toml`,
+  `gen/go/go.mod` — same convention across all four, see #106.
+- `package.json` / `node_modules/` (package root) — **not** app dependencies,
+  and **not** where consumers import from. The npm-managed half of the
+  toolchain: the `buf` CLI itself plus the two `protoc-gen-*` binaries needed on
+  `PATH` for TypeScript's `local:` plugins, run via `npm run
+  generate:local` /
+  `npm run generate:remote`. Consumers import from `gen/typescript/deno.json`'s
+  `exports`, not this file.
 
 ### Adding a new service's contracts
 
