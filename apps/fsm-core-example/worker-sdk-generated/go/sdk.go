@@ -2,7 +2,8 @@
 // Go worker SDK: connects to the gateway's sidecar Unix socket via the
 // generated pgfsm.sidecargateway.v1.SidecarGatewayService bidi-streaming
 // client (packages/fsm-proto-codegen/gen/go/, from
-// proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto — see #100), registers
+// packages/fsm-proto-codegen/proto/fsm-core-async-op-worker/pgfsm/sidecargateway/v1/sidecar_gateway.proto
+// — see #100), registers
 // a compiled-in actor registry, and serves invoke requests.
 //
 // Unlike worker-sdk/typescript and worker-sdk/python, this has no

@@ -2,7 +2,7 @@ version: v2
 managed:
   enabled: true
 inputs:
-  - directory: ../fsm-core-async-op-worker/src/proto
+  - directory: proto/fsm-core-async-op-worker
 plugins:
   # TypeScript — protobuf-es (message types) + Connect (client/server RPC
   # stubs). Replaces the current runtime-only @grpc/proto-loader reflection

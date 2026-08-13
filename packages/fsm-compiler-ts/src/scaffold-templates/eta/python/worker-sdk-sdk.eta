@@ -3,8 +3,9 @@
 generated pgfsm.sidecargateway.v1.SidecarGatewayService bidi-streaming
 client (the pgfsm-proto-codegen package, installed editable from
 packages/fsm-proto-codegen/gen/python/ via requirements.txt — see #106 —
-generated from proto/pgfsm/sidecargateway/v1/sidecar_gateway.proto, #100),
-registers actors from a compiler-generated registry, and serves invoke
+generated from
+packages/fsm-proto-codegen/proto/fsm-core-async-op-worker/pgfsm/sidecargateway/v1/sidecar_gateway.proto,
+#100), registers actors from a compiler-generated registry, and serves invoke
 requests.
 
 Python counterpart of ../typescript/sdk.ts's ActorWorker — same actor_key()

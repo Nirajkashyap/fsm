@@ -2,7 +2,7 @@
 
 | Field   | Value                                                                                             |
 | ------- | ------------------------------------------------------------------------------------------------- |
-| Status  | Draft                                                                                             |
+| Status  | Accepted                                                                                          |
 | Date    | 2026-08-13                                                                                        |
 | Authors | Niraj, Claude                                                                                     |
 | Issue   | #110                                                                                              |
@@ -159,23 +159,24 @@ changes are involved, so rollback carries no compatibility risk.
 
 ## Acceptance criteria
 
-- [ ] `packages/fsm-core-async-op-worker/src/proto/` no longer exists; its
+- [x] `packages/fsm-core-async-op-worker/src/proto/` no longer exists; its
       `.proto` files and `buf.yaml` live at
       `packages/fsm-proto-codegen/proto/fsm-core-async-op-worker/`, moved with
       `git mv` (history preserved).
-- [ ] `buf.gen.yaml`'s `inputs:` points at the new location.
-- [ ] `deno task generate` produces byte-identical output to what's currently
+- [x] `buf.gen.yaml`'s `inputs:` points at the new location.
+- [x] `deno task generate` produces byte-identical output to what's currently
       committed under `gen/`.
-- [ ] `fsm-proto-codegen/README.md` and `CLAUDE.md` rewritten to state it owns
+- [x] `fsm-proto-codegen/README.md` and `CLAUDE.md` rewritten to state it owns
       per-service proto contract sources (one subdirectory per service, each an
       independent buf module), including a short "adding a new service's
       contracts" note establishing the convention for next time.
-- [ ] All doc-comment references to the old path (enumerated in Consequences)
+- [x] All doc-comment references to the old path (enumerated in Consequences)
       updated, including the stale `activity-gateway.proto` filename in the root
       `README.md`.
-- [ ] No changes to any generated stub's content, any consumer's import path, or
+- [x] No changes to any generated stub's content, any consumer's import path, or
       `fsm-core-async-op-worker`'s runtime behavior.
 
 ## Implementation
 
-<!-- Filled in after acceptance: links to implementation issues and PRs. -->
+- #112 — relocates `proto/`, updates `buf.gen.yaml`, rewrites
+  `fsm-proto-codegen` docs, and fixes stale path references across consumers.
