@@ -50,11 +50,11 @@ database setup.
 ## Running the DB-backed tests
 
 The `*-test.ts` files under each FSM's version folder (e.g.
-`fsm/creditCheck/v01/fsm-core-macrostep-v2-test.ts`) exercise real DB functions
-(`macrostepV2`, `resolveStateValue`, worker journeys) against a live Postgres
-connection and compare the result to the FSM's own XState machine. They need
-that FSM already loaded into `fsm_core.fsm_states`/`fsm_transitions` — run this
-once per fresh/reset DB:
+`fsm/creditCheck/v01/compare-fsm-core-macrostep-v2-with-xstate-transition-test.ts`)
+exercise real DB functions (`macrostepV2`, `resolveStateValue`, worker journeys)
+against a live Postgres connection and compare the result to the FSM's own
+XState machine. They need that FSM already loaded into
+`fsm_core.fsm_states`/`fsm_transitions` — run this once per fresh/reset DB:
 
 ```bash
 deno task load   # from this directory, or `deno task -f fsm-core-example load` from the repo root
