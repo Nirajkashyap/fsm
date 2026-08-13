@@ -36,7 +36,11 @@ Flow:
 
 ## Index
 
-_No specs currently in Draft/Accepted status. SPEC-001 (Polyglot Actor Workers
-for Compiled Languages via Local IPC) graduated directly to
+| Spec                                                       | Title                                                 | Status |
+| ---------------------------------------------------------- | ----------------------------------------------------- | ------ |
+| [SPEC-002](spec-002-proto-contracts-in-codegen-package.md) | Proto Contract Ownership Moves to `fsm-proto-codegen` | Draft  |
+
+SPEC-001 (Polyglot Actor Workers for Compiled Languages via Local IPC) graduated
+directly to
 [ADR-003](../adr/adr-003-fsm-async-operation-polyglot-actor-execution-model.md)
-— see that ADR's "Supersedes" field._
+— see that ADR's "Supersedes" field.
