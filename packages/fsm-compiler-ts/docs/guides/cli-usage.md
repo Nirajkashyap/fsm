@@ -124,6 +124,16 @@ Unlike `generate-async-logic` (which walks an FSM folder and bulk-scaffolds from
 `fsm.json`), `--folder` here is the **app root** (e.g. `apps/fsm-core-example`),
 not an FSM/plugin-root folder.
 
+For `typescript`/`python`/`rust`, also rewrites that language's
+`<lang>/actors/generated-registry.*` from every actor currently on disk under
+`<version>/<lang>/actors/` (this run's actor included) — so repeated
+`create-async-logic` calls accumulate registry entries instead of each one
+clobbering the last. Every entry's identity is fixed: `parentFsmName` and
+`fsmType` are always `"sharedAsyncOp"` (these actors have no owning FSM),
+`fsmName` is the actor name, and `parentFsmVersion`/`fsmVersion` are both
+`--version`. Go has no per-version registry — each Go actor is already its own
+Go module (see its own `go.mod`), so only the actor file is written for `go`.
+
 ```bash
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c create-async-logic \

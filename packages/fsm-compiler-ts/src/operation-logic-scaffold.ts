@@ -289,13 +289,17 @@ export function toWrittenActor(
  * map. Matches the flattened identity model `fsm-compiler-ts`'s own
  * `validateAsyncOperationFromFolders` already used: `fsmName` is the actor's
  * own `src` (not a separate sub-FSM reference), `fsmVersion` is the parent
- * FSM's version, and `fsmType` is always `"promise"` (the only kind this
- * scaffolds).
+ * FSM's version. `fsmType` is `"promise"` for actors scaffolded from an
+ * invoke object (the only kind {@linkcode toRegisteredActor} builds) or
+ * `"sharedAsyncOp"` for the standalone, non-FSM-scoped pool
+ * `create-async-logic.ts` writes into — downstream, `fsmType` is an opaque
+ * string (used only inside `actorKey()`'s composite key), so this is safe to
+ * extend.
  */
 export type RegisteredActor = WrittenActor & {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: "promise";
+  fsmType: "promise" | "sharedAsyncOp";
   fsmName: string;
   fsmVersion: string;
 };

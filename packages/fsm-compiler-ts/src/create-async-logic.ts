@@ -2,9 +2,13 @@ import { getLogger } from "@logtape/logtape";
 import { isVersionFolderName } from "./util.ts";
 import type { ActorReference } from "./util.ts";
 import {
+  type ActorsBarrelLang,
   type OperationLang,
+  type RegisteredActor,
   resolvePluginRootAbsPath,
+  toWrittenActor,
   writeActorFile,
+  writeActorsRegistry,
 } from "./operation-logic-scaffold.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "create-async-logic"]);
@@ -18,12 +22,91 @@ const logger = getLogger(["@pgfsm/compiler", "create-async-logic"]);
 const SHARED_ASYNC_OP_DIR_NAME = "shared-async-op";
 
 /**
+ * Fixed `parentFsmName`/`fsmType` identity every shared-async-op actor
+ * registers under — unlike FSM-scoped actors (whose `parentFsmName` is the
+ * owning FSM and `fsmType` is `"promise"`, derived from an invoke object),
+ * shared-async-op actors have no owning FSM, so both are constants.
+ */
+const SHARED_ASYNC_OP_FSM_TYPE = "sharedAsyncOp" as const;
+const SHARED_ASYNC_OP_PARENT_FSM_NAME = "sharedAsyncOp";
+
+/** Languages `create-async-logic` can also emit a `generated-registry.*` for — Go has no per-version registry (see {@linkcode ActorsBarrelLang}'s doc comment). */
+const REGISTRY_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
+
+function isRegistryLang(lang: OperationLang): lang is ActorsBarrelLang {
+  return (REGISTRY_LANGS as OperationLang[]).includes(lang);
+}
+
+/** Builds the {@linkcode RegisteredActor} identity for one shared-async-op actor. */
+function toSharedAsyncOpRegisteredActor(
+  lang: ActorsBarrelLang,
+  version: string,
+  src: string,
+): RegisteredActor {
+  return {
+    ...toWrittenActor(lang, { src }),
+    parentFsmName: SHARED_ASYNC_OP_PARENT_FSM_NAME,
+    parentFsmVersion: version,
+    fsmType: SHARED_ASYNC_OP_FSM_TYPE,
+    fsmName: src,
+    fsmVersion: version,
+  };
+}
+
+/**
+ * Lists every actor already scaffolded under `<absFolderPath>/<lang>/actors/`
+ * (one subdirectory per actor — see {@linkcode writeActorFile}), by reading
+ * the directory rather than a manifest, so the registry it feeds always
+ * matches what's actually on disk even if a file was hand-removed. Excludes
+ * the registry file itself (a sibling file, not a directory).
+ */
+async function listExistingActorSrcNames(
+  absFolderPath: string,
+  lang: OperationLang,
+): Promise<string[]> {
+  const actorsDir = `${absFolderPath}/${lang}/actors`;
+  const names: string[] = [];
+  try {
+    for await (const entry of Deno.readDir(actorsDir)) {
+      if (entry.isDirectory) names.push(entry.name);
+    }
+  } catch (err) {
+    if (!(err instanceof Deno.errors.NotFound)) throw err;
+  }
+  return names.sort();
+}
+
+/**
+ * Rewrites `<absFolderPath>/<lang>/actors/<registry filename>` from every
+ * actor currently on disk for `lang` (the one just written by
+ * {@linkcode createAsyncOperationLogic} included) — so repeated
+ * `create-async-logic` calls accumulate registry entries instead of each one
+ * clobbering the last.
+ */
+async function rewriteSharedAsyncOpRegistry(
+  absFolderPath: string,
+  lang: OperationLang,
+  version: string,
+): Promise<string | undefined> {
+  if (!isRegistryLang(lang)) return undefined;
+  const srcNames = await listExistingActorSrcNames(absFolderPath, lang);
+  const actors = srcNames.map((src) =>
+    toSharedAsyncOpRegisteredActor(lang, version, src)
+  );
+  return await writeActorsRegistry(absFolderPath, actors, lang);
+}
+
+/**
  * Scaffolds a single new actor stub in the shared, non-FSM-scoped async
  * operation pool at `<appRootFolder>/shared-async-op/<version>/<lang>/actors/<name>/<name>.<ext>`,
  * via the same {@linkcode writeActorFile} helper
  * `generateAsyncOperationLogicFromFolders` uses per invoke object — so stub
- * content/formatting matches the rest of the actor-scaffolding pipeline.
- * Returns the absolute path written.
+ * content/formatting matches the rest of the actor-scaffolding pipeline. For
+ * `typescript`/`python`/`rust` (see {@linkcode ActorsBarrelLang}), also
+ * rewrites that language's `generated-registry.*` from every actor currently
+ * on disk (see {@linkcode rewriteSharedAsyncOpRegistry}), each entry's
+ * identity fixed to `parentFsmName`/`fsmType` `"sharedAsyncOp"` since these
+ * actors have no owning FSM. Returns the actor file's absolute path.
  */
 export async function createAsyncOperationLogic(
   appRootFolder: string,
@@ -54,5 +137,15 @@ export async function createAsyncOperationLogic(
     appRootDirName,
   );
   logger.info("Wrote actor file {file}", { file });
+
+  const registryFile = await rewriteSharedAsyncOpRegistry(
+    absFolderPath,
+    lang,
+    version,
+  );
+  if (registryFile) {
+    logger.info("Wrote actors registry {file}", { file: registryFile });
+  }
+
   return file;
 }
