@@ -1,8 +1,18 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
+import { copy } from "@std/fs/copy";
 
 const CLI = "packages/fsm-compiler-ts/src/cli/index.ts";
-const FSM_FOLDER = "apps/fsm-core-example/fsm";
-const SHARED_FSM_FOLDER = "apps/fsm-core-example/sharedFSM";
+
+// generate/delete/create-async-logic below invoke the real CLI as a
+// subprocess against these paths, so they must never point at the tracked
+// apps/fsm-core-example — that would delete/regenerate real committed files
+// (see #125). Work on a disposable copy instead, cleaned up by the final
+// test in this file.
+const FIXTURE_ROOT = await Deno.makeTempDir({ prefix: "fsm-compiler-cli-" });
+const APP_ROOT = `${FIXTURE_ROOT}/fsm-core-example`;
+await copy("apps/fsm-core-example", APP_ROOT);
+const FSM_FOLDER = `${APP_ROOT}/fsm`;
+const SHARED_FSM_FOLDER = `${APP_ROOT}/sharedFSM`;
 
 async function runCli(
   args: string[],
@@ -182,7 +192,7 @@ Deno.test("cli create-async-logic without --version exits 1", async () => {
     "-c",
     "create-async-logic",
     "-f",
-    "apps/fsm-core-example",
+    APP_ROOT,
     "--lang",
     "typescript",
     "--name",
@@ -197,7 +207,7 @@ Deno.test("cli create-async-logic without --name exits 1", async () => {
     "-c",
     "create-async-logic",
     "-f",
-    "apps/fsm-core-example",
+    APP_ROOT,
     "--lang",
     "typescript",
     "--version",
@@ -212,7 +222,7 @@ Deno.test("cli create-async-logic rejects an invalid --lang", async () => {
     "-c",
     "create-async-logic",
     "-f",
-    "apps/fsm-core-example",
+    APP_ROOT,
     "--lang",
     "cobol",
     "--version",
@@ -229,7 +239,7 @@ Deno.test("cli create-async-logic rejects a comma-separated --lang (exactly one 
     "-c",
     "create-async-logic",
     "-f",
-    "apps/fsm-core-example",
+    APP_ROOT,
     "--lang",
     "typescript,python",
     "--version",
@@ -242,30 +252,23 @@ Deno.test("cli create-async-logic rejects a comma-separated --lang (exactly one 
 });
 
 Deno.test("cli create-async-logic writes a single actor file under shared-async-op", async () => {
-  const actorFile =
-    "apps/fsm-core-example/shared-async-op/v01/typescript/actors/checkCreditScoreCliTest/checkCreditScoreCliTest.ts";
-  try {
-    const { code } = await runCli([
-      "-c",
-      "create-async-logic",
-      "-f",
-      "apps/fsm-core-example",
-      "--lang",
-      "typescript",
-      "--version",
-      "v01",
-      "--name",
-      "checkCreditScoreCliTest",
-    ]);
-    assertEquals(code, 0);
-    const stat = await Deno.stat(actorFile);
-    assertEquals(stat.isFile, true);
-  } finally {
-    await Deno.remove(
-      "apps/fsm-core-example/shared-async-op/v01/typescript/actors/checkCreditScoreCliTest",
-      { recursive: true },
-    ).catch(() => {});
-  }
+  const { code } = await runCli([
+    "-c",
+    "create-async-logic",
+    "-f",
+    APP_ROOT,
+    "--lang",
+    "typescript",
+    "--version",
+    "v01",
+    "--name",
+    "checkCreditScoreCliTest",
+  ]);
+  assertEquals(code, 0);
+  const stat = await Deno.stat(
+    `${APP_ROOT}/shared-async-op/v01/typescript/actors/checkCreditScoreCliTest/checkCreditScoreCliTest.ts`,
+  );
+  assertEquals(stat.isFile, true);
 });
 
 // --- delete ---
@@ -380,4 +383,12 @@ Deno.test("cli --available-actors flag is accepted", async () => {
   } finally {
     await Deno.remove(tmpFile);
   }
+});
+
+// --- Cleanup ---
+// Deno runs tests within a file sequentially in declaration order (absent
+// --parallel), so this runs last and removes the fixture copy every prior
+// test in this file wrote into.
+Deno.test("cleanup fixture copy", async () => {
+  await Deno.remove(FIXTURE_ROOT, { recursive: true });
 });
