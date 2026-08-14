@@ -1,6 +1,6 @@
 // <%~ it.label %>: <%~ it.name %>
 export function <%~ it.fnName %>(input: unknown): unknown {
   // <%~ it.todo %>
-  return {};
+  return { input, msg: "<%~ it.name %> actor invoked by <%~ it.lang %>" };
 }
 

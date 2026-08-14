@@ -17,7 +17,7 @@ Deno.test("createAsyncOperationLogic - writes a single actor under <appRoot>/sha
     const content = await Deno.readTextFile(file);
     assertEquals(
       content,
-      "// Actor: checkCreditScore\nexport function checkCreditScore(input: unknown): unknown {\n  // TODO: implement actor logic\n  return {};\n}\n",
+      '// Actor: checkCreditScore\nexport function checkCreditScore(input: unknown): unknown {\n  // TODO: implement actor logic\n  return { input, msg: "checkCreditScore actor invoked by typescript" };\n}\n',
     );
   } finally {
     await Deno.remove(dir, { recursive: true });

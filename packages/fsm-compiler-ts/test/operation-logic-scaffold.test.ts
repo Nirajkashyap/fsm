@@ -56,7 +56,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\nexport function creditCheck(input: unknown): unknown {\n  // TODO: implement actor logic\n  return {};\n}\n",
+      '// Actor: creditCheck\nexport function creditCheck(input: unknown): unknown {\n  // TODO: implement actor logic\n  return { input, msg: "creditCheck actor invoked by typescript" };\n}\n',
   },
   // python
   {
@@ -85,7 +85,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "# Actor: creditCheck\ndef creditCheck(input):\n    # TODO: implement actor logic\n    return {}\n",
+      '# Actor: creditCheck\ndef creditCheck(input):\n    # TODO: implement actor logic\n    return {"input": input, "msg": "creditCheck actor invoked by python"}\n',
   },
   // rust
   {
@@ -114,7 +114,7 @@ const cases: Case[] = [
     kind: "actors",
     name: "creditCheck",
     expected:
-      "// Actor: creditCheck\n#[allow(non_snake_case)]\npub fn creditCheck(input: serde_json::Value) -> serde_json::Value {\n    // TODO: implement actor logic\n    serde_json::json!({})\n}\n",
+      '// Actor: creditCheck\n#[allow(non_snake_case)]\npub fn creditCheck(input: serde_json::Value) -> serde_json::Value {\n    // TODO: implement actor logic\n    serde_json::json!({ "input": input, "msg": "creditCheck actor invoked by rust" })\n}\n',
   },
   // go (renderOperationModule prefixes the `package <kind>` header — accounted
   // for separately below, these cases cover the per-name stub only)
@@ -146,7 +146,7 @@ const cases: Case[] = [
     expected:
       // Go exports (capitalizes) actor function names for cross-package
       // access — see toGoExportedName / #83. Other kinds/languages don't.
-      "// Actor: creditCheck\nfunc CreditCheck(input any) (any, error) {\n\t// TODO: implement actor logic\n\treturn map[string]any{}, nil\n}\n",
+      '// Actor: creditCheck\nfunc CreditCheck(input any) (any, error) {\n\t// TODO: implement actor logic\n\treturn map[string]any{"input": input, "msg": "creditCheck actor invoked by go"}, nil\n}\n',
   },
 ];
 
@@ -182,7 +182,7 @@ Deno.test("writeActorFile - go actor gets a package header, exported (capitalize
     const content = await Deno.readTextFile(file);
     assertEquals(
       content,
-      "package actors\n\n// Actor: creditCheck\nfunc CreditCheck(input any) (any, error) {\n\t// TODO: implement actor logic\n\treturn map[string]any{}, nil\n}\n",
+      'package actors\n\n// Actor: creditCheck\nfunc CreditCheck(input any) (any, error) {\n\t// TODO: implement actor logic\n\treturn map[string]any{"input": input, "msg": "creditCheck actor invoked by go"}, nil\n}\n',
     );
   } finally {
     await Deno.remove(dir, { recursive: true });
@@ -238,7 +238,7 @@ Deno.test("writeActorFile - typescript actor has no package header", async () =>
     const content = await Deno.readTextFile(file);
     assertEquals(
       content,
-      "// Actor: creditCheck\nexport function creditCheck(input: unknown): unknown {\n  // TODO: implement actor logic\n  return {};\n}\n",
+      '// Actor: creditCheck\nexport function creditCheck(input: unknown): unknown {\n  // TODO: implement actor logic\n  return { input, msg: "creditCheck actor invoked by typescript" };\n}\n',
     );
   } finally {
     await Deno.remove(dir, { recursive: true });

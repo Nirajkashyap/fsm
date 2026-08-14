@@ -7,8 +7,9 @@ import type { TemplateInput } from "./types.ts";
 
 /**
  * Derives the values every template needs from a `(kind, name, lang)` triple.
- * `lang` only matters for Go actors (see {@linkcode toGoExportedName}) —
- * every other combination ignores it.
+ * `lang` renames the exported symbol for Go actors (see
+ * {@linkcode toGoExportedName}) and is passed through as-is for every actor
+ * template's invoked-by message; every other kind ignores it.
  */
 export function deriveTemplateInput(
   kind: OperationKind,
@@ -30,5 +31,5 @@ export function deriveTemplateInput(
     ? "TODO: implement delay logic (return ms)"
     : "TODO: implement";
 
-  return { name, fnName, label, todo };
+  return { name, fnName, label, todo, lang };
 }

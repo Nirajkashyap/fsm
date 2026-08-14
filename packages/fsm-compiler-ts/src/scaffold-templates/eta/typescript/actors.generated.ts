@@ -3,7 +3,7 @@
 import { eta } from "../eta-instance.ts";
 
 const compiled = eta.compile(
-  "// <%~ it.label %>: <%~ it.name %>\nexport function <%~ it.fnName %>(input: unknown): unknown {\n  // <%~ it.todo %>\n  return {};\n}\n\n",
+  '// <%~ it.label %>: <%~ it.name %>\nexport function <%~ it.fnName %>(input: unknown): unknown {\n  // <%~ it.todo %>\n  return { input, msg: "<%~ it.name %> actor invoked by <%~ it.lang %>" };\n}\n\n',
 );
 
 export const render: (input: unknown) => string = (input) =>

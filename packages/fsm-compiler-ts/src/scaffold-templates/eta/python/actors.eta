@@ -1,5 +1,5 @@
 # <%~ it.label %>: <%~ it.name %>
 def <%~ it.fnName %>(input):
     # <%~ it.todo %>
-    return {}
+    return {"input": input, "msg": "<%~ it.name %> actor invoked by <%~ it.lang %>"}
 
