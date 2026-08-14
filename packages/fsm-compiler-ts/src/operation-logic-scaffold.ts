@@ -160,21 +160,27 @@ export function actorFileBaseName(actor: ActorReference): string {
  * convention already established by hand for `apps/fsm-core-example`'s Go
  * actors (see `CheckReportsTable/go.mod`):
  * `<appRoot>/<fsmName>/<version>/go/actors/<actorDir>`, lowercased.
- * `<appRoot>` is the directory name two levels above the FSM's plugin root
- * (e.g. `apps/fsm-core-example/fsm/creditCheck/v01` -> appRoot
- * `fsm-core-example`). Each Go actor is its own Go module so a consumer in a
- * different module (e.g. a worker-sdk/go build) can pull it in via a
- * `require`/`replace` directive — Go has no dynamic-loading equivalent to
- * TS/Python's `import()`/`importlib`.
+ * `<appRoot>` is normally derived as the directory name two levels above the
+ * FSM's plugin root (e.g. `apps/fsm-core-example/fsm/creditCheck/v01` ->
+ * appRoot `fsm-core-example`) — that offset assumes the fixed
+ * `<appRoot>/<pluginRoot>/<fsmName>/<version>` depth every
+ * {@linkcode eachVersionedFsmFolder} caller has. Callers whose `absFolderPath`
+ * doesn't nest that deeply (e.g. `create-async-logic.ts`'s
+ * `<appRoot>/shared-async-op/<version>`, missing the plugin-root layer) must
+ * pass `appRootOverride` instead of relying on the offset. Each Go actor is
+ * its own Go module so a consumer in a different module (e.g. a
+ * worker-sdk/go build) can pull it in via a `require`/`replace` directive —
+ * Go has no dynamic-loading equivalent to TS/Python's `import()`/`importlib`.
  */
 function goActorModulePath(
   absFolderPath: string,
   actorDirName: string,
+  appRootOverride?: string,
 ): string {
   const { fsmName, fsmVersion } = fsmIdentityFromVersionFolderPath(
     absFolderPath,
   );
-  const appRoot = absFolderPath.split("/").at(-4)!; // .../<appRoot>/fsm/<fsmName>/<version>
+  const appRoot = appRootOverride ?? absFolderPath.split("/").at(-4)!; // .../<appRoot>/fsm/<fsmName>/<version>
   return `${appRoot}/${fsmName.toLowerCase()}/${fsmVersion}/go/actors/${actorDirName.toLowerCase()}`;
 }
 
@@ -196,8 +202,13 @@ function fsmIdentityFromVersionFolderPath(
 async function writeGoActorModule(
   absFolderPath: string,
   actorDirName: string,
+  appRootOverride?: string,
 ): Promise<void> {
-  const modulePath = goActorModulePath(absFolderPath, actorDirName);
+  const modulePath = goActorModulePath(
+    absFolderPath,
+    actorDirName,
+    appRootOverride,
+  );
   const dir = `${absFolderPath}/go/actors/${actorDirName}`;
   await Deno.writeTextFile(
     `${dir}/go.mod`,
@@ -211,13 +222,17 @@ async function writeGoActorModule(
  * The file exports one function named after the actor `src` — except Go,
  * whose function is exported (capitalized) instead, and which also gets its
  * own `go.mod` (see {@linkcode writeGoActorModule}), since Go enforces
- * exports and module boundaries at compile time.
+ * exports and module boundaries at compile time. `appRootOverride` is passed
+ * through to {@linkcode writeGoActorModule} for callers whose
+ * `absFolderPath` doesn't nest at the standard plugin-root depth (see
+ * {@linkcode goActorModulePath}); ignored for every other language.
  * Returns the absolute path written.
  */
 export async function writeActorFile(
   absFolderPath: string,
   lang: OperationLang,
   actor: ActorReference,
+  appRootOverride?: string,
 ): Promise<string> {
   const name = actorFileBaseName(actor);
   const dir = `${absFolderPath}/${lang}/actors/${name}`;
@@ -229,7 +244,7 @@ export async function writeActorFile(
     withSingleTrailingNewline(header + renderStub(lang, "actors", actor.src)),
   );
   if (lang === "go") {
-    await writeGoActorModule(absFolderPath, name);
+    await writeGoActorModule(absFolderPath, name, appRootOverride);
   }
   return file;
 }
@@ -274,13 +289,17 @@ export function toWrittenActor(
  * map. Matches the flattened identity model `fsm-compiler-ts`'s own
  * `validateAsyncOperationFromFolders` already used: `fsmName` is the actor's
  * own `src` (not a separate sub-FSM reference), `fsmVersion` is the parent
- * FSM's version, and `fsmType` is always `"promise"` (the only kind this
- * scaffolds).
+ * FSM's version. `fsmType` is `"promise"` for actors scaffolded from an
+ * invoke object (the only kind {@linkcode toRegisteredActor} builds) or
+ * `"sharedAsyncOp"` for the standalone, non-FSM-scoped pool
+ * `create-async-logic.ts` writes into — downstream, `fsmType` is an opaque
+ * string (used only inside `actorKey()`'s composite key), so this is safe to
+ * extend.
  */
 export type RegisteredActor = WrittenActor & {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: "promise";
+  fsmType: "promise" | "sharedAsyncOp";
   fsmName: string;
   fsmVersion: string;
 };
@@ -331,12 +350,20 @@ export async function writeActorsManifest(
 }
 
 /**
- * Languages with a natural single-file "re-export everything" idiom. Go is
- * deliberately excluded: each actor already lives in its own subdirectory,
- * which in Go makes it a separate package — there's no re-export syntax, and
- * a working registry file would need every actor function to be exported
- * (capitalized; not yet true, see #78) plus the consuming project's Go module
- * import path (which this compiler has no way to know).
+ * Languages with a natural single-file "re-export everything" idiom directly
+ * inside a version folder (`<lang>/actors/<barrel/registry filename>`). Go is
+ * deliberately excluded here: each actor already lives in its own
+ * subdirectory, which in Go makes it a separate package *and* its own Go
+ * module (see {@linkcode writeGoActorModule}) — there's no re-export syntax
+ * across module boundaries, only `require`/`replace`. A per-version Go
+ * registry would need its own `go.mod` requiring/replacing every sibling
+ * actor module individually; {@linkcode writeAggregateGoRegistry} already
+ * does exactly that, just scoped to the whole app run rather than one
+ * version folder at a time — so Go's generated registry lives there instead
+ * of here, not because it's missing. (The two blockers an earlier version of
+ * this comment cited — unexported Go stub names, and not knowing each
+ * actor's own Go module import path — were resolved by #83/#84: see
+ * {@linkcode toGoExportedName} and {@linkcode goActorModulePath}.)
  */
 export type ActorsBarrelLang = "typescript" | "python" | "rust";
 

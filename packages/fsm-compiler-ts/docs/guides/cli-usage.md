@@ -20,17 +20,19 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts -c <command> -f <
 
 ## Global Options
 
-| Flag                        | Alias | Description                                                                                                                                                                                         |
-| --------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--command <command>`       | `-c`  | Command to run (required)                                                                                                                                                                           |
-| `--folder <folder>`         | `-f`  | Path to FSM folder or `.ts` file (required; a single `.ts` file is accepted for `generate` only)                                                                                                    |
-| `--workflow-type <type>`    | `-w`  | Workflow type — required for `validate-sync-operation`, `validate-async-operation`, `load`                                                                                                          |
-| `--db-url <url>`            | `-d`  | PostgreSQL connection string — overrides `DATABASE_URL` env var                                                                                                                                     |
-| `--skip-dirs <dirs>`        | `-s`  | Comma-separated subdirectory names to skip when walking `<folder>`                                                                                                                                  |
-| `--available-actors <file>` | `-a`  | Path to a JSON file listing actor names available to resolve (used by `validate-sync-operation`, `validate-async-operation`)                                                                        |
-| `--lang <langs>`            | `-l`  | Comma-separated language(s): `typescript`, `python`, `rust`, `go`. For `generate-sync-logic` defaults to `typescript`; for `validate-async-operation` defaults to all languages (omit to check all) |
-| `--show-recommendation`     | `-r`  | Validate generated `fsm.json` against schema and print issues (`generate` only)                                                                                                                     |
-| `--help`                    | `-h`  | Show help message                                                                                                                                                                                   |
+| Flag                        | Alias | Description                                                                                                                                                                                                                                                    |
+| --------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--command <command>`       | `-c`  | Command to run (required)                                                                                                                                                                                                                                      |
+| `--folder <folder>`         | `-f`  | Path to FSM folder or `.ts` file (required; a single `.ts` file is accepted for `generate` only)                                                                                                                                                               |
+| `--workflow-type <type>`    | `-w`  | Workflow type — required for `validate-sync-operation`, `validate-async-operation`, `load`                                                                                                                                                                     |
+| `--db-url <url>`            | `-d`  | PostgreSQL connection string — overrides `DATABASE_URL` env var                                                                                                                                                                                                |
+| `--skip-dirs <dirs>`        | `-s`  | Comma-separated subdirectory names to skip when walking `<folder>`                                                                                                                                                                                             |
+| `--available-actors <file>` | `-a`  | Path to a JSON file listing actor names available to resolve (used by `validate-sync-operation`, `validate-async-operation`)                                                                                                                                   |
+| `--lang <langs>`            | `-l`  | Comma-separated language(s): `typescript`, `python`, `rust`, `go`. For `generate-sync-logic` defaults to `typescript`; for `validate-async-operation` defaults to all languages (omit to check all); for `create-async-logic` exactly one language is required |
+| `--version <version>`       | `-v`  | FSM version folder name, e.g. `v01` (`create-async-logic` only, required)                                                                                                                                                                                      |
+| `--name <name>`             | `-n`  | Actor function name, used for `<name>/<name>.ext` (`create-async-logic` only, required)                                                                                                                                                                        |
+| `--show-recommendation`     | `-r`  | Validate generated `fsm.json` against schema and print issues (`generate` only)                                                                                                                                                                                |
+| `--help`                    | `-h`  | Show help message                                                                                                                                                                                                                                              |
 
 ### Workflow Types
 
@@ -107,6 +109,41 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -f apps/fsm-core-example/fsm \
   --lang typescript,python
 ```
+
+---
+
+### `create-async-logic`
+
+Scaffold a **single** actor stub in the shared, non-FSM-scoped async-operation
+pool — for actors that aren't driven by any one FSM's `invoke` list. Writes one
+file at `<folder>/shared-async-op/<version>/<lang>/actors/<name>/<name>.<ext>`,
+via the same `writeActorFile` helper `generate-async-logic` uses per invoke
+object, so stub content/formatting matches the rest of the pipeline.
+
+Unlike `generate-async-logic` (which walks an FSM folder and bulk-scaffolds from
+`fsm.json`), `--folder` here is the **app root** (e.g. `apps/fsm-core-example`),
+not an FSM/plugin-root folder.
+
+For `typescript`/`python`/`rust`, also rewrites that language's
+`<lang>/actors/generated-registry.*` from every actor currently on disk under
+`<version>/<lang>/actors/` (this run's actor included) — so repeated
+`create-async-logic` calls accumulate registry entries instead of each one
+clobbering the last. Every entry's identity is fixed: `parentFsmName` and
+`fsmType` are always `"sharedAsyncOp"` (these actors have no owning FSM),
+`fsmName` is the actor name, and `parentFsmVersion`/`fsmVersion` are both
+`--version`. Go has no per-version registry — each Go actor is already its own
+Go module (see its own `go.mod`), so only the actor file is written for `go`.
+
+```bash
+deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
+  -c create-async-logic \
+  -f apps/fsm-core-example \
+  --lang typescript \
+  --version v01 \
+  --name checkCreditScore
+```
+
+**Required:** `-l/--lang` (exactly one language), `-v/--version`, `-n/--name`
 
 ---
 

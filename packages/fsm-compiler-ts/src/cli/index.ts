@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { getLogger } from "@logtape/logtape";
 import { configureCompilerLogger } from "../logger.ts";
 import {
+  createAsyncOperationLogic,
   deleteFsmJSONFromFolders,
   generateAsyncOperationLogicFromFolders,
   generateFsmJSONFromFolders,
@@ -36,6 +37,8 @@ const args = parseArgs(Deno.args, {
     "db-url",
     "lang",
     "worker-sdk-protocol",
+    "version",
+    "name",
   ],
   boolean: ["help", "show-recommendation"],
   alias: {
@@ -49,6 +52,8 @@ const args = parseArgs(Deno.args, {
     d: "db-url",
     l: "lang",
     p: "worker-sdk-protocol",
+    v: "version",
+    n: "name",
   },
 });
 
@@ -63,6 +68,7 @@ COMMANDS
   generate                            Generate fsm.json from a folder or a .ts file
   generate-async-logic                Scaffold actor stubs (per invoke object's fsmLanguage)
   generate-sync-logic                 Scaffold action/guard/delay stubs in --lang language(s)
+  create-async-logic                  Scaffold a single actor stub in the shared-async-op pool
   delete                              Delete generated fsm.json / xstate-fsm.json files
   validate-sync-operation             Validate sync operation logic (actions/guards/delays) for an FSM folder
   validate-async-operation            Validate async operation logic (actors) for a sharedPromise folder
@@ -72,9 +78,11 @@ WORKFLOW TYPES
 
 OPTIONS
   -c, --command <command>             Command to run (required)
-  -f, --folder <folder>               Path to FSM folder or .ts file (required; a .ts file is accepted for generate only)
+  -f, --folder <folder>               Path to FSM folder or .ts file (required; a .ts file is accepted for generate only; app root for create-async-logic)
   -w, --workflow-type <type>          Workflow type (optional for generate, generate-async-logic, generate-sync-logic, delete, defaults to "fsm"; required for validate-sync-operation, validate-async-operation, load)
-  -l, --lang <langs>                  Comma-separated language(s): typescript, python, rust, go. For generate-sync-logic defaults to typescript; for validate-async-operation defaults to all languages
+  -l, --lang <langs>                  Comma-separated language(s): typescript, python, rust, go. For generate-sync-logic defaults to typescript; for validate-async-operation defaults to all languages; for create-async-logic a single language is required
+  -v, --version <version>             FSM version folder name, e.g. v01 (create-async-logic only, required)
+  -n, --name <name>                   Actor function name, used for <name>/<name>.ext (create-async-logic only, required)
   -r, --show-recommendation           Validate generated fsm.json against schema and show errors (generate only)
   -s, --skip-dirs <dirs>              Comma-separated list of subdirectory names to skip
   -a, --available-actors <file>       Path to a JSON file containing available actor references (for validate-sync-operation, validate-async-operation)
@@ -93,6 +101,7 @@ EXAMPLES
   deno run --allow-all src/cli/index.ts -c generate-async-logic -f apps/fsm-core-example/fsm
   deno run --allow-all src/cli/index.ts -c generate-async-logic -f apps/fsm-core-example/fsm --worker-sdk-protocol legacy
   deno run --allow-all src/cli/index.ts -c generate-sync-logic -f apps/fsm-core-example/fsm --lang typescript,python
+  deno run --allow-all src/cli/index.ts -c create-async-logic -f apps/fsm-core-example --lang typescript --version v01 --name checkCreditScore
   deno run --allow-all src/cli/index.ts -c validate-sync-operation -f apps/fsm-core-example/fsm -w fsm
   deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/sharedFSM -w sharedPromise
   deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/sharedFSM -w sharedPromise --lang typescript
@@ -169,6 +178,25 @@ if (command === "validate-async-operation") {
   }
 }
 
+// Language for create-async-logic — exactly one language, required (no default).
+const createAsyncLogicLang = args["lang"] as OperationLang | undefined;
+if (command === "create-async-logic") {
+  if (
+    !createAsyncLogicLang || createAsyncLogicLang.includes(",") ||
+    !isOperationLang(createAsyncLogicLang)
+  ) {
+    logger.error(
+      "Invalid or missing --lang value: {value}. create-async-logic requires exactly one of: {valid}",
+      {
+        value: args["lang"] ?? "(none)",
+        valid: SUPPORTED_OPERATION_LANGS.join(", "),
+      },
+    );
+    printHelp();
+    Deno.exit(1);
+  }
+}
+
 const VALID_WORKFLOW_TYPES: string[] = [
   "fsm",
   "sharedFsm",
@@ -195,6 +223,10 @@ if (!command) missing.push("--command");
 if (!folder) missing.push("--folder");
 if (command && needsWorkflowType.includes(command) && !workflowType) {
   missing.push("--workflow-type");
+}
+if (command === "create-async-logic") {
+  if (!args["version"]) missing.push("--version");
+  if (!args["name"]) missing.push("--name");
 }
 
 if (missing.length > 0) {
@@ -298,6 +330,14 @@ try {
         workflowType ?? "fsm",
         langs,
         skipDirs,
+      );
+      break;
+    case "create-async-logic":
+      await createAsyncOperationLogic(
+        folder!,
+        createAsyncLogicLang!,
+        args["version"]!,
+        args["name"]!,
       );
       break;
     case "delete":
