@@ -1,6 +1,6 @@
 // <%~ it.label %>: <%~ it.name %>
 func <%~ it.fnName %>(input any) (any, error) {
 	// <%~ it.todo %>
-	return map[string]any{}, nil
+	return map[string]any{"input": input, "msg": "<%~ it.name %> actor invoked by <%~ it.lang %>"}, nil
 }
 

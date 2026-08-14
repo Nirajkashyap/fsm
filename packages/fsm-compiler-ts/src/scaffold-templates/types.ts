@@ -1,11 +1,15 @@
-import type { OperationKind } from "../operation-logic-scaffold.ts";
+import type {
+  OperationKind,
+  OperationLang,
+} from "../operation-logic-scaffold.ts";
 
-/** Values derived from a `(kind, name)` pair, passed to every template function. */
+/** Values derived from a `(kind, name, lang)` triple, passed to every template function. */
 export type TemplateInput = {
   name: string;
   fnName: string;
   label: string;
   todo: string;
+  lang: OperationLang;
 };
 
 /** Renders one operation-logic stub for a given kind. */
