@@ -208,6 +208,27 @@ Deno.test("writeActorFile - go actor also writes its own go.mod, module path der
   }
 });
 
+Deno.test("writeActorFile - appRootOverride wins over the path-offset appRoot derivation (for folder layouts that don't nest at the standard plugin-root depth)", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    // Only <appRoot>/shared-async-op/<version> deep — one level shallower
+    // than the fsm/sharedFSM plugin-root layout the default offset assumes.
+    const absFolderPath = `${dir}/apps/fsm-core-example/shared-async-op/v01`;
+    await Deno.mkdir(absFolderPath, { recursive: true });
+    const actor: ActorReference = { src: "checkCreditScore" };
+    await writeActorFile(absFolderPath, "go", actor, "fsm-core-example");
+    const goModContent = await Deno.readTextFile(
+      `${absFolderPath}/go/actors/checkCreditScore/go.mod`,
+    );
+    assertEquals(
+      goModContent,
+      "module fsm-core-example/shared-async-op/v01/go/actors/checkcreditscore\n\ngo 1.19\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("writeActorFile - typescript actor has no package header", async () => {
   const dir = await Deno.makeTempDir();
   try {

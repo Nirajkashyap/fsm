@@ -7,6 +7,7 @@ export {
   normalizeActionsToObjects,
 } from "./generate-fsm-json.ts";
 export { generateAsyncOperationLogicFromFolders } from "./generate-async-operation-logic.ts";
+export { createAsyncOperationLogic } from "./create-async-logic.ts";
 export { generateSyncOperationLogicFromFolders } from "./generate-sync-operation-logic.ts";
 export {
   isOperationLang,

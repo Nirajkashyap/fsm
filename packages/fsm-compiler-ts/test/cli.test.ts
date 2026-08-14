@@ -175,6 +175,99 @@ Deno.test("cli generate-sync-logic rejects an invalid --lang", async () => {
   assertEquals(code, 1);
 });
 
+// --- create-async-logic ---
+
+Deno.test("cli create-async-logic without --version exits 1", async () => {
+  const { code, stderr } = await runCli([
+    "-c",
+    "create-async-logic",
+    "-f",
+    "apps/fsm-core-example",
+    "--lang",
+    "typescript",
+    "--name",
+    "checkCreditScoreCliTest",
+  ]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "--version");
+});
+
+Deno.test("cli create-async-logic without --name exits 1", async () => {
+  const { code, stderr } = await runCli([
+    "-c",
+    "create-async-logic",
+    "-f",
+    "apps/fsm-core-example",
+    "--lang",
+    "typescript",
+    "--version",
+    "v01",
+  ]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "--name");
+});
+
+Deno.test("cli create-async-logic rejects an invalid --lang", async () => {
+  const { code, stderr } = await runCli([
+    "-c",
+    "create-async-logic",
+    "-f",
+    "apps/fsm-core-example",
+    "--lang",
+    "cobol",
+    "--version",
+    "v01",
+    "--name",
+    "checkCreditScoreCliTest",
+  ]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "--lang");
+});
+
+Deno.test("cli create-async-logic rejects a comma-separated --lang (exactly one language required)", async () => {
+  const { code, stderr } = await runCli([
+    "-c",
+    "create-async-logic",
+    "-f",
+    "apps/fsm-core-example",
+    "--lang",
+    "typescript,python",
+    "--version",
+    "v01",
+    "--name",
+    "checkCreditScoreCliTest",
+  ]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "--lang");
+});
+
+Deno.test("cli create-async-logic writes a single actor file under shared-async-op", async () => {
+  const actorFile =
+    "apps/fsm-core-example/shared-async-op/v01/typescript/actors/checkCreditScoreCliTest/checkCreditScoreCliTest.ts";
+  try {
+    const { code } = await runCli([
+      "-c",
+      "create-async-logic",
+      "-f",
+      "apps/fsm-core-example",
+      "--lang",
+      "typescript",
+      "--version",
+      "v01",
+      "--name",
+      "checkCreditScoreCliTest",
+    ]);
+    assertEquals(code, 0);
+    const stat = await Deno.stat(actorFile);
+    assertEquals(stat.isFile, true);
+  } finally {
+    await Deno.remove(
+      "apps/fsm-core-example/shared-async-op/v01/typescript/actors/checkCreditScoreCliTest",
+      { recursive: true },
+    ).catch(() => {});
+  }
+});
+
 // --- delete ---
 
 Deno.test("cli delete runs successfully on example folder", async () => {
