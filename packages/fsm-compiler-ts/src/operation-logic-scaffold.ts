@@ -350,12 +350,20 @@ export async function writeActorsManifest(
 }
 
 /**
- * Languages with a natural single-file "re-export everything" idiom. Go is
- * deliberately excluded: each actor already lives in its own subdirectory,
- * which in Go makes it a separate package — there's no re-export syntax, and
- * a working registry file would need every actor function to be exported
- * (capitalized; not yet true, see #78) plus the consuming project's Go module
- * import path (which this compiler has no way to know).
+ * Languages with a natural single-file "re-export everything" idiom directly
+ * inside a version folder (`<lang>/actors/<barrel/registry filename>`). Go is
+ * deliberately excluded here: each actor already lives in its own
+ * subdirectory, which in Go makes it a separate package *and* its own Go
+ * module (see {@linkcode writeGoActorModule}) — there's no re-export syntax
+ * across module boundaries, only `require`/`replace`. A per-version Go
+ * registry would need its own `go.mod` requiring/replacing every sibling
+ * actor module individually; {@linkcode writeAggregateGoRegistry} already
+ * does exactly that, just scoped to the whole app run rather than one
+ * version folder at a time — so Go's generated registry lives there instead
+ * of here, not because it's missing. (The two blockers an earlier version of
+ * this comment cited — unexported Go stub names, and not knowing each
+ * actor's own Go module import path — were resolved by #83/#84: see
+ * {@linkcode toGoExportedName} and {@linkcode goActorModulePath}.)
  */
 export type ActorsBarrelLang = "typescript" | "python" | "rust";
 
