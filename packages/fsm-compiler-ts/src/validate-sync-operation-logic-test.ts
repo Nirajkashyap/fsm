@@ -8,22 +8,21 @@ const logger = getLogger(["@pgfsm/compiler", "test"]);
 await configureCompilerLogger();
 
 (async () => {
-  const sharedFSMfolderPath = "apps/fsm-core-example/sharedFSM";
   const fsmfolderPath = "apps/fsm-core-example/fsm";
 
-  const skipSharedFSMDirs = [""];
-  const skipFSMDirs = ["", ""];
-
+  // vitalsWorkflow is a shared, reusable sub-workflow (fsmType "sharedFsm"),
+  // so it's scanned separately from the top-level FSMs (fsmType "fsm") even
+  // though both now live under the same fsm/ folder.
   const outputSharedFSM = await validateSyncOperationFromFolders(
-    sharedFSMfolderPath,
+    fsmfolderPath,
     "sharedFsm",
-    skipSharedFSMDirs,
+    ["carVitals", "creditCheck", "taskMachineConfig"],
     [],
   );
   const outputFSM = await validateSyncOperationFromFolders(
     fsmfolderPath,
     "fsm",
-    skipFSMDirs,
+    ["vitalsWorkflow"],
     outputSharedFSM,
   );
   logger.info("final output: {output}", { output: outputFSM });

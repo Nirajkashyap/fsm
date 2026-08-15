@@ -212,7 +212,7 @@ Deno.test("writeActorFile - appRootOverride wins over the path-offset appRoot de
   const dir = await Deno.makeTempDir();
   try {
     // Only <appRoot>/shared-async-op/<version> deep — one level shallower
-    // than the fsm/sharedFSM plugin-root layout the default offset assumes.
+    // than the fsm/ plugin-root layout the default offset assumes.
     const absFolderPath = `${dir}/apps/fsm-core-example/shared-async-op/v01`;
     await Deno.mkdir(absFolderPath, { recursive: true });
     const actor: ActorReference = { src: "checkCreditScore" };

@@ -11,22 +11,26 @@ await configureCompilerLogger();
 const pool = new Pool({ connectionString: Deno.env.get("DATABASE_URL") });
 
 (async () => {
-  const sharedFSMfolderPath = "apps/fsm-core-example/sharedFSM";
   const fsmfolderPath = "apps/fsm-core-example/fsm";
 
   const deps = {
     db: pool,
   };
 
-  const skipSharedFSMDirs = [""];
-  const skipFSMDirs = ["", ""];
-
+  // vitalsWorkflow is a shared, reusable sub-workflow (fsmType "sharedFsm"),
+  // so it's scanned separately from the top-level FSMs (fsmType "fsm") even
+  // though both now live under the same fsm/ folder.
   await loadFsmJSONFromFolders(
-    sharedFSMfolderPath,
+    fsmfolderPath,
     "sharedFsm",
-    skipSharedFSMDirs,
+    ["carVitals", "creditCheck", "taskMachineConfig"],
     deps,
   );
-  await loadFsmJSONFromFolders(fsmfolderPath, "fsm", skipFSMDirs, deps);
+  await loadFsmJSONFromFolders(
+    fsmfolderPath,
+    "fsm",
+    ["vitalsWorkflow"],
+    deps,
+  );
   logger.info("All workflows inserted successfully");
 })();

@@ -2,7 +2,6 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs/copy";
 
 const CLI = "packages/fsm-compiler-ts/src/cli/index.ts";
-
 // generate/delete/create-async-logic below invoke the real CLI as a
 // subprocess against these paths, so they must never point at the tracked
 // apps/fsm-core-example — that would delete/regenerate real committed files
@@ -12,7 +11,6 @@ const FIXTURE_ROOT = await Deno.makeTempDir({ prefix: "fsm-compiler-cli-" });
 const APP_ROOT = `${FIXTURE_ROOT}/fsm-core-example`;
 await copy("apps/fsm-core-example", APP_ROOT);
 const FSM_FOLDER = `${APP_ROOT}/fsm`;
-const SHARED_FSM_FOLDER = `${APP_ROOT}/sharedFSM`;
 
 async function runCli(
   args: string[],
@@ -308,14 +306,16 @@ Deno.test("cli validate-sync-operation with -w shorthand exits 0", async () => {
 
 // --- validate-async-operation ---
 
-Deno.test("cli validate-async-operation runs on sharedFSM folder", async () => {
+Deno.test("cli validate-async-operation runs on vitalsWorkflow (shared, sharedPromise) folder", async () => {
   const { code } = await runCli([
     "-c",
     "validate-async-operation",
     "-f",
-    SHARED_FSM_FOLDER,
+    FSM_FOLDER,
     "-w",
     "sharedPromise",
+    "--skip-dirs",
+    "carVitals,creditCheck,taskMachineConfig",
   ]);
   assertEquals(code, 0);
 });

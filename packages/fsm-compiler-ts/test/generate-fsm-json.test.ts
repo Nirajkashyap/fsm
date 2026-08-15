@@ -221,7 +221,10 @@ const FIXTURE_ROOT = await Deno.makeTempDir({
 const APP_ROOT = `${FIXTURE_ROOT}/fsm-core-example`;
 await copy("apps/fsm-core-example", APP_ROOT);
 const FSM_FOLDER = `${APP_ROOT}/fsm`;
-const SHARED_FSM_FOLDER = `${APP_ROOT}/sharedFSM`;
+// vitalsWorkflow is a shared, reusable sub-workflow (fsmType "sharedFsm"),
+// living alongside the top-level FSMs (fsmType "fsm") under the same fsm/
+// folder.
+const SHARED_FSM_SKIP_DIRS = ["carVitals", "creditCheck", "taskMachineConfig"];
 
 Deno.test("generateFsmJSONFromFolders - generates fsm.json for fsm folder", async () => {
   await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", []);
@@ -230,11 +233,15 @@ Deno.test("generateFsmJSONFromFolders - generates fsm.json for fsm folder", asyn
   assertEquals(stat.isFile, true);
 });
 
-Deno.test("generateFsmJSONFromFolders - generates fsm.json for sharedFSM folder", async () => {
-  await generateFsmJSONFromFolders(SHARED_FSM_FOLDER, "sharedFsm", []);
+Deno.test("generateFsmJSONFromFolders - generates fsm.json for vitalsWorkflow (shared)", async () => {
+  await generateFsmJSONFromFolders(
+    FSM_FOLDER,
+    "sharedFsm",
+    SHARED_FSM_SKIP_DIRS,
+  );
 
   const stat = await Deno.stat(
-    `${SHARED_FSM_FOLDER}/vitalsWorkflow/v01/fsm.json`,
+    `${FSM_FOLDER}/vitalsWorkflow/v01/fsm.json`,
   );
   assertEquals(stat.isFile, true);
 });
@@ -249,8 +256,13 @@ Deno.test("generateFsmJSONFromFolders - showRecommendation=true runs AJV validat
   await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", [], true);
 });
 
-Deno.test("generateFsmJSONFromFolders - showRecommendation=true on sharedFSM runs AJV validation without throwing", async () => {
-  await generateFsmJSONFromFolders(SHARED_FSM_FOLDER, "sharedFsm", [], true);
+Deno.test("generateFsmJSONFromFolders - showRecommendation=true on vitalsWorkflow (shared) runs AJV validation without throwing", async () => {
+  await generateFsmJSONFromFolders(
+    FSM_FOLDER,
+    "sharedFsm",
+    SHARED_FSM_SKIP_DIRS,
+    true,
+  );
 });
 
 Deno.test("generateFsmJSONFromFolders - respects skipDirs", async () => {
