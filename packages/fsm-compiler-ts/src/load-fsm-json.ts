@@ -1,7 +1,11 @@
 import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["@pgfsm/compiler", "load"]);
-import { isVersionFolderName, type WorkflowType } from "./util.ts";
+import {
+  extractFsmPluginRefs,
+  isVersionFolderName,
+  type WorkflowType,
+} from "./util.ts";
 import { type DBDeps, loadFsmFromJson } from "@pgfsm/db";
 import type { Json } from "@pgfsm/db/database.types";
 import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
@@ -23,6 +27,23 @@ async function loadFsmJSONFromFolder(
       await Deno.readTextFile(fsmJson),
     );
 
+    // 1.1 get dependent_children by filtering actors where fsmType is "fsm"
+    const allActors = extractFsmPluginRefs(fsmData).actors;
+
+    const dependentChildren = allActors.filter((actor) =>
+      actor.fsmType === "fsm"
+    ).map((actor) => ({
+      fsm_name: actor.src,
+      fsm_version: actor.fsmVersion,
+      fsm_type: actor.fsmType,
+      src: actor.src,
+    }));
+
+    logger.info("Found dependent children for {fsm}: {children}", {
+      fsm: `${dirEntryName}/${dirEntryNameVersion}`,
+      children: dependentChildren,
+    });
+
     // 2. Process fsmData and insert into database using helper functions
     // Call loadFsmStateFromJsonV2 and loadFsmTransitionFromJsonV2 with fsmData
     const fsmName = dirEntryName;
@@ -34,12 +55,12 @@ async function loadFsmJSONFromFolder(
       workflowType,
       fsmName,
       fsmVersion,
-      [],
+      dependentChildren,
     );
-    logger.info("Successfully loaded FSM from {path}: {result}", {
-      path: fsmJson,
-      result: fsmResult,
-    });
+    // logger.info("Successfully loaded FSM from {path}: {result}", {
+    //   path: fsmJson,
+    //   result: fsmResult,
+    // });
     return fsmResult;
   } catch (err) {
     if (err instanceof Deno.errors.NotFound) {
