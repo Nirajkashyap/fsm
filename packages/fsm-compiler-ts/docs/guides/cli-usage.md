@@ -189,11 +189,12 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -f apps/fsm-core-example/fsm \
   -w fsm
 
-# Shared FSM folder
+# Shared FSMs only (vitalsWorkflow lives under fsm/ alongside top-level FSMs)
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-sync-operation \
-  -f apps/fsm-core-example/sharedFSM \
-  -w sharedFsm
+  -f apps/fsm-core-example/fsm \
+  -w sharedFsm \
+  --skip-dirs carVitals,creditCheck,taskMachineConfig
 ```
 
 **Required:** `-w / --workflow-type`
@@ -217,24 +218,27 @@ Pass `--lang` to restrict which languages are checked (default: all languages
 present in the actor folders).
 
 ```bash
-# Validate all languages
+# Validate all languages (vitalsWorkflow only, via --skip-dirs)
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
-  -f apps/fsm-core-example/sharedFSM \
-  -w sharedPromise
+  -f apps/fsm-core-example/fsm \
+  -w sharedPromise \
+  --skip-dirs carVitals,creditCheck,taskMachineConfig
 
 # TypeScript actors only
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
-  -f apps/fsm-core-example/sharedFSM \
+  -f apps/fsm-core-example/fsm \
   -w sharedPromise \
+  --skip-dirs carVitals,creditCheck,taskMachineConfig \
   --lang typescript
 
 # Multiple languages
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
-  -f apps/fsm-core-example/sharedFSM \
+  -f apps/fsm-core-example/fsm \
   -w sharedPromise \
+  --skip-dirs carVitals,creditCheck,taskMachineConfig \
   --lang typescript,python
 
 # Promise workflow folder

@@ -56,7 +56,7 @@ EXAMPLES
     --url-path-prefix /api/fsm \\
     --port 8080 \\
     --shared-promise-path /abs/path/to/sharedPromise \\
-    --shared-fsm-path /abs/path/to/sharedFSM \\
+    --shared-fsm-path /abs/path/to/fsm \\
     --fsm-path /abs/path/to/fsm
 
   # Use a custom env file

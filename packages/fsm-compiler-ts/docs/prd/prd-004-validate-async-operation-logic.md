@@ -45,8 +45,9 @@ function with the expected shape, per its `fsmLanguage`.
 ```bash
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
-  -f apps/fsm-core-example/sharedFSM \
-  -w sharedPromise
+  -f apps/fsm-core-example/fsm \
+  -w sharedPromise \
+  --skip-dirs carVitals,creditCheck,taskMachineConfig
 ```
 
 `validateAsyncOperationFromFoldersV2` walks each requested language's `actors/`
@@ -79,15 +80,17 @@ dependency modules only.
 # Validate TypeScript actors only
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
-  -f apps/fsm-core-example/sharedFSM \
+  -f apps/fsm-core-example/fsm \
   -w sharedPromise \
+  --skip-dirs carVitals,creditCheck,taskMachineConfig \
   --lang typescript
 
 # Multiple languages
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
-  -f apps/fsm-core-example/sharedFSM \
+  -f apps/fsm-core-example/fsm \
   -w sharedPromise \
+  --skip-dirs carVitals,creditCheck,taskMachineConfig \
   --lang typescript,python
 ```
 

@@ -6,8 +6,8 @@ protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 ## FSM Definition Format
 
 FSMs are versioned JSON files in `apps/fsm-core-example/fsm/` (e.g.
-`creditCheck/`, `carVitals/`, `taskMachineConfig/`). Each version folder
-(`v01/`, `v02/`) contains:
+`creditCheck/`, `carVitals/`, `taskMachineConfig/`, `vitalsWorkflow/`). Each
+version folder (`v01/`, `v02/`) contains:
 
 - `fsm.json` — state machine definition
 - `xstate-fsm.json` — XState 5-compatible format
@@ -17,6 +17,7 @@ FSMs are versioned JSON files in `apps/fsm-core-example/fsm/` (e.g.
   `rust/actors/`, `go/actors/` — the concrete example of the polyglot actor
   model described in the root `CLAUDE.md`
 
-`sharedFSM/` holds definitions reused across examples (e.g. `vitalsWorkflow/`).
-Definitions target **XState 5** semantics and are consumed by
-`packages/fsm-compiler-ts/`.
+`vitalsWorkflow/` is a shared, reusable sub-workflow (fsmType `sharedFsm`)
+invoked by other FSMs, rather than a standalone top-level FSM — otherwise it
+follows the same layout. Definitions target **XState 5** semantics and are
+consumed by `packages/fsm-compiler-ts/`.

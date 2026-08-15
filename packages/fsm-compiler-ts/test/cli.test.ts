@@ -2,7 +2,6 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 
 const CLI = "packages/fsm-compiler-ts/src/cli/index.ts";
 const FSM_FOLDER = "apps/fsm-core-example/fsm";
-const SHARED_FSM_FOLDER = "apps/fsm-core-example/sharedFSM";
 
 async function runCli(
   args: string[],
@@ -305,14 +304,16 @@ Deno.test("cli validate-sync-operation with -w shorthand exits 0", async () => {
 
 // --- validate-async-operation ---
 
-Deno.test("cli validate-async-operation runs on sharedFSM folder", async () => {
+Deno.test("cli validate-async-operation runs on vitalsWorkflow (shared, sharedPromise) folder", async () => {
   const { code } = await runCli([
     "-c",
     "validate-async-operation",
     "-f",
-    SHARED_FSM_FOLDER,
+    FSM_FOLDER,
     "-w",
     "sharedPromise",
+    "--skip-dirs",
+    "carVitals,creditCheck,taskMachineConfig",
   ]);
   assertEquals(code, 0);
 });

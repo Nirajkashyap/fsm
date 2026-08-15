@@ -103,9 +103,9 @@ EXAMPLES
   deno run --allow-all src/cli/index.ts -c generate-sync-logic -f apps/fsm-core-example/fsm --lang typescript,python
   deno run --allow-all src/cli/index.ts -c create-async-logic -f apps/fsm-core-example --lang typescript --version v01 --name checkCreditScore
   deno run --allow-all src/cli/index.ts -c validate-sync-operation -f apps/fsm-core-example/fsm -w fsm
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/sharedFSM -w sharedPromise
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/sharedFSM -w sharedPromise --lang typescript
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/sharedFSM -w sharedPromise --lang typescript,python
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedPromise --skip-dirs carVitals,creditCheck,taskMachineConfig
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedPromise --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedPromise --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript,python
 `);
 }
 

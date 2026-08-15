@@ -126,9 +126,9 @@ export async function createAsyncOperationLogic(
   const actor: ActorReference = { src: name, fsmLanguage: lang };
 
   // shared-async-op has no plugin-root layer between the app root and the
-  // version folder (unlike fsm/sharedFSM), so writeActorFile's default
-  // path-offset appRoot derivation for Go's go.mod would resolve one level
-  // too shallow — pass the app root's own directory name explicitly.
+  // version folder (unlike fsm/), so writeActorFile's default path-offset
+  // appRoot derivation for Go's go.mod would resolve one level too shallow —
+  // pass the app root's own directory name explicitly.
   const appRootDirName = absAppRootPath.split("/").at(-1)!;
   const file = await writeActorFile(
     absFolderPath,
