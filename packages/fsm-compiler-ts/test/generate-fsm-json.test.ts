@@ -1,4 +1,5 @@
 import { assertEquals, assertExists } from "@std/assert";
+import { copy } from "@std/fs/copy";
 import {
   addMissingFsmTypeToInvokeActors,
   type FsmDraftStateNode,
@@ -210,8 +211,16 @@ Deno.test("normalizeActionsToObjects - does not mutate original", () => {
 });
 
 // --- generateFsmJSONFromFolders integration tests ---
+// generateFsmJSONFromFolders writes fsm.json/xstate-fsm.json in place, so
+// these must run against a disposable copy, never the tracked
+// apps/fsm-core-example (see #125).
 
-const FSM_FOLDER = "apps/fsm-core-example/fsm";
+const FIXTURE_ROOT = await Deno.makeTempDir({
+  prefix: "fsm-compiler-generate-fsm-json-",
+});
+const APP_ROOT = `${FIXTURE_ROOT}/fsm-core-example`;
+await copy("apps/fsm-core-example", APP_ROOT);
+const FSM_FOLDER = `${APP_ROOT}/fsm`;
 // vitalsWorkflow is a shared, reusable sub-workflow (fsmType "sharedFsm"),
 // living alongside the top-level FSMs (fsmType "fsm") under the same fsm/
 // folder.
@@ -281,4 +290,12 @@ Deno.test("generateFsmJSONFromFolders - throws on path ending with '/'", async (
     assertExists((e as Error).message.match(/cannot end with/i));
   }
   assertEquals(threw, true);
+});
+
+// --- Cleanup ---
+// Deno runs tests within a file sequentially in declaration order (absent
+// --parallel), so this runs last and removes the fixture copy every prior
+// test in this file wrote into.
+Deno.test("cleanup fixture copy", async () => {
+  await Deno.remove(FIXTURE_ROOT, { recursive: true });
 });
