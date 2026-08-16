@@ -6,12 +6,25 @@ export * from "./const.ts";
 export * from "./custom.types.ts";
 export * from "./queue.ts";
 export * from "./fsm-helper.ts";
-export * from "./fsm-instance.ts";
 export * from "./fsm-instance-lock.ts";
 
 export type { Json } from "./database.types.ts";
-export { enqueueDispatch, resumeEventForFsmWorker } from "./fsm-scheduler.ts";
-export type { FsmDispatchType, ResumeEventResult } from "./fsm-scheduler.ts";
+export {
+  _enqueueDispatch,
+  archiveEventFromFsmTypeWorker,
+  createFsmInstanceFromName,
+  getFSMData,
+  getFsmDataResolveStateValue,
+  isFSMInstancePresent,
+  listFsmInstances,
+  resumeEventForFsmWorker,
+  sendEventToFsmQueueWithEventLogs,
+  stopEventForFsmWorker,
+} from "./35_fsm_sync_operation_worker_v1/fsmctl.ts";
+export type {
+  FsmDispatchType,
+  ResumeEventResult,
+} from "./35_fsm_sync_operation_worker_v1/fsmctl.ts";
 
 export {
   claimScheduledForFsmlet,
@@ -20,24 +33,25 @@ export {
   fsmletNotifyChannel,
   listActiveFsmlets,
   registerFsmlet,
-  scheduleNextPending,
-} from "./fsm-workerlet.ts";
+} from "./35_fsm_sync_operation_worker_v1/fsmSyncOperationWorkerlet.ts";
 export type {
   FsmDispatchEntry,
   FsmletNode,
   FsmModule,
-} from "./fsm-workerlet.ts";
+} from "./35_fsm_sync_operation_worker_v1/fsmSyncOperationWorkerlet.ts";
+
+export { scheduleNextPending } from "./35_fsm_sync_operation_worker_v1/fsmSyncOperationScheduler.ts";
 
 export {
   createAsyncOperationInstanceAndNotifyAsyncOperationSchedulerWork,
   listAsyncOperationInstances,
   listAsyncOperationMeta,
-} from "./25_async_operation_worker_v1/asyncOperationCtl.ts";
+} from "./25_async_operation_worker_v1/asyncOperationWorkerCtl.ts";
 export type {
   AsyncOperationDispatchInput,
   AsyncOperationInstanceRow,
   AsyncOperationMetaRow,
-} from "./25_async_operation_worker_v1/asyncOperationCtl.ts";
+} from "./25_async_operation_worker_v1/asyncOperationWorkerCtl.ts";
 
 export { loadAsyncOperation } from "./25_async_operation_worker_v1/asyncOperationMeta.ts";
 export { asyncOperationScheduleNextPending } from "./25_async_operation_worker_v1/asyncOperationScheduler.ts";
@@ -71,3 +85,5 @@ export type {
   EnsurePromiseQueueForWorkerResult,
   PromiseWorkerIdentity,
 } from "./30_async_operation_worker_v2/asyncOperationWorker.ts";
+
+export { archiveEventFromFsmPromiseTypeWorker } from "./30_async_operation_worker_v2/asyncOperationCtl.ts";

@@ -5,14 +5,18 @@ protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 
 ## Structure (`src/`)
 
-- `fsm-instance.ts` — create instances, manage state, archive events
 - `fsm-helper.ts` — load states/transitions from JSON, DB queries
 - `fsm-instance-lock.ts` — advisory lock concurrency control
 - `queue.ts` — pgmq-based event queue management
-- `fsm-workerlet.ts` — `fsm_workerlet` table ops for the fsmlet node-agent
-  (dispatch-queue worker model)
-- `fsm-scheduler.ts` — FSM dispatch enqueue/resume ops for `fsmscheduler`
-- `25_async_operation_worker_v1/asyncOperationCtl.ts` — async-operation
+- `35_fsm_sync_operation_worker_v1/fsmSyncOperationWorkerlet.ts` —
+  `fsm_workerlet` table ops for the fsmlet node-agent (dispatch-queue worker
+  model)
+- `35_fsm_sync_operation_worker_v1/fsmctl.ts` — FSM instance lifecycle (list,
+  create, get, stop), archive/send events, and dispatch enqueue/resume ops for
+  `fsmscheduler`
+- `35_fsm_sync_operation_worker_v1/fsmSyncOperationScheduler.ts` —
+  dispatch-queue scheduling op (`schedule_next_pending`)
+- `25_async_operation_worker_v1/asyncOperationWorkerCtl.ts` — async-operation
   dispatch-table ops (promise/callback workflows)
 - `25_async_operation_worker_v1/asyncOperationMeta.ts` — `async_operation_meta`
   load op
@@ -26,6 +30,8 @@ protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 - `30_async_operation_worker_v2/asyncOperationWorker.ts` —
   `claimPendingPromiseEventsForWorkers` (PGMQ promise-queue polling) and
   `ensurePromiseQueueForWorker` (PGMQ promise-queue creation)
+- `30_async_operation_worker_v2/asyncOperationCtl.ts` —
+  `archiveEventFromFsmPromiseTypeWorker`
 - `pg-utils.ts` — small pg param helpers (e.g. `toJsonbParam`)
 - `const.ts` — schema/table name constants (`FSM_SCHEMA`,
   `FSM_SCHEMA_FN_VERSION`, `QUEUE_SCHEMA`, …)

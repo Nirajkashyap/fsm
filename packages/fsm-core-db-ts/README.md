@@ -48,15 +48,15 @@ for the full mapping table.
 
 ## Key files
 
-| File                       | Purpose                                                |
-| -------------------------- | ------------------------------------------------------ |
-| `src/const.ts`             | Schema name, function version, sentinel UUID constants |
-| `src/custom.types.ts`      | `DBDeps` type definition                               |
-| `src/fsm-instance.ts`      | Instance lifecycle — create, archive, list             |
-| `src/fsm-helper.ts`        | State resolution, microstep, transition queries        |
-| `src/fsm-instance-lock.ts` | PG advisory lock helpers                               |
-| `src/queue.ts`             | pgmq queue CRUD and message reads                      |
-| `src/database.types.ts`    | Auto-generated types from live DB schema (do not edit) |
+| File                                            | Purpose                                                |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| `src/const.ts`                                  | Schema name, function version, sentinel UUID constants |
+| `src/custom.types.ts`                           | `DBDeps` type definition                               |
+| `src/35_fsm_sync_operation_worker_v1/fsmctl.ts` | Instance lifecycle — create, archive, list             |
+| `src/fsm-helper.ts`                             | State resolution, microstep, transition queries        |
+| `src/fsm-instance-lock.ts`                      | PG advisory lock helpers                               |
+| `src/queue.ts`                                  | pgmq queue CRUD and message reads                      |
+| `src/database.types.ts`                         | Auto-generated types from live DB schema (do not edit) |
 
 ## Regenerating types
 
