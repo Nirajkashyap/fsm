@@ -1,5 +1,5 @@
 import { getLogger } from "@logtape/logtape";
-import type { DBDeps } from "./custom-type.ts";
+import type { DBDeps } from "./custom.types.ts";
 import { FSM_SCHEMA } from "./const.ts";
 
 const logger = getLogger(["@pgfsm/db", "async-op-workerlet"]);

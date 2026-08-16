@@ -1,5 +1,5 @@
 import { getLogger } from "@logtape/logtape";
-import type { DBDeps } from "./custom-type.ts";
+import type { DBDeps } from "./custom.types.ts";
 import { FSM_SCHEMA, FSM_SCHEMA_FN_VERSION } from "./const.ts";
 import type { Json } from "./database.types.ts";
 

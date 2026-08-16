@@ -3,7 +3,7 @@
 // or sink is exported from here by design.
 // Expose all methods from db implementation
 export * from "./const.ts";
-export * from "./custom-type.ts";
+export * from "./custom.types.ts";
 export * from "./queue.ts";
 export * from "./fsm-helper.ts";
 export * from "./fsm-instance.ts";

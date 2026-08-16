@@ -51,7 +51,7 @@ for the full mapping table.
 | File                       | Purpose                                                |
 | -------------------------- | ------------------------------------------------------ |
 | `src/const.ts`             | Schema name, function version, sentinel UUID constants |
-| `src/custom-type.ts`       | `DBDeps` type definition                               |
+| `src/custom.types.ts`      | `DBDeps` type definition                               |
 | `src/fsm-instance.ts`      | Instance lifecycle — create, archive, list             |
 | `src/fsm-helper.ts`        | State resolution, microstep, transition queries        |
 | `src/fsm-instance-lock.ts` | PG advisory lock helpers                               |

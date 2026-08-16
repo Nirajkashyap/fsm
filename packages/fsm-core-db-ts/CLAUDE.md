@@ -19,7 +19,7 @@ protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 - `pg-utils.ts` — small pg param helpers (e.g. `toJsonbParam`)
 - `const.ts` — schema/table name constants (`FSM_SCHEMA`,
   `FSM_SCHEMA_FN_VERSION`, `QUEUE_SCHEMA`, …)
-- `custom-type.ts` — shared types (e.g. `DBDeps`)
+- `custom.types.ts` — shared types (e.g. `DBDeps`)
 - `index.ts` — public barrel export; this package is a library and only calls
   `getLogger()` — logging is configured once by the host process (see
   `packages/fsm-logging-ts/CLAUDE.md`)

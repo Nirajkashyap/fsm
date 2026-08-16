@@ -1,6 +1,6 @@
 import { getLogger } from "@logtape/logtape";
 import type { Database as DatabaseGenerated } from "./database.types.ts";
-import type { DBDeps } from "./custom-type.ts";
+import type { DBDeps } from "./custom.types.ts";
 import type { PromiseWorkerIdentity } from "./fsm-instance.ts";
 
 const logger = getLogger(["@pgfsm/db", "queue"]);
