@@ -12,10 +12,17 @@ protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 - `fsm-workerlet.ts` — `fsm_workerlet` table ops for the fsmlet node-agent
   (dispatch-queue worker model)
 - `fsm-scheduler.ts` — FSM dispatch enqueue/resume ops for `fsmscheduler`
-- `async-operation.ts` — async-operation dispatch-table ops (promise/callback
-  workflows)
-- `async-operation-workerlet.ts` — `async_operation_workerlet` table ops for the
-  async-operation node-agent
+- `25_async_operation_worker_v1/asyncOperationCtl.ts` — async-operation
+  dispatch-table ops (promise/callback workflows)
+- `25_async_operation_worker_v1/asyncOperationMeta.ts` — `async_operation_meta`
+  load op
+- `25_async_operation_worker_v1/asyncOperationScheduler.ts` — dispatch-queue
+  scheduling op (`async_operation_schedule_next_pending`)
+- `25_async_operation_worker_v1/asyncOperationHelper.ts` — actor registry checks
+  (`check_registry_for_async_actors`,
+  `check_registry_and_working_for_async_actors_for_fsm_instance_and_worklet`)
+- `25_async_operation_worker_v1/asyncOperationWorkerlet.ts` —
+  `async_operation_workerlet` table ops for the async-operation node-agent
 - `pg-utils.ts` — small pg param helpers (e.g. `toJsonbParam`)
 - `const.ts` — schema/table name constants (`FSM_SCHEMA`,
   `FSM_SCHEMA_FN_VERSION`, `QUEUE_SCHEMA`, …)

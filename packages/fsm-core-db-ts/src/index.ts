@@ -29,22 +29,27 @@ export type {
 } from "./fsm-workerlet.ts";
 
 export {
-  asyncOperationScheduleNextPending,
-  checkRegistryAndWorkingForAsyncActors,
-  checkRegistryForAsyncActors,
   createAsyncOperationInstanceAndNotifyAsyncOperationSchedulerWork,
   listAsyncOperationInstances,
   listAsyncOperationMeta,
-  loadAsyncOperation,
-} from "./async-operation.ts";
+} from "./25_async_operation_worker_v1/asyncOperationCtl.ts";
 export type {
-  AsyncActor,
   AsyncOperationDispatchInput,
   AsyncOperationInstanceRow,
   AsyncOperationMetaRow,
+} from "./25_async_operation_worker_v1/asyncOperationCtl.ts";
+
+export { loadAsyncOperation } from "./25_async_operation_worker_v1/asyncOperationMeta.ts";
+export { asyncOperationScheduleNextPending } from "./25_async_operation_worker_v1/asyncOperationScheduler.ts";
+export {
+  checkRegistryAndWorkingForAsyncActors,
+  checkRegistryForAsyncActors,
+} from "./25_async_operation_worker_v1/asyncOperationHelper.ts";
+export type {
+  AsyncActor,
   CheckRegistryAndWorkingForAsyncActorsResult,
   CheckRegistryForAsyncActorsResult,
-} from "./async-operation.ts";
+} from "./25_async_operation_worker_v1/asyncOperationHelper.ts";
 
 export {
   asyncOperationWorkerletHeartbeat,
@@ -52,8 +57,8 @@ export {
   claimScheduledForAsyncOperationWorkerlet,
   deregisterAsyncOperationWorkerlet,
   registerAsyncOperationWorkerlet,
-} from "./async-operation-workerlet.ts";
+} from "./25_async_operation_worker_v1/asyncOperationWorkerlet.ts";
 export type {
   AsyncOpDispatchEntry,
   AsyncOperationSupportedOp,
-} from "./async-operation-workerlet.ts";
+} from "./25_async_operation_worker_v1/asyncOperationWorkerlet.ts";
