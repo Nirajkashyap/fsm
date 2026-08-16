@@ -23,6 +23,9 @@ protocol live in the root `CLAUDE.md` / `AGENTS.md`.
   `check_registry_and_working_for_async_actors_for_fsm_instance_and_worklet`)
 - `25_async_operation_worker_v1/asyncOperationWorkerlet.ts` —
   `async_operation_workerlet` table ops for the async-operation node-agent
+- `30_async_operation_worker_v2/asyncOperationWorker.ts` —
+  `claimPendingPromiseEventsForWorkers` (PGMQ promise-queue polling) and
+  `ensurePromiseQueueForWorker` (PGMQ promise-queue creation)
 - `pg-utils.ts` — small pg param helpers (e.g. `toJsonbParam`)
 - `const.ts` — schema/table name constants (`FSM_SCHEMA`,
   `FSM_SCHEMA_FN_VERSION`, `QUEUE_SCHEMA`, …)

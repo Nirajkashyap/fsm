@@ -62,3 +62,12 @@ export type {
   AsyncOpDispatchEntry,
   AsyncOperationSupportedOp,
 } from "./25_async_operation_worker_v1/asyncOperationWorkerlet.ts";
+
+export {
+  claimPendingPromiseEventsForWorkers,
+  ensurePromiseQueueForWorker,
+} from "./30_async_operation_worker_v2/asyncOperationWorker.ts";
+export type {
+  EnsurePromiseQueueForWorkerResult,
+  PromiseWorkerIdentity,
+} from "./30_async_operation_worker_v2/asyncOperationWorker.ts";
