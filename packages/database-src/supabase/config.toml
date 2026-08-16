@@ -49,6 +49,15 @@ max_client_conn = 100
 # Specifies an ordered list of schema files that describe your database.
 # Supports glob patterns relative to supabase directory: "./schemas/*.sql"
 schema_paths = [
+    "./schemas/00_pre_ext/*.sql",
+    "./schemas/05_ext_module_init/*.sql",
+    "./schemas/10_ext_helper/*.sql",
+    "./schemas/11_ext_base/*.sql",
+    "./schemas/15_deprecated_fsm_core_macrostep_v1/*.sql",
+    "./schemas/20_fsm_core_macrostep_v2/*.sql",
+    "./schemas/25_async_operation_worker_v1/*.sql",
+    "./schemas/30_async_operation_worker_v2/*.sql",
+    "./schemas/35_fsm_sync_operation_worker_v1/*.sql",
     "./schemas/*.sql"
 ]
 
