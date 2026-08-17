@@ -49,11 +49,14 @@ npm run supabase:db:deletefakeusers
 Tests live in `supabase/tests/` — the directory name the Supabase CLI's pgTAP
 runner hardcodes (`supabase test db` mounts `supabase/tests` directly; it can't
 be pointed at an arbitrarily named folder). One file per file in
-`supabase/schemas/`, sharing the same basename (e.g.
-`schemas/20241218134636_fsm_advisory_lock_helper.sql` →
-`tests/20241218134636_fsm_advisory_lock_helper.sql`). `tests/000_setup.sql`
-bootstraps the `pgtap` extension and always runs first (pg_prove executes files
-in alphabetical order).
+`supabase/schemas/`, sharing the same basename, nested under the same numbered
+concern directory as its schema file (e.g.
+`schemas/10_ext_helper/20241218134636_fsm_advisory_lock_helper.sql` →
+`tests/10_ext_helper/20241218134636_fsm_advisory_lock_helper.sql`). Schema files
+not yet grouped into a concern directory keep their matching test file flat at
+`tests/` top level too. `tests/000_setup.sql` bootstraps the `pgtap` extension
+and always runs first (pg_prove discovers files recursively and runs them in
+alphabetical order, and `000_setup.sql` sorts before every concern directory).
 
 ```bash
 # Local Supabase must already be running (npm run supabase:start:env)
