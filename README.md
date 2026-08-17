@@ -254,6 +254,33 @@ deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts
   # -s <stale-threshold-s>  # seconds before a fsmlet is considered dead (default 30)
 ```
 
+### Alternative: `pg_cron` instead of a standing scheduler process
+
+If you'd rather not run `fsmscheduler` as a standing process at all, `pgcron` is
+a one-shot CLI that registers a `pg_cron` job to do the same scheduling work —
+`schedule_next_pending()` in a loop — on a periodic in-database timer instead of
+a `LISTEN`/poll loop. See
+[`docs/specs/spec-003-pgcron-fsm-scheduler.md`](docs/specs/spec-003-pgcron-fsm-scheduler.md).
+
+```bash
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/pgcron.ts
+  # -d <db-url>    # overrides DATABASE_URL
+  # -s <schedule>  # pg_cron schedule expression (default "5 seconds")
+```
+
+Run it once to register (or update) the job — it doesn't run as a standing
+process itself, it just calls PostgreSQL's `cron.schedule()` and exits.
+
+> **Optional:** with `pg_cron` handling scheduling, the standing `fsmscheduler`
+> CLI is no longer needed. If you want to fully retire it, also remove the
+> `PERFORM pg_notify('fsm_scheduler_work', input_instance_id::text);` call from
+> `fsm_core.enqueue_fsm_dispatch_v2` (defined in
+> `packages/database-src/supabase/schemas/35_fsm_sync_operation_worker_v1/20250119124637_fsm_scheduler_dispatch.sql`)
+> — that notify is what wakes `fsmscheduler`'s `LISTEN` connection, so removing
+> it breaks that link. Only do this once you've confirmed the `pg_cron` job is
+> registered and running; otherwise dispatch entries will have no scheduling
+> trigger at all.
+
 ---
 
 ## 5. Control the cluster (`ctl`)

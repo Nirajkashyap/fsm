@@ -1235,6 +1235,10 @@ export type Database = {
         Args: { input_text: string };
         Returns: unknown;
       };
+      schedule_all_pending: {
+        Args: { input_stale_threshold_seconds?: number };
+        Returns: undefined;
+      };
       schedule_next_pending: {
         Args: { input_stale_threshold_seconds?: number };
         Returns: boolean;

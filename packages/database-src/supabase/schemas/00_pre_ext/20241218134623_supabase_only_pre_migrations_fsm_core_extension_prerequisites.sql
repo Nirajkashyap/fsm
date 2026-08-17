@@ -15,3 +15,5 @@ EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'Failed to create extension pgmq with CASCADE: %', SQLERRM;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE EXTENSION IF NOT EXISTS pg_cron;

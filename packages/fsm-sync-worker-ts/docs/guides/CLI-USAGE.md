@@ -1,12 +1,13 @@
 # fsm-sync-worker-ts — CLI Usage Guide
 
-This package provides three CLIs:
+This package provides four CLIs:
 
 | CLI              | Entry point               | Role                                                                                                                          |
 | ---------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **fsmlet**       | `src/cli/fsmlet.ts`       | Long-running node agent (kubelet equivalent) — registers itself, claims and drives FSM workers up to a concurrency limit      |
 | **fsmscheduler** | `src/cli/fsmscheduler.ts` | Control-plane routing process (kube-scheduler equivalent) for `fsmlet` node agents. Run once per cluster, not on worker nodes |
 | **fsmctl**       | `src/cli/fsmctl.ts`       | One-shot control CLI (kubectl equivalent) — create/resume/send/stop against the dispatch-queue model, then exits              |
+| **pgcron**       | `src/cli/pgcron.ts`       | One-shot deploy-time script — (re)registers the `pg_cron` job that drains the dispatch queue on a timer                       |
 
 > **Async-operation CLIs** (`async-operation-workerlet`,
 > `async-operation-scheduler`, `async-operation-ctl`) live in the sibling
@@ -240,6 +241,55 @@ command runs once and the process exits (`0` on success, `1` on error).
 
 ---
 
+## pgcron — one-shot pg_cron job (re)registration
+
+`pgcron` idempotently (re)registers the `fsm_schedule_all_pending` `pg_cron`
+job, which calls `fsm_core.schedule_all_pending()` on a timer to replace
+`fsmscheduler`'s standing LISTEN/poll loop with an in-database periodic sweep
+(see `docs/specs/spec-003-pgcron-fsm-scheduler.md` at the repo root).
+
+This exists because `cron.schedule()` is a data-level side effect (a row insert
+into `cron.job`) — migra's structural diff, used to generate the versioned pgxn
+migration scripts under `packages/database-src/supabase/migrations/`, only picks
+up DDL and can't capture it. Run this CLI once as a deploy-time step after
+applying migrations, or whenever the schedule needs to change; it unschedules
+any pre-existing job with the same name first, so re-running it is safe.
+
+### Invocation
+
+```bash
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/pgcron.ts [options]
+```
+
+### Options
+
+| Flag                | Alias | Description                                                         |
+| ------------------- | ----- | ------------------------------------------------------------------- |
+| `--db-url <url>`    | `-d`  | PostgreSQL connection string (overrides `DATABASE_URL` from `.env`) |
+| `--schedule <cron>` | `-s`  | `pg_cron` schedule expression (default: `"5 seconds"`)              |
+| `--help`            | `-h`  | Print help and exit                                                 |
+
+### Example
+
+```bash
+# Minimal — reads DATABASE_URL from .env, uses the default 5s schedule
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/pgcron.ts
+
+# Explicit connection + a coarser 30s schedule
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/pgcron.ts \
+  -d postgresql://user:pass@localhost:5432/db \
+  -s "30 seconds"
+```
+
+Like `fsmctl`, this is one-shot: it runs once and exits (`0` on success, `1` on
+error). Neither `supabase db reset` (local dev) nor the applied
+`supabase/migrations/` (production/pgxn) ever register the job on their own —
+`cron.schedule()` is a data-level side effect, not something either path applies
+automatically. Run this CLI once after migrations apply, in any environment, to
+register or update the job.
+
+---
+
 ## All flags (`fsmctl`)
 
 | Flag            | Alias | Required by              | Description                                                    |
@@ -265,6 +315,7 @@ command runs once and the process exits (`0` on success, `1` on error).
     "dev": "deno run --allow-all --watch src/cli/fsmctl.ts",
     "fsmlet": "deno run --allow-all src/cli/fsmlet.ts",
     "fsmscheduler": "deno run --allow-all src/cli/fsmscheduler.ts",
+    "pgcron": "deno run --allow-all src/cli/pgcron.ts",
     "check": "deno check src/index.ts"
   }
 }
@@ -280,6 +331,7 @@ from the repo root:
 deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmctl.ts -c <command> [options]
 deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmlet.ts -f <path>
 deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts
+deno run --allow-all packages/fsm-sync-worker-ts/src/cli/pgcron.ts
 ```
 
 For the async-operation CLI tasks, see

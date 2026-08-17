@@ -4,4 +4,4 @@ schema = '{{NAME}}'
 relocatable = false
 superuser = true
 trusted = false
-requires = 'ltree, pgmq'
+requires = 'ltree, pgmq, pg_cron'
