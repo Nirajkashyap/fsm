@@ -245,6 +245,31 @@ Deno.test("writeActorFile - typescript actor has no package header", async () =>
   }
 });
 
+Deno.test("writeActorFile - typescript actor with a long name is wrapped to pass `deno fmt --check` (see #139)", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    // Long enough that the single-line `return { input, msg: "..." }` stub
+    // overflows deno fmt's line width — writeActorFile must run `deno fmt`
+    // on its own output so the committed file never needs a manual pass.
+    const actor: ActorReference = { src: "CheckingCreditScores3parallel" };
+    const file = await writeActorFile(dir, "typescript", actor);
+    const content = await Deno.readTextFile(file);
+    assertEquals(
+      content,
+      "// Actor: CheckingCreditScores3parallel\n" +
+        "export function CheckingCreditScores3parallel(input: unknown): unknown {\n" +
+        "  // TODO: implement actor logic\n" +
+        "  return {\n" +
+        "    input,\n" +
+        '    msg: "CheckingCreditScores3parallel actor invoked by typescript",\n' +
+        "  };\n" +
+        "}\n",
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("toWrittenActor - builds record matching writeActorFile's path convention", () => {
   const actor: ActorReference = { src: "checkBureau" };
   assertEquals(toWrittenActor("typescript", actor), {
