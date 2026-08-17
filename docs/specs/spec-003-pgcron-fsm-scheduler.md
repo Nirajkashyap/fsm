@@ -54,6 +54,19 @@ inline-call approach ADR-002 already sketched.
   event drains the entire queue (not just one entry). Any replacement must
   preserve "drain until empty or no capable fsmlet" as an atomic unit of work
   per invocation, not just "schedule one entry."
+- **A purely INSERT-triggered scheduler has no idle-retry path** — if
+  `schedule_next_pending()` is only invoked inline from
+  `enqueue_fsm_dispatch_v2()` (Option B), a `pending` entry that fails to
+  schedule (e.g. all fsmlets briefly full or stale) is only retried as a side
+  effect of some _other_ dispatch INSERT happening later (it will be picked up
+  first, since `schedule_next_pending()` always claims the oldest `pending`
+  row). If dispatch traffic goes quiet system-wide after that point, the entry
+  has no trigger to retry it at all and stays `pending` indefinitely — unlike a
+  periodic mechanism (Options A/C), which keeps retrying every cycle regardless
+  of new traffic. This bears directly on the "worker died, replacement fsmlet
+  added" recovery case: if no other instance happens to be enqueuing work in the
+  meantime, Option B will not reschedule the stuck entry to the new fsmlet on
+  its own.
 - **Stale-fsmlet threshold must be preserved** — `schedule_next_pending()` takes
   `input_stale_threshold_seconds` (default 30) to filter out fsmlets with a dead
   heartbeat. Whatever calls it must keep this configurable without a code change
