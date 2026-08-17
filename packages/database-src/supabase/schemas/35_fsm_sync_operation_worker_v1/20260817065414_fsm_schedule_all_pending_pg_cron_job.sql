@@ -14,8 +14,11 @@
 -- Job run history (successes and failures) is queryable via the built-in
 -- cron.job_run_details table; wiring that into ops-facing alerting is out of
 -- scope for this migration.
-
-CREATE EXTENSION IF NOT EXISTS pg_cron;
+--
+-- The extension itself is enabled in
+-- supabase/schemas/00_pre_ext/20241218134623_supabase_only_pre_migrations_fsm_core_extension_prerequisites.sql
+-- (pg_cron is a hard `requires` of the packaged pgxn extension, alongside
+-- ltree/pgmq — see pgxn-templates/extension.control).
 
 -- cron.schedule() errors on a duplicate jobname (unique per jobname+username),
 -- so unschedule any pre-existing job with this name before re-registering —
