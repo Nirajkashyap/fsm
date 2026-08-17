@@ -1,18 +1,18 @@
 # SPEC-003: Replace the fsmscheduler TS Process with pg_cron
 
-| Field   | Value                                              |
-| ------- | -------------------------------------------------- |
-| Status  | Draft                                              |
-| Date    | 2026-07-26                                         |
-| Authors | Niraj, Claude                                      |
-| Issue   | #59                                                |
-| Affects | `apps/fsm-core-worker-ts`, `packages/database-src` |
+| Field   | Value                                                  |
+| ------- | ------------------------------------------------------ |
+| Status  | Draft                                                  |
+| Date    | 2026-07-26                                             |
+| Authors | Niraj, Claude                                          |
+| Issue   | #59                                                    |
+| Affects | `packages/fsm-sync-worker-ts`, `packages/database-src` |
 
 ---
 
 ## Problem
 
-`apps/fsm-core-worker-ts/src/fsmscheduler/fsmscheduler.ts` is a standing
+`packages/fsm-sync-worker-ts/src/fsmscheduler/fsmscheduler.ts` is a standing
 TypeScript process that must run on the control plane alongside the API server.
 It holds a dedicated `LISTEN` connection on the `fsm_scheduler_work` channel and
 drives `fsm_core.schedule_next_pending()` in a loop, with a 30s fallback poll
@@ -28,11 +28,11 @@ inline-call approach ADR-002 already sketched.
 
 ## Constraints
 
-- **KB-001 §3.4 (connection accounting)** — `fsmscheduler` currently holds
-  exactly one dedicated `LISTEN` connection on the control plane. Removing it is
-  a real but modest connection-budget win; `fsmlet` nodes keep their own
-  per-node `LISTEN` connections regardless, so this does not change the
-  bounded-fleet connection story materially.
+- **ADR-003 § Connection accounting** — `fsmscheduler` currently holds exactly
+  one dedicated `LISTEN` connection on the control plane. Removing it is a real
+  but modest connection-budget win; `fsmlet` nodes keep their own per-node
+  `LISTEN` connections regardless, so this does not change the bounded-fleet
+  connection story materially.
 - **ADR-002 Stage 3 (current architecture)** — the scheduler/kubelet split
   (`fsmscheduler` decides placement, `fsmlet` only executes what it's assigned)
   is the accepted model. This spec does not change that split — it only changes
@@ -75,7 +75,7 @@ inline-call approach ADR-002 already sketched.
 Keep `fsmscheduler.ts` as the standing LISTEN/poll process.
 
 **Pros:** Already built, tested, running. Near-instant dispatch via `pg_notify`.
-Supports multiple scheduler replicas today (SKIP LOCKED), a property KB-001
+Supports multiple scheduler replicas today (SKIP LOCKED), a property ADR-002
 flags as possibly needed for future throughput/sharding.
 
 **Cons:** One more process to deploy/monitor on the control plane. Three-hop
@@ -153,7 +153,7 @@ Option A (status quo) is superseded by this decision once Option C ships.
 - **Harder:** Debugging shifts from live process logs to `cron.job_run_details`
   queries; anyone used to `docker logs fsmscheduler` / Pino output needs a new
   habit. Running multiple scheduler instances for future throughput sharding
-  (KB-001's noted possible future need) is no longer straightforward with a
+  (ADR-002's noted possible future need) is no longer straightforward with a
   single `pg_cron` job — would need multiple jobs partitioned by FSM type if
   that need materializes.
 - **Easier:** One fewer process to deploy, restart, and health-check on the
@@ -163,14 +163,14 @@ Option A (status quo) is superseded by this decision once Option C ships.
   1. Add `fsm_core.schedule_all_pending(stale_threshold_seconds int)` wrapper
      function + pgTAP tests.
   2. Register the `pg_cron` job calling it on the agreed interval.
-  3. Remove `apps/fsm-core-worker-ts/src/fsmscheduler/` and
-     `apps/fsm-core-worker-ts/src/cli/fsmscheduler.ts`, and any process
+  3. Remove `packages/fsm-sync-worker-ts/src/fsmscheduler/` and
+     `packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts`, and any process
      supervisor / deployment entry that starts them.
   4. Remove the `pg_notify('fsm_scheduler_work', ...)` call from
      `enqueue_fsm_dispatch_v2` (dead code — no listener remains).
   5. Update ADR-002 (mark the "eliminate fsmscheduler" TODO resolved, link this
-     spec) and KB-001 §3.1/§3.4 (remove `fsmscheduler` from the architecture
-     diagram and connection accounting).
+     spec) and ADR-003 (remove `fsmscheduler` from the architecture diagram and
+     connection accounting sections).
 - **Rollback:** all of the above is a single deploy (SQL migration + application
   code removal). Rollback is `git revert` the migration and application PRs,
   which restores `fsmscheduler.ts` and the notify call unchanged — no data
@@ -189,9 +189,9 @@ Option A (status quo) is superseded by this decision once Option C ships.
       isn't available).
 - [ ] A `pg_cron` job is registered calling `schedule_all_pending()` on that
       interval, configurable via `cron.alter_job` without a code deploy.
-- [ ] `apps/fsm-core-worker-ts/src/fsmscheduler/` and
-      `apps/fsm-core-worker-ts/src/cli/fsmscheduler.ts` are deleted, along with
-      any deployment/process-supervisor config that referenced them.
+- [ ] `packages/fsm-sync-worker-ts/src/fsmscheduler/` and
+      `packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts` are deleted, along
+      with any deployment/process-supervisor config that referenced them.
 - [ ] The `pg_notify('fsm_scheduler_work', ...)` call is removed from
       `enqueue_fsm_dispatch_v2`, and the `fsm_scheduler_work` channel no longer
       appears anywhere in application code.
@@ -207,7 +207,7 @@ Option A (status quo) is superseded by this decision once Option C ships.
       silently dropped.
 - [ ] ADR-002's "Explore eliminating the application-level fsmscheduler" TODO is
       updated to reference this spec as its resolution.
-- [ ] KB-001 §3.1 architecture diagram and §3.4 connection accounting are
+- [ ] ADR-003's architecture diagram and connection accounting section are
       updated to remove `fsmscheduler` and its LISTEN connection.
 
 ## Implementation
