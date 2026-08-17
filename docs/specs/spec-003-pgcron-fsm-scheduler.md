@@ -58,6 +58,17 @@ inline-call approach ADR-002 already sketched.
   `input_stale_threshold_seconds` (default 30) to filter out fsmlets with a dead
   heartbeat. Whatever calls it must keep this configurable without a code change
   (currently a CLI flag).
+- **Known gap, out of scope: orphaned `scheduled` entries are not reclaimed** —
+  once `schedule_next_pending()` assigns an entry (`status='scheduled'`,
+  `fsm_workerlet_id` set), only that specific fsmlet's
+  `claim_scheduled_for_fsmlet()` call can pick it up. If that fsmlet dies after
+  assignment but before claiming, the entry is stuck permanently — no code path
+  reclaims `scheduled` rows whose target fsmlet has gone stale.
+  `schedule_next_pending()` only ever scans `status='pending'` rows, so this is
+  unaffected by which mechanism calls it. This is a pre-existing gap in today's
+  architecture (Option A included), not something any of Options A/B/C fix, and
+  fixing it is out of scope for this spec — noted here so it isn't mistaken for
+  a trade-off between the options below.
 - **Latency budget** — a few seconds of added dispatch latency vs. today's
   near-instant `pg_notify` push is acceptable for this workload. This rules
   nothing out — it specifically keeps `pg_cron`'s sub-minute scheduling syntax
