@@ -40,7 +40,10 @@ export type {
   FsmModule,
 } from "./35_fsm_sync_operation_worker_v1/fsmSyncOperationWorkerlet.ts";
 
-export { scheduleNextPending } from "./35_fsm_sync_operation_worker_v1/fsmSyncOperationScheduler.ts";
+export {
+  registerScheduleAllPendingCronJob,
+  scheduleNextPending,
+} from "./35_fsm_sync_operation_worker_v1/fsmSyncOperationScheduler.ts";
 
 export {
   createAsyncOperationInstanceAndNotifyAsyncOperationSchedulerWork,
