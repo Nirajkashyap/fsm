@@ -2,7 +2,7 @@
 
 | Field   | Value                                                  |
 | ------- | ------------------------------------------------------ |
-| Status  | Draft                                                  |
+| Status  | Accepted                                               |
 | Date    | 2026-07-26                                             |
 | Authors | Niraj, Claude                                          |
 | Issue   | #59                                                    |
@@ -183,23 +183,35 @@ Option A (status quo) is superseded by this decision once Option C ships.
 - **Easier:** One fewer process to deploy, restart, and health-check on the
   control plane. Changing the poll interval or stale threshold becomes a SQL
   `cron.alter_job` call instead of a redeploy with new CLI flags.
-- **Migration (big-bang cutover):**
+- **Migration:** originally planned as a big-bang cutover (steps 1-5 below);
+  **step 3 (deleting `fsmscheduler.ts`) is deferred** per implementation
+  decision — see the note after step 5.
   1. Add `fsm_core.schedule_all_pending(stale_threshold_seconds int)` wrapper
      function + pgTAP tests.
   2. Register the `pg_cron` job calling it on the agreed interval.
-  3. Remove `packages/fsm-sync-worker-ts/src/fsmscheduler/` and
+  3. ~~Remove `packages/fsm-sync-worker-ts/src/fsmscheduler/` and
      `packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts`, and any process
-     supervisor / deployment entry that starts them.
+     supervisor / deployment entry that starts them.~~ **Deferred** —
+     `fsmscheduler.ts` stays running as a fallback safety net alongside the
+     `pg_cron` drain; its 30s poll loop calls `schedule_next_pending()`
+     independently of `pg_notify`, which is safe to run concurrently
+     (`SELECT FOR UPDATE SKIP LOCKED`). Deletion becomes a separate future
+     decision once the `pg_cron` drain has run in production long enough to
+     trust as the sole mechanism.
   4. Remove the `pg_notify('fsm_scheduler_work', ...)` call from
-     `enqueue_fsm_dispatch_v2` (dead code — no listener remains).
+     `enqueue_fsm_dispatch_v2` (redundant now that `pg_cron` drains — but
+     `fsmscheduler.ts`'s `LISTEN "fsm_scheduler_work"` remains in the code, now
+     permanently dormant since nothing notifies it, rather than removed).
   5. Update ADR-002 (mark the "eliminate fsmscheduler" TODO resolved, link this
-     spec) and ADR-003 (remove `fsmscheduler` from the architecture diagram and
-     connection accounting sections).
-- **Rollback:** all of the above is a single deploy (SQL migration + application
-  code removal). Rollback is `git revert` the migration and application PRs,
-  which restores `fsmscheduler.ts` and the notify call unchanged — no data
-  migration involved since `fsm_dispatch_queue` and `fsm_daemon_node` schemas
-  don't change.
+     spec) and ADR-003 (describe `pg_cron` as the primary scheduling path and
+     `fsmscheduler` as a fallback-only holdover, not removed as originally
+     planned).
+- **Rollback:** with step 3 deferred, `fsmscheduler.ts` never leaves the
+  codebase, so rollback only concerns the `pg_notify` removal (step 4) and the
+  new `pg_cron` job/function (steps 1-2) — `git revert` those PRs and disable
+  the `pg_cron` job; `fsmscheduler.ts` picks the notify path back up unchanged.
+  No data migration involved since `fsm_dispatch_queue` and `fsm_daemon_node`
+  schemas don't change.
 
 ## Acceptance criteria
 
@@ -213,12 +225,15 @@ Option A (status quo) is superseded by this decision once Option C ships.
       isn't available).
 - [ ] A `pg_cron` job is registered calling `schedule_all_pending()` on that
       interval, configurable via `cron.alter_job` without a code deploy.
-- [ ] `packages/fsm-sync-worker-ts/src/fsmscheduler/` and
+- [x] ~~`packages/fsm-sync-worker-ts/src/fsmscheduler/` and
       `packages/fsm-sync-worker-ts/src/cli/fsmscheduler.ts` are deleted, along
-      with any deployment/process-supervisor config that referenced them.
+      with any deployment/process-supervisor config that referenced them.~~
+      **Deferred, not required for acceptance** — `fsmscheduler.ts` stays as a
+      fallback safety net; see Consequences & migration.
 - [ ] The `pg_notify('fsm_scheduler_work', ...)` call is removed from
-      `enqueue_fsm_dispatch_v2`, and the `fsm_scheduler_work` channel no longer
-      appears anywhere in application code.
+      `enqueue_fsm_dispatch_v2`. `fsmscheduler.ts`'s LISTEN on that channel
+      remains in the code but is confirmed dormant, since nothing calls
+      `pg_notify` on it anymore.
 - [ ] End-to-end: enqueueing a dispatch entry results in it being scheduled to a
       capable fsmlet within the documented interval, verified against a running
       local Supabase instance with `pg_cron` enabled.
@@ -232,8 +247,13 @@ Option A (status quo) is superseded by this decision once Option C ships.
 - [ ] ADR-002's "Explore eliminating the application-level fsmscheduler" TODO is
       updated to reference this spec as its resolution.
 - [ ] ADR-003's architecture diagram and connection accounting section are
-      updated to remove `fsmscheduler` and its LISTEN connection.
+      updated to describe `pg_cron` as the primary scheduling path and
+      `fsmscheduler` as a fallback-only holdover (not removed).
 
 ## Implementation
 
-<!-- Filled in after acceptance: links to implementation issues and PRs. -->
+- #142 — add `schedule_all_pending()`, register the `pg_cron` job, verify
+  end-to-end (spec steps 1-2)
+- #143 — remove the `pg_notify('fsm_scheduler_work', ...)` call, update
+  ADR-002/ADR-003 (spec steps 4-5; step 3, deleting `fsmscheduler.ts`, is
+  deferred — see Consequences & migration)
