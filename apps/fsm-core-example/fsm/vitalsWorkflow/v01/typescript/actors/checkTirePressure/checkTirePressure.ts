@@ -1,4 +1,5 @@
 // Actor: checkTirePressure
-export function checkTirePressure(context: any, event: any) {
+export function checkTirePressure(input: unknown): unknown {
   // TODO: implement actor logic
+  return { input, msg: "checkTirePressure actor invoked by typescript" };
 }

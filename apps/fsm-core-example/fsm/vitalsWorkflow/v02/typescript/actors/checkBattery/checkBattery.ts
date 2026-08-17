@@ -1,4 +1,5 @@
 // Actor: checkBattery
-export function checkBattery(context: any, event: any) {
+export function checkBattery(input: unknown): unknown {
   // TODO: implement actor logic
+  return { input, msg: "checkBattery actor invoked by typescript" };
 }
