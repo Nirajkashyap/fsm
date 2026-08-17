@@ -246,6 +246,7 @@ export async function writeActorFile(
   if (lang === "go") {
     await writeGoActorModule(absFolderPath, name, appRootOverride);
   }
+  if (lang === "typescript") await formatTsFileBestEffort(file);
   return file;
 }
 
@@ -412,6 +413,7 @@ export async function writeActorsBarrel(
     separator,
   ) + "\n";
   await Deno.writeTextFile(file, content);
+  if (lang === "typescript") await formatTsFileBestEffort(file);
   return file;
 }
 
@@ -467,7 +469,26 @@ export async function writeActorsRegistry(
   const file = `${dir}/${ACTORS_REGISTRY_FILE_NAME[lang]}`;
   await Deno.writeTextFile(file, buildActorsRegistryContent(langActors, lang));
   if (lang === "rust") await formatRustFileBestEffort(file);
+  if (lang === "typescript") await formatTsFileBestEffort(file);
   return file;
+}
+
+/**
+ * Runs `deno fmt` on a generated `.ts` file so it matches what `deno fmt
+ * --check` (the repo's pre-commit hook) expects — mirrors
+ * {@linkcode formatRustFileBestEffort}/{@linkcode formatGoFileBestEffort}.
+ * Needed because scaffolded content isn't hand-wrapped to the configured
+ * line width — e.g. a long actor name is enough to push the generated
+ * `return { input, msg: "..." }` stub past it. Best-effort: silently does
+ * nothing if `deno` isn't on `PATH`.
+ */
+async function formatTsFileBestEffort(path: string): Promise<void> {
+  try {
+    await new Deno.Command("deno", { args: ["fmt", path], stderr: "null" })
+      .output();
+  } catch {
+    // deno not on PATH — leave the file as generated.
+  }
 }
 
 /**
@@ -656,6 +677,7 @@ export async function writeAggregateActorsRegistry(
     buildAggregateRegistryContent(langActors, lang, pluginRootDirName),
   );
   if (lang === "rust") await formatRustFileBestEffort(file);
+  if (lang === "typescript") await formatTsFileBestEffort(file);
   return file;
 }
 
@@ -683,6 +705,31 @@ async function formatGoFileBestEffort(path: string): Promise<void> {
       .output();
   } catch {
     // gofmt not installed — leave the file as generated.
+  }
+}
+
+/**
+ * Runs `go mod tidy` in a generated Go module's directory, best-effort
+ * (mirrors {@linkcode formatGoFileBestEffort}). `renderGoModAggregate` only
+ * ever writes the `require`/`replace` pairs it's explicitly given — it has
+ * no notion of a dependency's own transitive deps (e.g. grpc-go pulls in
+ * `golang.org/x/net`, `google.golang.org/protobuf`, etc.) or which Go
+ * version those deps need, so a freshly-scaffolded `go.mod` under the
+ * `"grpc"` protocol fails `go build` until tidied. Silently does nothing if
+ * `go` isn't on `PATH`, or if tidying fails (e.g. a unit test's fixture
+ * `replace` targets don't exist on disk) — leaves the file as generated
+ * either way, same tolerance as the other best-effort formatters here.
+ */
+async function goModTidyBestEffort(dir: string): Promise<void> {
+  try {
+    await new Deno.Command("go", {
+      args: ["mod", "tidy"],
+      cwd: dir,
+      stdout: "null",
+      stderr: "null",
+    }).output();
+  } catch {
+    // go not installed — leave go.mod as generated.
   }
 }
 
@@ -746,6 +793,7 @@ export async function writeAggregateGoRegistry(
   const registryFile = `${dir}/registry.go`;
   await Deno.writeTextFile(registryFile, registryContent);
   await formatGoFileBestEffort(registryFile);
+  await goModTidyBestEffort(dir);
   return registryFile;
 }
 
@@ -869,14 +917,17 @@ export async function writeWorkerSdk(
   if (wroteTypescript) {
     const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/typescript`;
     await Deno.mkdir(dir, { recursive: true });
+    const cliFile = `${dir}/cli.ts`;
     await Deno.writeTextFile(
-      `${dir}/cli.ts`,
+      cliFile,
       renderTsWorkerSdkCli({
         registryImportPath: "./typescript-actors-registry.generated.ts",
       }),
     );
+    await formatTsFileBestEffort(cliFile);
+    const sdkFile = `${dir}/sdk.ts`;
     await Deno.writeTextFile(
-      `${dir}/sdk.ts`,
+      sdkFile,
       protocol === "legacy"
         ? renderTsWorkerSdkSdkLegacy({
           protocolImportPath: GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH,
@@ -886,6 +937,7 @@ export async function writeWorkerSdk(
           protoPbImportPath: GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH,
         }),
     );
+    await formatTsFileBestEffort(sdkFile);
   }
 
   const wrotePython = hasLang("python");
@@ -1038,6 +1090,7 @@ export async function writeWorkerSdk(
       ],
     });
     await Deno.writeTextFile(`${dir}/go.mod`, goModContent);
+    await goModTidyBestEffort(dir);
   }
 
   return {
