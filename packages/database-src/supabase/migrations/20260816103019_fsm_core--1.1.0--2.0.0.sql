@@ -1,6 +1,9 @@
+alter table "fsm_core"."fsm_promise_queue_event_logs" drop constraint "fsm_promise_queue_event_logs_send_to_parent_queue_id_fkey";
+
 drop function if exists "fsm_core"."load_fsm_from_json_v2"(json_input jsonb, root_node_text text, input_fsm_type text, input_fsm_name text, input_fsm_version text);
 
-create table "fsm_core"."async_operation_instance_and_async_operation_workerlet" (
+
+  create table "fsm_core"."async_operation_instance_and_async_operation_workerlet" (
     "async_operation_instance_and_async_operation_workerlet_id" uuid not null default gen_random_uuid(),
     "async_operation_instance_id" uuid not null,
     "async_operation_workerlet_id" uuid,
@@ -13,10 +16,11 @@ create table "fsm_core"."async_operation_instance_and_async_operation_workerlet"
     "status" text not null default 'pending'::text,
     "created_at" timestamp with time zone not null default now(),
     "scheduled_at" timestamp with time zone
-);
+      );
 
 
-create table "fsm_core"."async_operation_meta" (
+
+  create table "fsm_core"."async_operation_meta" (
     "async_operation_meta_id" uuid not null default gen_random_uuid(),
     "async_operation_name" text not null,
     "async_operation_type" text not null,
@@ -27,10 +31,11 @@ create table "fsm_core"."async_operation_meta" (
     "async_operation_language" text not null,
     "updated_at" timestamp with time zone not null default now(),
     "updated_by_pid" text not null
-);
+      );
 
 
-create table "fsm_core"."async_operation_workerlet" (
+
+  create table "fsm_core"."async_operation_workerlet" (
     "async_operation_workerlet_id" uuid not null default gen_random_uuid(),
     "async_operation_workerlet_pid" text not null,
     "supported_async_operations" jsonb not null default '[]'::jsonb,
@@ -38,18 +43,20 @@ create table "fsm_core"."async_operation_workerlet" (
     "active_pid_number" integer not null default 0,
     "last_heartbeat" timestamp with time zone not null default now(),
     "registered_at" timestamp with time zone not null default now()
-);
+      );
 
 
-create table "fsm_core"."fsm_dependencies" (
+
+  create table "fsm_core"."fsm_dependencies" (
     "parent_fsm_name" text not null,
     "parent_fsm_version" text not null,
     "child_fsm_name" text not null,
     "child_fsm_version" text not null
-);
+      );
 
 
-create table "fsm_core"."fsm_instance_and_fsm_workerlet" (
+
+  create table "fsm_core"."fsm_instance_and_fsm_workerlet" (
     "fsm_instance_and_fsm_workerlet_id" uuid not null default gen_random_uuid(),
     "fsm_instance_id" uuid not null,
     "fsm_workerlet_id" uuid,
@@ -59,10 +66,11 @@ create table "fsm_core"."fsm_instance_and_fsm_workerlet" (
     "status" text not null default 'pending'::text,
     "created_at" timestamp with time zone not null default now(),
     "scheduled_at" timestamp with time zone
-);
+      );
 
 
-create table "fsm_core"."fsm_workerlet" (
+
+  create table "fsm_core"."fsm_workerlet" (
     "fsm_workerlet_id" uuid not null default gen_random_uuid(),
     "fsm_workerlet_pid" text not null,
     "fsm_modules" jsonb not null default '[]'::jsonb,
@@ -70,7 +78,7 @@ create table "fsm_core"."fsm_workerlet" (
     "active_workers" integer not null default 0,
     "last_heartbeat" timestamp with time zone not null default now(),
     "registered_at" timestamp with time zone not null default now()
-);
+      );
 
 
 alter table "fsm_core"."fsm_instance" add column "worker_lock_expires_at" timestamp with time zone;
@@ -195,8 +203,11 @@ BEGIN
   WHERE async_operation_instance_and_async_operation_workerlet_id = v_entry_id;
 
   -- Step 4: wake the workerlet via pg_notify.
+  -- Prefix must keep prefix + uuid within PostgreSQL's 63-byte channel-name
+  -- limit (pg_notify errors above it). Must match
+  -- asyncOperationWorkerletNotifyChannel in fsm-core-db-ts.
   PERFORM pg_notify(
-    'async_operation_workerlet_work_' || v_chosen_workerlet_id::text,
+    'async_op_workerlet_work_' || v_chosen_workerlet_id::text,
     v_instance_id::text
   );
 
@@ -250,6 +261,51 @@ END;
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION fsm_core.check_registry_and_working_for_async_actors_for_fsm_instance_an(input_async_actors jsonb, input_fsm_name text, input_fsm_version text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  v_actor           record;
+  v_non_working_actors jsonb := '[]'::jsonb;
+  v_found           boolean;
+BEGIN
+  FOR v_actor IN
+    SELECT
+      elem->>'src'        AS src,
+      elem->>'fsmVersion' AS fsm_version
+    FROM jsonb_array_elements(input_async_actors) AS elem
+  LOOP
+    SELECT EXISTS (
+      SELECT 1
+      FROM fsm_core.async_operation_instance_and_async_operation_workerlet
+      WHERE parent_fsm_name           = input_fsm_name
+        AND parent_fsm_version        = input_fsm_version
+        AND async_operation_name      = v_actor.src
+        AND async_operation_version   = v_actor.fsm_version
+        AND status IN ('pending', 'scheduled')
+    ) INTO v_found;
+
+    IF NOT v_found THEN
+      v_non_working_actors := v_non_working_actors || jsonb_build_array(
+        jsonb_build_object(
+          'src',        v_actor.src,
+          'fsmVersion', v_actor.fsm_version
+        )
+      );
+    END IF;
+  END LOOP;
+
+  RETURN jsonb_build_object(
+    'all_working',        jsonb_array_length(v_non_working_actors) = 0,
+    'non_working_actors', v_non_working_actors,
+    'fsm_name',           input_fsm_name,
+    'fsm_version',        input_fsm_version
+  );
+END;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION fsm_core.check_registry_for_async_actors(input_async_actors jsonb, input_fsm_name text, input_fsm_version text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -290,6 +346,89 @@ BEGIN
     'fsm_name',       input_fsm_name,
     'fsm_version',    input_fsm_version
   );
+END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION fsm_core.claim_pending_promise_events_for_workers_v2(input_workers jsonb)
+ RETURNS SETOF jsonb
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    worker jsonb;
+    computed_queue_name text;
+    queue_exists boolean;
+    msg pgmq.message_record;
+BEGIN
+    FOR worker IN SELECT * FROM jsonb_array_elements(input_workers)
+    LOOP
+        computed_queue_name := fsm_core.compute_promise_queue_name_v2(
+            worker->>'parent_fsm_name', worker->>'parent_fsm_version',
+            worker->>'fsm_type', worker->>'fsm_name',
+            worker->>'fsm_version', worker->>'fsm_language'
+        );
+
+        SELECT EXISTS (
+            SELECT 1 FROM pgmq.meta WHERE queue_name = computed_queue_name
+        ) INTO queue_exists;
+
+        IF NOT queue_exists THEN
+            CONTINUE;
+        END IF;
+
+        FOR msg IN
+            SELECT * FROM pgmq.read(computed_queue_name, 30, 1)
+        LOOP
+            RETURN NEXT jsonb_build_object(
+                'parentFsmName', worker->>'parent_fsm_name',
+                'parentFsmVersion', worker->>'parent_fsm_version',
+                'fsmType', worker->>'fsm_type',
+                'fsmName', worker->>'fsm_name',
+                'fsmVersion', worker->>'fsm_version',
+                'fsmLanguage', worker->>'fsm_language',
+                'input', msg.message->'eventData'->'eventPayload',
+                'instanceId', msg.message->>'sendToParentQueueId',
+                'correlationId', msg.msg_id::text,
+                'promiseQueueName', computed_queue_name,
+                'promiseQueueType', worker->>'fsm_type',
+                'promiseQueueVersion', worker->>'fsm_version',
+                'msgId', msg.msg_id,
+                'eventName', msg.message->>'sendToParentQueueIdEventName',
+                'eventActionType', msg.message->'eventData'->>'actionType',
+                'eventDelay', COALESCE((msg.message->>'queueMsgDelay')::integer, 0),
+                'sendToParentQueueId', msg.message->>'sendToParentQueueId',
+                'sendToParentQueueIdEventName', msg.message->>'sendToParentQueueIdEventName'
+            );
+        END LOOP;
+    END LOOP;
+
+    RETURN;
+END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION fsm_core.claim_scheduled_for_async_operation_workerlet(input_workerlet_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  v_result jsonb;
+BEGIN
+  WITH claimed AS (
+    DELETE FROM fsm_core.async_operation_instance_and_async_operation_workerlet
+    WHERE async_operation_instance_and_async_operation_workerlet_id = (
+      SELECT async_operation_instance_and_async_operation_workerlet_id
+      FROM fsm_core.async_operation_instance_and_async_operation_workerlet
+      WHERE status = 'scheduled'
+        AND async_operation_workerlet_id = input_workerlet_id
+      ORDER BY scheduled_at
+      FOR UPDATE SKIP LOCKED
+      LIMIT 1
+    )
+    RETURNING *
+  )
+  SELECT row_to_json(claimed.*)::jsonb INTO v_result FROM claimed;
+  RETURN v_result;
 END;
 $function$
 ;
@@ -339,6 +478,57 @@ END;
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION fsm_core.compute_promise_queue_name_v2(input_parent_fsm_name text, input_parent_fsm_version text, input_fsm_type text, input_fsm_name text, input_fsm_version text, input_fsm_language text)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+    IF input_fsm_type = 'promise' THEN
+        RETURN input_parent_fsm_name || '_' || input_parent_fsm_version
+            || '_' || LEFT(input_fsm_type, 1) || '_' || input_fsm_name || '_'
+            || LEFT(input_fsm_language, 1);
+    ELSE
+        RETURN input_parent_fsm_name || '_' || input_parent_fsm_version
+            || '_' || LEFT(input_fsm_type, 1) || '_' || input_fsm_name || '_'
+            || input_fsm_version || '_' || input_fsm_language;
+    END IF;
+END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION fsm_core.create_async_operation_instance_and_notify_async_operation_sche(input_async_operation_instance_id uuid, input_async_operation_name text, input_async_operation_version text, input_async_operation_type text, input_parent_fsm_name text, input_parent_fsm_version text, input_async_operation_language text)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  INSERT INTO fsm_core.async_operation_instance_and_async_operation_workerlet (
+    async_operation_instance_id,
+    async_operation_name,
+    async_operation_version,
+    async_operation_type,
+    parent_fsm_name,
+    parent_fsm_version,
+    async_operation_language
+  )
+  VALUES (
+    input_async_operation_instance_id,
+    input_async_operation_name,
+    input_async_operation_version,
+    input_async_operation_type,
+    input_parent_fsm_name,
+    input_parent_fsm_version,
+    input_async_operation_language
+  );
+
+  PERFORM pg_notify(
+    'async_operation_scheduler_work',
+    input_async_operation_instance_id::text
+  );
+END;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION fsm_core.enqueue_fsm_dispatch_v1(input_instance_id text, input_fsm_name text, input_fsm_version text, input_dispatch_type text DEFAULT 'start'::text)
  RETURNS void
  LANGUAGE plpgsql
@@ -375,6 +565,35 @@ BEGIN
   VALUES (input_instance_id, input_fsm_name, input_fsm_version, input_dispatch_type);
 
   PERFORM pg_notify('fsm_scheduler_work', input_instance_id::text);
+END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION fsm_core.ensure_promise_queue_for_worker_v2(input_parent_fsm_name text, input_parent_fsm_version text, input_fsm_type text, input_fsm_name text, input_fsm_version text, input_fsm_language text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    computed_queue_name text;
+    already_existed boolean;
+BEGIN
+    computed_queue_name := fsm_core.compute_promise_queue_name_v2(
+        input_parent_fsm_name, input_parent_fsm_version, input_fsm_type,
+        input_fsm_name, input_fsm_version, input_fsm_language
+    );
+
+    SELECT EXISTS (
+        SELECT 1 FROM pgmq.meta WHERE queue_name = computed_queue_name
+    ) INTO already_existed;
+
+    IF NOT already_existed THEN
+        PERFORM pgmq.create(computed_queue_name);
+    END IF;
+
+    RETURN jsonb_build_object(
+        'queue_name', computed_queue_name,
+        'already_existed', already_existed
+    );
 END;
 $function$
 ;
@@ -424,14 +643,16 @@ BEGIN
     async_operation_type,
     async_operation_language,
     parent_fsm_name,
-    parent_fsm_version
+    parent_fsm_version,
+    updated_by_pid
   ) VALUES (
     input_async_operation_name,
     input_async_operation_version,
     input_async_operation_type,
     input_async_operation_language,
     input_parent_fsm_name,
-    input_parent_fsm_version
+    input_parent_fsm_version,
+    input_updated_by_pid
   )
   ON CONFLICT ON CONSTRAINT async_operation_meta_unique
   DO UPDATE SET
@@ -787,7 +1008,96 @@ END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION fsm_core.create_fsm_instance_from_name_v2(input_fsm_name text, input_fsm_version text, input_fsm_context jsonb, create_pgmq_queue boolean DEFAULT false)
+CREATE OR REPLACE FUNCTION fsm_core.archive_event_from_fsm_promise_type_worker_v2(input_promise_queue_name text, input_promise_queue_type text, input_promise_queue_version text, input_promise_queue_msg_id bigint, input_event_name text, input_event_action_type text, input_event_data jsonb, input_event_delay integer, input_send_to_parent_queue_id uuid, input_send_to_parent_queue_id_event_name text, input_execution_started_at timestamp with time zone, input_execution_duration integer, input_execution_finished_at timestamp with time zone, input_event_status text, input_event_output jsonb, input_error_message text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    promise_archive_result boolean;
+    send_to_parent_result jsonb;
+    output_promise_queue_event_log_id uuid;
+BEGIN
+    -- 1. Remove event from promise queue
+    promise_archive_result := pgmq.archive(
+        queue_name := input_promise_queue_name,
+        msg_id := input_promise_queue_msg_id
+    );
+
+    -- 2. Send promise result back to parent FSM queue -- only when there is
+    -- a real parent to notify.
+    IF input_send_to_parent_queue_id IS NOT NULL
+        AND input_send_to_parent_queue_id <> fsm_core.pg_system_queue_uuid()
+        AND input_send_to_parent_queue_id <> fsm_core.api_system_queue_uuid()
+    THEN
+        send_to_parent_result := fsm_core.send_event_to_fsm_queue_with_event_logs_v2(
+            input_fsm_instance_id := input_send_to_parent_queue_id,
+            input_fsm_instance_id_fsm_type := NULL,
+            input_fsm_instance_id_fsm_version := NULL,
+            input_send_to_parent_queue_id := fsm_core.pg_system_queue_uuid(),
+            input_send_to_parent_queue_type := fsm_core.pg_system_queue_type(),
+            input_send_to_parent_queue_id_event_name := fsm_core.pg_system_event_name(),
+            input_event_name := input_event_name,
+            input_event_action_type := 'promise_completed',
+            input_event_data := input_event_output,
+            input_event_delay := 0,
+            input_event_status := input_event_status,
+            input_event_output := input_event_output,
+            input_error_message := input_error_message,
+            input_execution_started_at := input_execution_started_at,
+            input_execution_duration := input_execution_duration,
+            input_execution_finished_at := input_execution_finished_at
+        );
+    ELSE
+        send_to_parent_result := jsonb_build_object('skipped', true, 'reason', 'no real parent to notify');
+    END IF;
+
+    -- 3. Log archive event in promise queue event logs
+    INSERT INTO fsm_core.fsm_promise_queue_event_logs (
+        promise_queue_name,
+        promise_queue_type,
+        promise_queue_version,
+        promise_queue_msg_id,
+        event_name,
+        event_data,
+        event_delay,
+        send_to_parent_queue_id,
+        send_to_parent_queue_id_event_name,
+        execution_started_at,
+        execution_duration,
+        execution_finished_at,
+        event_status,
+        event_output,
+        error_message
+    ) VALUES (
+        input_promise_queue_name,
+        input_promise_queue_type,
+        input_promise_queue_version,
+        input_promise_queue_msg_id,
+        input_event_name,
+        input_event_data,
+        input_event_delay,
+        input_send_to_parent_queue_id,
+        input_send_to_parent_queue_id_event_name,
+        input_execution_started_at,
+        input_execution_duration,
+        input_execution_finished_at,
+        input_event_status,
+        input_event_output,
+        input_error_message
+    ) RETURNING promise_queue_event_log_id INTO output_promise_queue_event_log_id;
+
+    RETURN jsonb_build_object(
+        'promise_queue_archive_result', promise_archive_result,
+        'promise_queue_name', input_promise_queue_name,
+        'promise_queue_msg_id', input_promise_queue_msg_id,
+        'send_to_parent_result', send_to_parent_result,
+        'promise_queue_event_log_id', output_promise_queue_event_log_id
+    );
+END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION fsm_core.create_fsm_instance_from_name_v2(input_fsm_name text, input_fsm_version text, input_fsm_context jsonb, create_pgmq_queue boolean DEFAULT true)
  RETURNS jsonb
  LANGUAGE plpgsql
 AS $function$

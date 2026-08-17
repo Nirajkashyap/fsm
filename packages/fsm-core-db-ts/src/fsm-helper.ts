@@ -1,6 +1,6 @@
 import { getLogger } from "@logtape/logtape";
 import type { Database as DatabaseGenerated, Json } from "./database.types.ts";
-import type { DBDeps } from "./custom-type.ts";
+import type { DBDeps } from "./custom.types.ts";
 
 const logger = getLogger(["@pgfsm/db", "helper"]);
 import { FSM_SCHEMA, FSM_SCHEMA_FN_VERSION } from "./const.ts";
