@@ -31,6 +31,26 @@ deno run --allow-all --watch src/main.ts
 deno run --allow-all src/main.ts
 ```
 
+### Via npx (no Deno required)
+
+```bash
+npx @pgfsm/compiler --command <cmd> --folder <path> ...
+```
+
+This package is published to npm as `@pgfsm/compiler` with a `fsm-compiler`
+`bin` entry, so it can be run via `npx`/`npm install -g` on plain Node — no Deno
+install needed.
+
+That bin entry only exists because publishing goes through `deno task build:npm`
+(`scripts/build-npm.ts`, using `@deno/dnt`), which transpiles + Node-shims the
+source into `dist/` and registers both the library export and the shebanged CLI
+bin. `deno pack` (used for this repo's other npm-published packages) does
+**not** synthesize a `package.json` `bin` field — per the Deno docs' own
+"Limitations" section (https://docs.deno.com/runtime/reference/cli/pack/), it's
+library-publishing only. A CLI packed that way would be unreachable from `npx`,
+so `.github/workflows/npm-publish.yml` builds this package's `compiler` matrix
+entry through the dnt path instead.
+
 ## Prerequisites
 
 - **Deno** (see `.prototools` for pinned version) — always required

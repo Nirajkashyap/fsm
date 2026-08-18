@@ -28,9 +28,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # dnt: true means this package ships a CLI that must work via `npx`.
+          # `deno pack` only emits a library — it does not synthesize a
+          # package.json `bin` field, so a CLI entry point packed that way is
+          # unreachable from npx (confirmed against the Deno docs' own
+          # "Limitations" section: https://docs.deno.com/runtime/reference/cli/pack/).
+          # These packages instead build through `deno task build:npm`
+          # (packages/fsm-compiler-ts/scripts/build-npm.ts), which uses
+          # @deno/dnt to transpile + Node-shim the Deno source into `dist/`
+          # and registers both the library export and a shebanged `bin`
+          # entry in one pass. Packages without a CLI (or without a dnt
+          # build script yet) stay on `deno pack`.
           - id: compiler
             path: packages/fsm-compiler-ts
             tag_prefix: compiler-v
+            dnt: true
           - id: db
             path: packages/fsm-core-db-ts
             tag_prefix: db-v
@@ -74,14 +86,29 @@ jobs:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Pack
-        if: steps.gate.outputs.should_run == 'true'
+      - name: Pack (library only)
+        if: steps.gate.outputs.should_run == 'true' && matrix.dnt != true
         working-directory: ${{ matrix.path }}
         run: deno pack
 
-      - name: Publish
-        if: steps.gate.outputs.should_run == 'true'
+      - name: Publish (library only)
+        if: steps.gate.outputs.should_run == 'true' && matrix.dnt != true
         working-directory: ${{ matrix.path }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish $(ls *.tgz) --access public
+
+      # dnt path (lib + npx-able CLI bin) — see the matrix comment above for why.
+      - name: Build (dnt) — lib + CLI bin
+        if: steps.gate.outputs.should_run == 'true' && matrix.dnt == true
+        working-directory: ${{ matrix.path }}
+        run: |
+          VERSION=$(node -p "require('./deno.json').version")
+          deno task build:npm "$VERSION" --copy-readme
+
+      - name: Publish (dnt dist)
+        if: steps.gate.outputs.should_run == 'true' && matrix.dnt == true
+        working-directory: ${{ matrix.path }}/dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
