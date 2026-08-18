@@ -11,7 +11,8 @@
     "--allow-all",
     "--unstable-detect-cjs",
     "--unstable-sloppy-imports",
-    "--env-file=${workspaceFolder}/.env"
+    "--env-file=${workspaceFolder}/.env",
+    "--no-check"
   ],
 
   "deno.suggest.imports.autoDiscover": true,
