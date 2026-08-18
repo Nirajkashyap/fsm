@@ -11,11 +11,22 @@ await build({
   shims: {
     deno: true,
   },
+  // Publishing doesn't need test/*.test.ts bundled into dist — and dnt tries
+  // to build them for the CJS target too, which fails on the top-level
+  // await in test/cli.test.ts (CJS/UMD can't support it).
+  test: false,
   package: {
     name: "@pgfsm/compiler",
     version: Deno.args[0]?.replace(/^v/, "") ?? "0.0.0",
     description: "FSM JSON compiler for PostgreSQL-backed state machines",
     license: "MIT",
+    // pg ships no types of its own; dnt only auto-installs packages that
+    // are themselves import specifiers, so without this the type-check
+    // pass can't resolve `import ... from "pg"` (deno.json's own
+    // "@types/pg" import mapping isn't picked up the same way here).
+    devDependencies: {
+      "@types/pg": "^8.18.0",
+    },
   },
   compilerOptions: {
     lib: ["ES2022", "DOM"],
