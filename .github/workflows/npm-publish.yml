@@ -86,6 +86,23 @@ jobs:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
 
+      # A prerelease version (e.g. 0.1.0-alpha.0) must publish under its own
+      # dist-tag — `npm publish` with no --tag defaults to `latest` no matter
+      # what the version string says, so without this an alpha would silently
+      # become the default `npm install` resolution.
+      - name: Determine npm dist-tag
+        id: dist-tag
+        if: steps.gate.outputs.should_run == 'true'
+        working-directory: ${{ matrix.path }}
+        run: |
+          VERSION=$(node -p "require('./deno.json').version")
+          if [[ "$VERSION" =~ -([a-zA-Z]+)(\.|$) ]]; then
+            TAG="${BASH_REMATCH[1]}"
+          else
+            TAG="latest"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - name: Pack (library only)
         if: steps.gate.outputs.should_run == 'true' && matrix.dnt != true
         working-directory: ${{ matrix.path }}
@@ -96,7 +113,7 @@ jobs:
         working-directory: ${{ matrix.path }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish $(ls *.tgz) --access public
+        run: npm publish $(ls *.tgz) --access public --tag "${{ steps.dist-tag.outputs.tag }}"
 
       # dnt path (lib + npx-able CLI bin) — see the matrix comment above for why.
       - name: Build (dnt) — lib + CLI bin
@@ -111,4 +128,4 @@ jobs:
         working-directory: ${{ matrix.path }}/dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: npm publish --access public --tag "${{ steps.dist-tag.outputs.tag }}"
