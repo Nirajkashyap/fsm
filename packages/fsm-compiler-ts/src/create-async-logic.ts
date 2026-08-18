@@ -3,6 +3,8 @@ import { isVersionFolderName } from "./util.ts";
 import type { ActorReference } from "./util.ts";
 import {
   type ActorsBarrelLang,
+  formatRustFilesBestEffort,
+  formatTsFilesBestEffort,
   type OperationLang,
   type RegisteredActor,
   resolvePluginRootAbsPath,
@@ -146,6 +148,18 @@ export async function createAsyncOperationLogic(
   if (registryFile) {
     logger.info("Wrote actors registry {file}", { file: registryFile });
   }
+
+  // One batched format call instead of per-file — see
+  // generate-async-operation-logic.ts's doc comment for the same rationale
+  // (only ever 1-2 files here, but keeps both scaffolding paths consistent).
+  const tsFiles = [file, registryFile].filter(
+    (f): f is string => f !== undefined && lang === "typescript",
+  );
+  const rustFiles = [registryFile].filter(
+    (f): f is string => f !== undefined && lang === "rust",
+  );
+  await formatTsFilesBestEffort(tsFiles);
+  await formatRustFilesBestEffort(rustFiles);
 
   return file;
 }

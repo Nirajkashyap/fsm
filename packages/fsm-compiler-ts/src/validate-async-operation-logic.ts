@@ -14,9 +14,21 @@ import {
 import {
   type ActorPluginValidationResult,
   type ActorReference,
+  DenoCommand,
   isVersionFolderName,
   type WorkflowType,
 } from "./util.ts";
+
+/**
+ * Every actor-language checker below shells out to that language's runtime
+ * (`deno`, `python3`, `go`, `rustc`), so validation is unsupported under the
+ * npm/npx build regardless of language — see {@linkcode DenoCommand}'s doc
+ * comment for why. Each branch checks for it up front and reports a clear
+ * per-actor failure instead of letting the `new Deno.Command(...)` call
+ * throw and get swallowed by the outer per-version-folder `catch`.
+ */
+const DENO_COMMAND_UNAVAILABLE_MESSAGE =
+  "Actor validation shells out to the target language's runtime and requires the Deno-native CLI — unsupported when running via the npm/npx (@pgfsm/compiler) build.";
 
 export async function validateAsyncOperationFromFolders(
   folderPath: string,
@@ -114,154 +126,224 @@ export async function validateAsyncOperationFromFolders(
                     let errorMessage: string | null = null;
 
                     if (lang === "typescript") {
-                      const checkerPath = `${_checkerDir}/check_fn.ts`;
-                      const result = await new Deno.Command("deno", {
-                        args: [
-                          "run",
-                          "--allow-all",
-                          checkerPath,
-                          modulePath,
-                          fnName,
-                        ],
-                        stderr: "piped",
-                      }).output();
-                      if (result.success) {
-                        isVerified = true;
-                        logger.info(
-                          "actors/typescript: function {src} found in {path}",
-                          { src: fnName, path: modulePath },
+                      if (!DenoCommand) {
+                        errorMessage = DENO_COMMAND_UNAVAILABLE_MESSAGE;
+                        logger.error(
+                          "actors/typescript: {msg} ({src} in {path})",
+                          {
+                            msg: errorMessage,
+                            src: fnName,
+                            path: modulePath,
+                          },
                         );
                       } else {
-                        errorMessage = new TextDecoder().decode(result.stderr)
-                          .trim();
-                        logger.error(
-                          "actors/typescript: function {src} not found in {path}: {err}",
-                          { src: fnName, path: modulePath, err: errorMessage },
-                        );
-                      }
-                    } else if (lang === "python") {
-                      const checkerPath = `${_checkerDir}/check_fn.py`;
-                      const result = await new Deno.Command("python3", {
-                        args: [checkerPath, modulePath, fnName],
-                        stderr: "piped",
-                      }).output();
-                      if (result.success) {
-                        isVerified = true;
-                        logger.info(
-                          "actors/python: function {src} found in {path}",
-                          { src: fnName, path: modulePath },
-                        );
-                      } else {
-                        errorMessage = new TextDecoder().decode(result.stderr)
-                          .trim();
-                        logger.error(
-                          "actors/python: function {src} not found in {path}: {err}",
-                          { src: fnName, path: modulePath, err: errorMessage },
-                        );
-                      }
-                    } else if (lang === "go") {
-                      if (_goCheckerBin === null) {
-                        const srcPath = `${_checkerDir}/check_fn.go`;
-                        const tmpDir = await Deno.makeTempDir({
-                          prefix: "pgfsm_go_checker_",
-                        });
-                        const binPath = `${tmpDir}/check_fn`;
-                        const compile = await new Deno.Command("go", {
-                          args: ["build", "-o", binPath, srcPath],
-                          stderr: "piped",
-                        }).output();
-                        if (compile.success) {
-                          _goCheckerBin = binPath;
-                        } else {
-                          const err = new TextDecoder().decode(compile.stderr)
-                            .trim();
-                          logger.error("Failed to compile Go checker: {err}", {
-                            err,
-                          });
-                          _goCheckerBin = false;
-                        }
-                      }
-                      if (_goCheckerBin === false) {
-                        errorMessage = "Go checker binary compilation failed";
-                        logger.error(
-                          "actors/go: checker unavailable for {src} in {path}",
-                          { src: fnName, path: modulePath },
-                        );
-                      } else {
-                        const result = await new Deno.Command(_goCheckerBin, {
-                          args: [modulePath, fnName],
+                        const checkerPath = `${_checkerDir}/check_fn.ts`;
+                        const result = await new DenoCommand("deno", {
+                          args: [
+                            "run",
+                            "--allow-all",
+                            checkerPath,
+                            modulePath,
+                            fnName,
+                          ],
                           stderr: "piped",
                         }).output();
                         if (result.success) {
                           isVerified = true;
                           logger.info(
-                            "actors/go: function {src} found in {path}",
+                            "actors/typescript: function {src} found in {path}",
                             { src: fnName, path: modulePath },
                           );
                         } else {
-                          errorMessage = new TextDecoder().decode(result.stderr)
-                            .trim();
+                          errorMessage = new TextDecoder().decode(
+                            result.stderr,
+                          ).trim();
                           logger.error(
-                            "actors/go: function {src} not found in {path}: {err}",
+                            "actors/typescript: function {src} not found in {path}: {err}",
                             {
                               src: fnName,
                               path: modulePath,
                               err: errorMessage,
                             },
                           );
+                        }
+                      }
+                    } else if (lang === "python") {
+                      if (!DenoCommand) {
+                        errorMessage = DENO_COMMAND_UNAVAILABLE_MESSAGE;
+                        logger.error(
+                          "actors/python: {msg} ({src} in {path})",
+                          {
+                            msg: errorMessage,
+                            src: fnName,
+                            path: modulePath,
+                          },
+                        );
+                      } else {
+                        const checkerPath = `${_checkerDir}/check_fn.py`;
+                        const result = await new DenoCommand("python3", {
+                          args: [checkerPath, modulePath, fnName],
+                          stderr: "piped",
+                        }).output();
+                        if (result.success) {
+                          isVerified = true;
+                          logger.info(
+                            "actors/python: function {src} found in {path}",
+                            { src: fnName, path: modulePath },
+                          );
+                        } else {
+                          errorMessage = new TextDecoder().decode(
+                            result.stderr,
+                          ).trim();
+                          logger.error(
+                            "actors/python: function {src} not found in {path}: {err}",
+                            {
+                              src: fnName,
+                              path: modulePath,
+                              err: errorMessage,
+                            },
+                          );
+                        }
+                      }
+                    } else if (lang === "go") {
+                      if (!DenoCommand) {
+                        errorMessage = DENO_COMMAND_UNAVAILABLE_MESSAGE;
+                        logger.error(
+                          "actors/go: {msg} ({src} in {path})",
+                          {
+                            msg: errorMessage,
+                            src: fnName,
+                            path: modulePath,
+                          },
+                        );
+                      } else {
+                        if (_goCheckerBin === null) {
+                          const srcPath = `${_checkerDir}/check_fn.go`;
+                          const tmpDir = await Deno.makeTempDir({
+                            prefix: "pgfsm_go_checker_",
+                          });
+                          const binPath = `${tmpDir}/check_fn`;
+                          const compile = await new DenoCommand("go", {
+                            args: ["build", "-o", binPath, srcPath],
+                            stderr: "piped",
+                          }).output();
+                          if (compile.success) {
+                            _goCheckerBin = binPath;
+                          } else {
+                            const err = new TextDecoder().decode(
+                              compile.stderr,
+                            ).trim();
+                            logger.error(
+                              "Failed to compile Go checker: {err}",
+                              { err },
+                            );
+                            _goCheckerBin = false;
+                          }
+                        }
+                        if (_goCheckerBin === false) {
+                          errorMessage = "Go checker binary compilation failed";
+                          logger.error(
+                            "actors/go: checker unavailable for {src} in {path}",
+                            { src: fnName, path: modulePath },
+                          );
+                        } else {
+                          const result = await new DenoCommand(
+                            _goCheckerBin,
+                            {
+                              args: [modulePath, fnName],
+                              stderr: "piped",
+                            },
+                          ).output();
+                          if (result.success) {
+                            isVerified = true;
+                            logger.info(
+                              "actors/go: function {src} found in {path}",
+                              { src: fnName, path: modulePath },
+                            );
+                          } else {
+                            errorMessage = new TextDecoder().decode(
+                              result.stderr,
+                            ).trim();
+                            logger.error(
+                              "actors/go: function {src} not found in {path}: {err}",
+                              {
+                                src: fnName,
+                                path: modulePath,
+                                err: errorMessage,
+                              },
+                            );
+                          }
                         }
                       }
                     } else if (lang === "rust") {
-                      if (_rustCheckerBin === null) {
-                        const srcPath = `${_checkerDir}/check_fn.rs`;
-                        const tmpDir = await Deno.makeTempDir({
-                          prefix: "pgfsm_rust_checker_",
-                        });
-                        const binPath = `${tmpDir}/check_fn`;
-                        const compile = await new Deno.Command("rustc", {
-                          args: [srcPath, "-o", binPath],
-                          stderr: "piped",
-                        }).output();
-                        if (compile.success) {
-                          _rustCheckerBin = binPath;
-                        } else {
-                          const err = new TextDecoder().decode(compile.stderr)
-                            .trim();
-                          logger.error(
-                            "Failed to compile Rust checker: {err}",
-                            { err },
-                          );
-                          _rustCheckerBin = false;
-                        }
-                      }
-                      if (_rustCheckerBin === false) {
-                        errorMessage = "Rust checker binary compilation failed";
+                      if (!DenoCommand) {
+                        errorMessage = DENO_COMMAND_UNAVAILABLE_MESSAGE;
                         logger.error(
-                          "actors/rust: checker unavailable for {src} in {path}",
-                          { src: fnName, path: modulePath },
+                          "actors/rust: {msg} ({src} in {path})",
+                          {
+                            msg: errorMessage,
+                            src: fnName,
+                            path: modulePath,
+                          },
                         );
                       } else {
-                        const result = await new Deno.Command(_rustCheckerBin, {
-                          args: [modulePath, fnName],
-                          stderr: "piped",
-                        }).output();
-                        if (result.success) {
-                          isVerified = true;
-                          logger.info(
-                            "actors/rust: function {src} found in {path}",
+                        if (_rustCheckerBin === null) {
+                          const srcPath = `${_checkerDir}/check_fn.rs`;
+                          const tmpDir = await Deno.makeTempDir({
+                            prefix: "pgfsm_rust_checker_",
+                          });
+                          const binPath = `${tmpDir}/check_fn`;
+                          const compile = await new DenoCommand("rustc", {
+                            args: [srcPath, "-o", binPath],
+                            stderr: "piped",
+                          }).output();
+                          if (compile.success) {
+                            _rustCheckerBin = binPath;
+                          } else {
+                            const err = new TextDecoder().decode(
+                              compile.stderr,
+                            ).trim();
+                            logger.error(
+                              "Failed to compile Rust checker: {err}",
+                              { err },
+                            );
+                            _rustCheckerBin = false;
+                          }
+                        }
+                        if (_rustCheckerBin === false) {
+                          errorMessage =
+                            "Rust checker binary compilation failed";
+                          logger.error(
+                            "actors/rust: checker unavailable for {src} in {path}",
                             { src: fnName, path: modulePath },
                           );
                         } else {
-                          errorMessage = new TextDecoder().decode(result.stderr)
-                            .trim();
-                          logger.error(
-                            "actors/rust: function {src} not found in {path}: {err}",
+                          const result = await new DenoCommand(
+                            _rustCheckerBin,
                             {
-                              src: fnName,
-                              path: modulePath,
-                              err: errorMessage,
+                              args: [modulePath, fnName],
+                              stderr: "piped",
                             },
-                          );
+                          ).output();
+                          if (result.success) {
+                            isVerified = true;
+                            logger.info(
+                              "actors/rust: function {src} found in {path}",
+                              { src: fnName, path: modulePath },
+                            );
+                          } else {
+                            errorMessage = new TextDecoder().decode(
+                              result.stderr,
+                            ).trim();
+                            logger.error(
+                              "actors/rust: function {src} not found in {path}: {err}",
+                              {
+                                src: fnName,
+                                path: modulePath,
+                                err: errorMessage,
+                              },
+                            );
+                          }
                         }
                       }
                     }

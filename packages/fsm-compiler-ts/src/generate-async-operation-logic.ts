@@ -4,6 +4,10 @@ import {
   actorFileBaseName,
   type ActorsBarrelLang,
   eachVersionedFsmFolder,
+  formatGoFilesBestEffort,
+  formatRustFilesBestEffort,
+  formatTsFilesBestEffort,
+  goModTidyManyBestEffort,
   isOperationLang,
   type RegisteredActor,
   resolvePluginRootAbsPath,
@@ -55,6 +59,13 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  * `workerSdkProtocol` selects which sidecar wire protocol the generated
  * worker SDKs speak — see {@linkcode WorkerSdkProtocol}. Defaults to
  * `"grpc"`.
+ *
+ * Every `write*` call below only writes — nothing is formatted/tidied
+ * per-file as it's written. Instead, every `.ts`/`.rs`/`.go` path and Go
+ * module directory produced across the *whole* run is collected and
+ * formatted once at the very end (one `deno fmt`, one `rustfmt`, one
+ * `gofmt`, one `go mod tidy` per Go module) — see
+ * {@linkcode formatTsFilesBestEffort} and friends.
  */
 export async function generateAsyncOperationLogicFromFolders(
   folderPath: string,
@@ -67,6 +78,10 @@ export async function generateAsyncOperationLogicFromFolders(
   });
 
   const allRegisteredActors: RegisteredActor[] = [];
+  const tsFiles: string[] = [];
+  const rustFiles: string[] = [];
+  const goFiles: string[] = [];
+  const goModDirs: string[] = [];
 
   await eachVersionedFsmFolder(
     folderPath,
@@ -104,6 +119,7 @@ export async function generateAsyncOperationLogicFromFolders(
         seen.add(key);
 
         const file = await writeActorFile(absFolderPath, lang, actor);
+        if (lang === "typescript") tsFiles.push(file);
         writtenActors.push(toRegisteredActor(absFolderPath, lang, actor));
         logger.info("Wrote actor file {file}", { file });
       }
@@ -126,6 +142,7 @@ export async function generateAsyncOperationLogicFromFolders(
           lang,
         );
         if (barrelFile) {
+          if (lang === "typescript") tsFiles.push(barrelFile);
           logger.info("Wrote {lang} actors barrel {file}", {
             lang,
             file: barrelFile,
@@ -138,6 +155,8 @@ export async function generateAsyncOperationLogicFromFolders(
           lang,
         );
         if (registryFile) {
+          if (lang === "typescript") tsFiles.push(registryFile);
+          if (lang === "rust") rustFiles.push(registryFile);
           logger.info("Wrote {lang} actors registry {file}", {
             lang,
             file: registryFile,
@@ -164,6 +183,8 @@ export async function generateAsyncOperationLogicFromFolders(
       lang,
     );
     if (aggregateFile) {
+      if (lang === "typescript") tsFiles.push(aggregateFile);
+      if (lang === "rust") rustFiles.push(aggregateFile);
       logger.info("Wrote {lang} aggregate actors registry {file}", {
         lang,
         file: aggregateFile,
@@ -177,6 +198,8 @@ export async function generateAsyncOperationLogicFromFolders(
     allRegisteredActors,
   );
   if (goRegistryFile) {
+    goFiles.push(goRegistryFile);
+    goModDirs.push(goRegistryFile.slice(0, goRegistryFile.lastIndexOf("/")));
     logger.info("Wrote go aggregate actors registry {file}", {
       file: goRegistryFile,
     });
@@ -188,8 +211,17 @@ export async function generateAsyncOperationLogicFromFolders(
     allRegisteredActors,
     { protocol: workerSdkProtocol },
   );
+  tsFiles.push(...wrote.tsFiles);
+  rustFiles.push(...wrote.rustFiles);
+  goFiles.push(...wrote.goFiles);
+  if (wrote.goModDir) goModDirs.push(wrote.goModDir);
   logger.info(
     "Wrote worker-sdk-generated/ (typescript={ts}, python={py}, rust={rust}, go={go})",
     { ts: wrote.typescript, py: wrote.python, rust: wrote.rust, go: wrote.go },
   );
+
+  await formatTsFilesBestEffort(tsFiles);
+  await formatRustFilesBestEffort(rustFiles);
+  await formatGoFilesBestEffort(goFiles);
+  await goModTidyManyBestEffort(goModDirs);
 }
