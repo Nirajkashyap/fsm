@@ -9,6 +9,36 @@ import type {
   ParallelStateNode,
 } from "./generated/fsm-machine-schema.types.ts";
 
+/**
+ * Structural stand-in for `Deno.Command`'s constructor, covering only the
+ * options/output shape actually used in this codebase (`args`/`cwd`/
+ * `stdout`/`stderr` in, `success`/`stderr` out). Deliberately NOT derived
+ * from `typeof Deno.Command` — that type reference itself fails to
+ * typecheck once this file is built for npm via `deno task build:npm` (dnt
+ * + `@deno/shim-deno`), because the shim doesn't implement `Command` at all
+ * (see its own PROGRESS.md:
+ * https://github.com/denoland/node_shims/blob/main/packages/shim-deno/PROGRESS.md,
+ * where it's listed unchecked).
+ */
+type DenoCommandCtor = new (command: string, options?: {
+  args?: string[];
+  cwd?: string;
+  stdout?: "piped" | "null" | "inherit";
+  stderr?: "piped" | "null" | "inherit";
+}) => {
+  output(): Promise<
+    { success: boolean; stdout: Uint8Array; stderr: Uint8Array }
+  >;
+};
+
+/**
+ * `Deno.Command`'s constructor, or `undefined` when running under the
+ * npm/npx build (no subprocess support there — see {@linkcode DenoCommandCtor}).
+ * Every caller must check for that before constructing.
+ */
+export const DenoCommand: DenoCommandCtor | undefined =
+  (Deno as unknown as { Command?: DenoCommandCtor }).Command;
+
 export type WorkflowType = "fsm" | "sharedFsm" | "sharedPromise" | "promise";
 
 export type ActorReference = {

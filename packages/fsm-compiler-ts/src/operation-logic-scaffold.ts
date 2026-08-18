@@ -1,6 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import {
   type ActorReference,
+  DenoCommand,
   isValidPythonIdentifier,
   isVersionFolderName,
   toGoExportedName,
@@ -246,7 +247,6 @@ export async function writeActorFile(
   if (lang === "go") {
     await writeGoActorModule(absFolderPath, name, appRootOverride);
   }
-  if (lang === "typescript") await formatTsFileBestEffort(file);
   return file;
 }
 
@@ -413,7 +413,6 @@ export async function writeActorsBarrel(
     separator,
   ) + "\n";
   await Deno.writeTextFile(file, content);
-  if (lang === "typescript") await formatTsFileBestEffort(file);
   return file;
 }
 
@@ -468,39 +467,50 @@ export async function writeActorsRegistry(
   await Deno.mkdir(dir, { recursive: true });
   const file = `${dir}/${ACTORS_REGISTRY_FILE_NAME[lang]}`;
   await Deno.writeTextFile(file, buildActorsRegistryContent(langActors, lang));
-  if (lang === "rust") await formatRustFileBestEffort(file);
-  if (lang === "typescript") await formatTsFileBestEffort(file);
   return file;
 }
 
 /**
- * Runs `deno fmt` on a generated `.ts` file so it matches what `deno fmt
- * --check` (the repo's pre-commit hook) expects — mirrors
- * {@linkcode formatRustFileBestEffort}/{@linkcode formatGoFileBestEffort}.
+ * Runs `deno fmt` once across every path passed in, so it matches what
+ * `deno fmt --check` (the repo's pre-commit hook) expects — mirrors
+ * {@linkcode formatRustFilesBestEffort}/{@linkcode formatGoFilesBestEffort}.
  * Needed because scaffolded content isn't hand-wrapped to the configured
  * line width — e.g. a long actor name is enough to push the generated
- * `return { input, msg: "..." }` stub past it. Best-effort: silently does
- * nothing if `deno` isn't on `PATH`.
+ * `return { input, msg: "..." }` stub past it. Callers collect every
+ * `.ts` path a whole scaffolding run wrote and call this once at the end,
+ * rather than once per file as each was written — same result, fewer
+ * subprocess spawns. Best-effort: silently does nothing if `paths` is
+ * empty, `deno` isn't on `PATH`, or running under the npm/npx build (no
+ * {@linkcode DenoCommand} there — see its doc comment).
  */
-async function formatTsFileBestEffort(path: string): Promise<void> {
+export async function formatTsFilesBestEffort(
+  paths: string[],
+): Promise<void> {
+  if (paths.length === 0 || !DenoCommand) return;
   try {
-    await new Deno.Command("deno", { args: ["fmt", path], stderr: "null" })
+    await new DenoCommand("deno", { args: ["fmt", ...paths], stderr: "null" })
       .output();
   } catch {
-    // deno not on PATH — leave the file as generated.
+    // deno not on PATH — leave the files as generated.
   }
 }
 
 /**
- * Runs `rustfmt` on a generated `.rs` file so it matches what `cargo fmt
- * --check` expects — needed once a generated registry is actually
- * `#[path]`-included into a real crate (e.g. worker-sdk/rust), since our own
- * codegen doesn't hand-replicate rustfmt's line-wrapping rules. Best-effort:
- * silently does nothing if `rustfmt` isn't on `PATH`, matching this file's
- * existing tolerance for missing toolchains elsewhere (see
- * `validate-async-operation-logic.ts`'s checker compilation).
+ * Runs `rustfmt` once across every path passed in, so it matches what
+ * `cargo fmt --check` expects — needed once a generated registry is
+ * actually `#[path]`-included into a real crate (e.g. worker-sdk/rust),
+ * since our own codegen doesn't hand-replicate rustfmt's line-wrapping
+ * rules. See {@linkcode formatTsFilesBestEffort} for the batching
+ * rationale. Best-effort: silently does nothing if `paths` is empty,
+ * `rustfmt` isn't on `PATH` (matching this file's existing tolerance for
+ * missing toolchains elsewhere — see `validate-async-operation-logic.ts`'s
+ * checker compilation), or running under the npm/npx build (no
+ * {@linkcode DenoCommand} there).
  */
-async function formatRustFileBestEffort(path: string): Promise<void> {
+export async function formatRustFilesBestEffort(
+  paths: string[],
+): Promise<void> {
+  if (paths.length === 0 || !DenoCommand) return;
   try {
     // --edition / --style-edition 2021: two separate rustfmt settings, both
     // needed. `--edition` alone (which `cargo fmt` derives from Cargo.toml)
@@ -510,12 +520,12 @@ async function formatRustFileBestEffort(path: string): Promise<void> {
     // fmt` sets it implicitly from the crate's edition in a way the bare
     // rustfmt binary doesn't. Without both flags, output here wouldn't match
     // what `cargo fmt --check` expects.
-    await new Deno.Command("rustfmt", {
-      args: ["--edition", "2021", "--style-edition", "2021", path],
+    await new DenoCommand("rustfmt", {
+      args: ["--edition", "2021", "--style-edition", "2021", ...paths],
       stderr: "null",
     }).output();
   } catch {
-    // rustfmt not installed — leave the file as generated.
+    // rustfmt not installed — leave the files as generated.
   }
 }
 
@@ -676,8 +686,6 @@ export async function writeAggregateActorsRegistry(
     file,
     buildAggregateRegistryContent(langActors, lang, pluginRootDirName),
   );
-  if (lang === "rust") await formatRustFileBestEffort(file);
-  if (lang === "typescript") await formatTsFileBestEffort(file);
   return file;
 }
 
@@ -698,38 +706,50 @@ function goImportAlias(a: RegisteredActor): string {
 
 const GO_AGGREGATE_DIR_NAME = "go-actors-registry-generated";
 
-/** Runs `gofmt -w` on a generated `.go` file. Best-effort, mirrors {@linkcode formatRustFileBestEffort}. */
-async function formatGoFileBestEffort(path: string): Promise<void> {
+/** Runs `gofmt -w` once across every path passed in. See {@linkcode formatTsFilesBestEffort} for the batching rationale; same best-effort tolerance (empty `paths`, missing `gofmt`, npm/npx build). */
+export async function formatGoFilesBestEffort(
+  paths: string[],
+): Promise<void> {
+  if (paths.length === 0 || !DenoCommand) return;
   try {
-    await new Deno.Command("gofmt", { args: ["-w", path], stderr: "null" })
+    await new DenoCommand("gofmt", { args: ["-w", ...paths], stderr: "null" })
       .output();
   } catch {
-    // gofmt not installed — leave the file as generated.
+    // gofmt not installed — leave the files as generated.
   }
 }
 
 /**
- * Runs `go mod tidy` in a generated Go module's directory, best-effort
- * (mirrors {@linkcode formatGoFileBestEffort}). `renderGoModAggregate` only
- * ever writes the `require`/`replace` pairs it's explicitly given — it has
- * no notion of a dependency's own transitive deps (e.g. grpc-go pulls in
- * `golang.org/x/net`, `google.golang.org/protobuf`, etc.) or which Go
- * version those deps need, so a freshly-scaffolded `go.mod` under the
- * `"grpc"` protocol fails `go build` until tidied. Silently does nothing if
- * `go` isn't on `PATH`, or if tidying fails (e.g. a unit test's fixture
- * `replace` targets don't exist on disk) — leaves the file as generated
- * either way, same tolerance as the other best-effort formatters here.
+ * Runs `go mod tidy` once per generated Go module directory passed in —
+ * still one subprocess per directory (each `go.mod` is its own module;
+ * `go mod tidy` has no multi-module batch mode), but centralized into a
+ * single call site instead of scattered across every write function that
+ * happens to produce a `go.mod`, matching the batching this file's other
+ * formatters use (see {@linkcode formatTsFilesBestEffort}).
+ * `renderGoModAggregate` only ever writes the `require`/`replace` pairs
+ * it's explicitly given — it has no notion of a dependency's own
+ * transitive deps (e.g. grpc-go pulls in `golang.org/x/net`,
+ * `google.golang.org/protobuf`, etc.) or which Go version those deps need,
+ * so a freshly-scaffolded `go.mod` under the `"grpc"` protocol fails
+ * `go build` until tidied. Silently does nothing per directory if `go`
+ * isn't on `PATH`, if tidying fails (e.g. a unit test's fixture `replace`
+ * targets don't exist on disk), or if running under the npm/npx build (no
+ * {@linkcode DenoCommand} there) — leaves each `go.mod` as generated either
+ * way.
  */
-async function goModTidyBestEffort(dir: string): Promise<void> {
-  try {
-    await new Deno.Command("go", {
-      args: ["mod", "tidy"],
-      cwd: dir,
-      stdout: "null",
-      stderr: "null",
-    }).output();
-  } catch {
-    // go not installed — leave go.mod as generated.
+export async function goModTidyManyBestEffort(dirs: string[]): Promise<void> {
+  if (!DenoCommand) return;
+  for (const dir of dirs) {
+    try {
+      await new DenoCommand("go", {
+        args: ["mod", "tidy"],
+        cwd: dir,
+        stdout: "null",
+        stderr: "null",
+      }).output();
+    } catch {
+      // go not installed, or tidying failed — leave go.mod as generated.
+    }
   }
 }
 
@@ -792,8 +812,6 @@ export async function writeAggregateGoRegistry(
   });
   const registryFile = `${dir}/registry.go`;
   await Deno.writeTextFile(registryFile, registryContent);
-  await formatGoFileBestEffort(registryFile);
-  await goModTidyBestEffort(dir);
   return registryFile;
 }
 
@@ -891,6 +909,12 @@ export interface WriteWorkerSdkOptions {
  * included — ships from one self-contained directory a build can point at.
  * Returns `false` (writes nothing) when there are no actors for that language
  * across the whole run — matches every other aggregate writer in this file.
+ * Also returns every `.ts`/`.rs`/`.go` path written (`tsFiles`/`rustFiles`/
+ * `goFiles`) and the Go worker-sdk's module directory (`goModDir`, if any)
+ * — this function doesn't format/tidy anything itself; callers batch these
+ * into one end-of-run pass via {@linkcode formatTsFilesBestEffort} /
+ * {@linkcode formatRustFilesBestEffort} / {@linkcode formatGoFilesBestEffort} /
+ * {@linkcode goModTidyManyBestEffort} instead of per-file.
  *
  * Unlike the registries, `sdk.{ts,py,rs,go}`/`protocol.{ts,py,rs,go}` don't
  * vary per project at all — every project using this gateway (and this
@@ -905,13 +929,25 @@ export async function writeWorkerSdk(
   pluginRootDirName: string,
   actors: RegisteredActor[],
   options: WriteWorkerSdkOptions = {},
-): Promise<
-  { typescript: boolean; python: boolean; rust: boolean; go: boolean }
-> {
+): Promise<{
+  typescript: boolean;
+  python: boolean;
+  rust: boolean;
+  go: boolean;
+  tsFiles: string[];
+  rustFiles: string[];
+  goFiles: string[];
+  goModDir?: string;
+}> {
   const protocol = options.protocol ?? "grpc";
   const appRoot = appRootAbsPath.split("/").at(-1)!;
   const hasLang = (lang: OperationLang) =>
     actors.some((a) => a.fsmLanguage === lang);
+
+  const tsFiles: string[] = [];
+  const rustFiles: string[] = [];
+  const goFiles: string[] = [];
+  let goModDir: string | undefined;
 
   const wroteTypescript = hasLang("typescript");
   if (wroteTypescript) {
@@ -924,7 +960,6 @@ export async function writeWorkerSdk(
         registryImportPath: "./typescript-actors-registry.generated.ts",
       }),
     );
-    await formatTsFileBestEffort(cliFile);
     const sdkFile = `${dir}/sdk.ts`;
     await Deno.writeTextFile(
       sdkFile,
@@ -937,7 +972,7 @@ export async function writeWorkerSdk(
           protoPbImportPath: GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH,
         }),
     );
-    await formatTsFileBestEffort(sdkFile);
+    tsFiles.push(cliFile, sdkFile);
   }
 
   const wrotePython = hasLang("python");
@@ -988,9 +1023,7 @@ export async function writeWorkerSdk(
           registryRelativePath: "../rust-actors-registry.generated.rs",
         }),
       );
-      await formatRustFileBestEffort(mainFile);
       await Deno.writeTextFile(sdkFile, renderRustWorkerSdkSdkLegacy({}));
-      await formatRustFileBestEffort(sdkFile);
       await Deno.writeTextFile(
         `${dir}/src/protocol.rs`,
         renderRustWorkerSdkProtocolLegacy({}),
@@ -1006,9 +1039,7 @@ export async function writeWorkerSdk(
           registryRelativePath: "../rust-actors-registry.generated.rs",
         }),
       );
-      await formatRustFileBestEffort(mainFile);
       await Deno.writeTextFile(sdkFile, renderRustWorkerSdkSdk({}));
-      await formatRustFileBestEffort(sdkFile);
       await Deno.writeTextFile(
         `${dir}/Cargo.toml`,
         renderRustWorkerSdkCargoToml({
@@ -1016,6 +1047,7 @@ export async function writeWorkerSdk(
         }),
       );
     }
+    rustFiles.push(mainFile, sdkFile);
     await Deno.writeTextFile(
       `${dir}/.gitignore`,
       renderRustWorkerSdkGitignore({}),
@@ -1031,7 +1063,6 @@ export async function writeWorkerSdk(
     const sdkFile = `${dir}/sdk.go`;
     if (protocol === "legacy") {
       await Deno.writeTextFile(sdkFile, renderGoWorkerSdkSdkLegacy({}));
-      await formatGoFileBestEffort(sdkFile);
       await Deno.writeTextFile(
         `${dir}/protocol.go`,
         renderGoWorkerSdkProtocolLegacy({}),
@@ -1044,8 +1075,8 @@ export async function writeWorkerSdk(
             `${GATEWAY_SIDECAR_PROTO_GEN_GO_MODULE_PATH}/sidecargateway/v1`,
         }),
       );
-      await formatGoFileBestEffort(sdkFile);
     }
+    goFiles.push(sdkFile);
     await Deno.writeTextFile(
       `${dir}/.gitignore`,
       renderGoWorkerSdkGitignore({}),
@@ -1090,7 +1121,7 @@ export async function writeWorkerSdk(
       ],
     });
     await Deno.writeTextFile(`${dir}/go.mod`, goModContent);
-    await goModTidyBestEffort(dir);
+    goModDir = dir;
   }
 
   return {
@@ -1098,6 +1129,10 @@ export async function writeWorkerSdk(
     python: wrotePython,
     rust: wroteRust,
     go: wroteGo,
+    tsFiles,
+    rustFiles,
+    goFiles,
+    goModDir,
   };
 }
 
