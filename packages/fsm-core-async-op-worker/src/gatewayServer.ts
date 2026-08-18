@@ -34,7 +34,7 @@ import {
   type RegisteredActor,
   SidecarGateway,
 } from "./sidecar/gateway.ts";
-import { ActivityGatewayService } from "@pgfsm/proto-codegen/typescript/activitygateway/v1/connect";
+import { ActivityGatewayService } from "@pgfsm/proto-codegen/activitygateway/v1/connect";
 import { startAsyncOpPollLoop } from "./asyncOpPollLoop.ts";
 
 const logger = getLogger(["@pgfsm/worker", "async-op-worker-gateway"]);

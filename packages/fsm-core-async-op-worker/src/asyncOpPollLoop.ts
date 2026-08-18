@@ -161,11 +161,24 @@ export async function dispatchAndArchive(
 
   const executionFinishedAt = new Date();
 
+  // Outcome-dependent prefix, matching fsm-async-worker-ts's working
+  // convention exactly (fsmpromiseworker-helper.ts's
+  // send_event_name_to_parent_queue_id): the fsmlet only recognizes
+  // "xstate.done.actor.<base>" / "xstate.error.actor.<base>" as a valid
+  // transition event -- the claimed row's raw eventName (the un-prefixed
+  // state-node id the fsmlet itself sent, e.g.
+  // "0.(machine).creditCheck.Verifying Credentials") never matches any
+  // transition on its own, which used to leave the FSM stuck at that state
+  // forever even though the actor invoke above succeeded.
+  const prefixedEventName = `${
+    eventStatus === "succeeded" ? "xstate.done.actor." : "xstate.error.actor."
+  }${event.eventName}`;
+
   logger.info(
     "Dispatch result for actor {actorKey}, event {eventName}: status={status}, output={output}, error={error}",
     {
       actorKey: actorKeyOf(event),
-      eventName: event.eventName,
+      eventName: prefixedEventName,
       status: eventStatus,
       output: eventOutput,
       error: errorMessage,
@@ -178,7 +191,7 @@ export async function dispatchAndArchive(
       event.promiseQueueType,
       event.promiseQueueVersion,
       event.msgId,
-      event.eventName,
+      prefixedEventName,
       event.eventActionType,
       eventOutput,
       event.eventDelay,

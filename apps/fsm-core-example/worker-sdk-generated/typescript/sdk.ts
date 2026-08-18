@@ -24,7 +24,7 @@ import {
   Http2SessionManager,
 } from "@connectrpc/connect-node";
 import * as net from "node:net";
-import { SidecarGatewayService } from "@pgfsm/proto-codegen/typescript/sidecargateway/v1/connect";
+import { SidecarGatewayService } from "@pgfsm/proto-codegen/sidecargateway/v1/connect";
 import {
   Heartbeat,
   type Invoke,
@@ -35,7 +35,7 @@ import {
   SessionRequest,
   type SessionResponse,
   Unregister,
-} from "@pgfsm/proto-codegen/typescript/sidecargateway/v1/pb";
+} from "@pgfsm/proto-codegen/sidecargateway/v1/pb";
 
 const logger = getLogger([
   "@pgfsm/worker",
