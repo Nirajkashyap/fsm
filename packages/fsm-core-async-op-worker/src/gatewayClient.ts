@@ -25,7 +25,7 @@ import {
 } from "@connectrpc/connect-node";
 import * as net from "node:net";
 import type { ClientSessionOptions } from "node:http2";
-import { ActivityGatewayService } from "@pgfsm/proto-codegen/typescript/activitygateway/v1/connect";
+import { ActivityGatewayService } from "@pgfsm/proto-codegen/activitygateway/v1/connect";
 
 // Connect's `Client<typeof ActivityGatewayService>` utility type resolves every
 // method to `never` under `deno check` specifically (reproduced in complete

@@ -817,9 +817,9 @@ export async function writeAggregateGoRegistry(
  * bookkeeping moot.
  */
 const GATEWAY_SIDECAR_PROTO_CONNECT_IMPORT_PATH =
-  "@pgfsm/proto-codegen/typescript/sidecargateway/v1/connect";
+  "@pgfsm/proto-codegen/sidecargateway/v1/connect";
 const GATEWAY_SIDECAR_PROTO_PB_IMPORT_PATH =
-  "@pgfsm/proto-codegen/typescript/sidecargateway/v1/pb";
+  "@pgfsm/proto-codegen/sidecargateway/v1/pb";
 /**
  * pip `-e` (editable install) target from
  * `<appRoot>/worker-sdk-generated/python/` (where `requirements.txt` lives)

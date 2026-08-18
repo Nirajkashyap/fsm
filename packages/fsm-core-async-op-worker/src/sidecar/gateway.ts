@@ -31,14 +31,14 @@ import {
   type ServiceImpl,
 } from "@connectrpc/connect";
 import * as http2 from "node:http2";
-import { SidecarGatewayService } from "@pgfsm/proto-codegen/typescript/sidecargateway/v1/connect";
+import { SidecarGatewayService } from "@pgfsm/proto-codegen/sidecargateway/v1/connect";
 import {
   Invoke,
   type Register,
   RegisterAck,
   type SessionRequest,
   SessionResponse,
-} from "@pgfsm/proto-codegen/typescript/sidecargateway/v1/pb";
+} from "@pgfsm/proto-codegen/sidecargateway/v1/pb";
 
 const logger = getLogger([
   "@pgfsm/worker",

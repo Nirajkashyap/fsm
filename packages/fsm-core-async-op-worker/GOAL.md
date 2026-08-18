@@ -144,13 +144,18 @@ helpers, callable from anywhere):
 
 ### Real remaining gaps (not part of the original 8 steps)
 
-- **No outcome-dependent `eventName` prefixing.**
-  `claim_pending_promise_events_for_workers_v2` runs before `sidecar.invoke()`,
-  so it can't know success/failure yet — `eventName` in the claimed row is
-  always the raw `sendToParentQueueIdEventName` from the PGMQ message, never
-  `"xstate.done.actor."`/`"xstate.error.actor."`-prefixed. Whether/how to
-  compute that prefix is a `dispatchAndArchive()` (TS-side) concern, not yet
-  implemented.
+- ~~No outcome-dependent `eventName` prefixing.~~ **Fixed.**
+  `claim_pending_promise_events_for_workers_v2` still runs before
+  `sidecar.invoke()`, so `eventName` in the claimed row is still the raw
+  `sendToParentQueueIdEventName` from the PGMQ message — but
+  `dispatchAndArchive()` now prefixes it with `"xstate.done.actor."` /
+  `"xstate.error.actor."` (based on the invoke outcome) before archiving,
+  matching `fsm-async-worker-ts`'s working convention
+  (`fsmpromiseworker-helper.ts`'s `send_event_name_to_parent_queue_id`). Without
+  this the fsmlet could never find a matching transition for the raw eventName
+  and the FSM instance stayed stuck at the invoking state forever, even though
+  the actor invoke itself succeeded — caught via a real end-to-end run, not just
+  unit coverage.
 - **PGMQ's 48-character queue name limit** isn't fully solved. The
   `fsm_type = "promise"` shortening (drop `fsm_version`, first-char
   `fsm_language`) fits typical identities, but the non-`"promise"` path
