@@ -1,38 +1,13 @@
--- ============================================================
--- 1. create_promise_queue_and_send_event_from_fsm_instance_id_v2 (renamed)
---    Routes promise/sharedPromise events to promise queue.
---    Checks queue existence, creates if missing, returns send result.
--- ============================================================
-DROP FUNCTION IF EXISTS fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(text, jsonb, text, text, text, text, text, text, text, text, uuid);
--- Queue naming delegates to fsm_core.compute_promise_queue_name_v2
--- (30_async_operation_worker_v2/20260806201803_ensure_promise_queue_for_worker.sql,
--- loaded before this file) instead of computing it inline, so this function
--- and fsm-core-async-op-worker's poll loop (claim_pending_promise_events_for_workers_v2,
--- same shared helper) can never drift onto different queue names for the
--- same actor identity again. fsmLanguage is a new parameter this call needs
--- to pass through -- the compiled FSM's invoke action params already carry
--- it (see fsm.json), archive_event_from_fsm_type_worker_v2 just wasn't
--- reading it yet.
---
--- compute_promise_queue_name_v2 has no fsmType validation of its own (its
--- "otherwise" branch happily names a queue for any fsmType, not just
--- 'sharedPromise') -- this function still validates fsmType itself, same as
--- before, so an unsupported fsmType keeps raising here rather than silently
--- getting a queue name and proceeding.
-CREATE OR REPLACE FUNCTION fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
-    event_name text,
-    event_input jsonb,
-    id text,
-    action_type text,
-    src text,
-    fsmName text,
-    fsmType text,
-    fsmVersion text,
-    parentFsmName text,
-    parentFsmVersion text,
-    fsmLanguage text,
-    from_source_fsm_instance_id uuid
-) RETURNS jsonb AS $$
+drop function if exists "fsm_core"."create_promise_queue_and_send_event_from_fsm_instance_id_v2"(event_name text, event_input jsonb, id text, action_type text, src text, fsmname text, fsmtype text, fsmversion text, parentfsmname text, parentfsmversion text, from_source_fsm_instance_id uuid);
+
+drop function if exists "fsm_core"."send_event_to_queue_from_fsm_instance_id_v2"(event_name text, event_input jsonb, id text, action_type text, src text, fsmname text, fsmtype text, fsmversion text, parentfsmname text, parentfsmversion text, from_source_fsm_instance_id uuid);
+
+set check_function_bodies = off;
+
+CREATE OR REPLACE FUNCTION fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(event_name text, event_input jsonb, id text, action_type text, src text, fsmname text, fsmtype text, fsmversion text, parentfsmname text, parentfsmversion text, fsmlanguage text, from_source_fsm_instance_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
 DECLARE
     promise_queue_name text;
     queue_exists boolean := false;
@@ -75,75 +50,13 @@ BEGIN
 
     RETURN send_result || jsonb_build_object('start_queue_worker', start_queue_worker);
 END;
-$$ LANGUAGE plpgsql;
+$function$
+;
 
-
--- ============================================================
--- 2. create_fsm_queue_and_send_event_from_fsm_instance_id_v2 (renamed)
---    Routes childFsm events: generates UUID child queue,
---    creates it, sends event, returns send result.
--- ============================================================
-DROP FUNCTION IF EXISTS fsm_core.create_fsm_queue_and_send_event_from_fsm_instance_id_v2(text, jsonb, text, text, text, text, text, text, text, text, uuid);
-CREATE OR REPLACE FUNCTION fsm_core.create_fsm_queue_and_send_event_from_fsm_instance_id_v2(
-    event_name text,
-    event_input jsonb,
-    id text,
-    action_type text,
-    src text,
-    fsmName text,
-    fsmType text,
-    fsmVersion text,
-    parentFsmName text,
-    parentFsmVersion text,
-    from_source_fsm_instance_id uuid
-) RETURNS jsonb AS $$
-DECLARE
-    child_instance_id uuid := uuid_generate_v4();
-    send_result jsonb;
-BEGIN
-    PERFORM pgmq.create(queue_name := child_instance_id::text);
-
-    send_result := fsm_core.send_event_to_fsm_queue_with_event_logs_v2(
-        input_fsm_instance_id := child_instance_id,
-        input_fsm_instance_id_fsm_type := fsmType,
-        input_fsm_instance_id_fsm_version := fsmVersion,
-        input_send_to_parent_queue_id := from_source_fsm_instance_id,
-        input_send_to_parent_queue_type := 'FSM OR childFSM OR sharedFSM', -- # TODO : pending 
-        input_send_to_parent_queue_id_event_name := id,
-        input_event_name := event_name,
-        input_event_action_type := action_type,
-        input_event_data := event_input,
-        input_event_delay := 0,
-        input_event_status := 'fsm_started',
-        input_event_output := '{}'::jsonb,
-        input_error_message := NULL
-    );
-
-    RETURN send_result || jsonb_build_object('start_queue_worker', true, 'child_instance_id', child_instance_id);
-END;
-$$ LANGUAGE plpgsql;
-
-
--- ============================================================
--- 3. send_event_to_queue_from_fsm_instance_id_v2
---    Fix: pgmq.create (was fsm_core.create), real queue_exists check,
---         delegate to sub-functions, remove dead RETURN at end
--- ============================================================
-DROP FUNCTION IF EXISTS fsm_core.send_event_to_queue_from_fsm_instance_id_v2(text, jsonb, text, text, text, text, text, text, text, text, uuid);
-CREATE OR REPLACE FUNCTION fsm_core.send_event_to_queue_from_fsm_instance_id_v2(
-    event_name text,
-    event_input jsonb,
-    id text,
-    action_type text,
-    src text,
-    fsmName text,
-    fsmType text,
-    fsmVersion text,
-    parentFsmName text,
-    parentFsmVersion text,
-    fsmLanguage text,
-    from_source_fsm_instance_id uuid
-) RETURNS jsonb AS $$
+CREATE OR REPLACE FUNCTION fsm_core.send_event_to_queue_from_fsm_instance_id_v2(event_name text, event_input jsonb, id text, action_type text, src text, fsmname text, fsmtype text, fsmversion text, parentfsmname text, parentfsmversion text, fsmlanguage text, from_source_fsm_instance_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
 BEGIN
     IF fsmType = 'promise' OR fsmType = 'sharedPromise' THEN
         RETURN fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
@@ -178,94 +91,13 @@ BEGIN
         RAISE EXCEPTION 'Unsupported fsmType: %', fsmType;
     END IF;
 END;
-$$ LANGUAGE plpgsql;
+$function$
+;
 
-
-
--- OLD structure for reference
-
--- to_be_removed_promise_queue_msg_ids example input:
--- [
---   {
---     id: "0.(machine).creditCheck.Verifying Credentials",
---     src: "verifyCredentials",
---     type: "xstate.invoke",
---     fsm_order: 3,
---     action_type: "invoke",
---   },
--- ]
-
--- input_total_promise_queue_data example input:
--- [
---   {
---     event: {
---       type: "promise",
---       event_data: null,
---       send_to_parent_queue_id: "5426d9c2-5c3f-49e7-ac1e-9388b659116f",
---       send_event_name_to_parent_queue_id: "0.(machine).creditCheck.Verifying Credentials",
---     },
---     queue_msg_id: 4,
---     promise_queue_name: "verifyCredentials",
---     start_promise_worker: true,
---   },
--- ]
-
-
--- NEW structure for reference
--- to_be_removed_promise_queue_msg_ids example input:
--- [
---     {
---       id: "0.(machine).creditCheck.Verifying Credentials",
---       src: "verifyCredentials",
---       type: "xstate.invoke",
---       fsmType: "promise",
---       fsm_order: 3,
---       fsmVersion: "v01",
---       action_type: "invoke"
---     }
--- ]
-
--- input_total_promise_queue_data example input:
--- [
---     {
---     queue_id: "creditCheck_v01_verifyCredentials",
---     queue_msg_id: 2,
---     queue_msg_delay: 0,
---     event_data: {
---         event_type: "0.(machine).creditCheck.Verifying Credentials",
---         action_type: "invoke",
---         event_payload: null
---     },
---     queue_type: "promise",
---     queue_fn_name: "verifyCredentials",
---     queue_version: "v01",
---     send_to_parent_queue_id: "44ab9fd4-4411-4e1f-aa31-c687d2b925b6",
---     send_to_parent_queue_type: "fsm",
---     send_to_parent_queue_id_event_name: "done.0.(machine).creditCheck.Verifying Credentials"
---     }
--- ]    
-
--- macro save fn
-DROP FUNCTION IF EXISTS fsm_core.archive_event_from_fsm_type_worker_v2(
-  text, bigint, jsonb, jsonb, jsonb, jsonb, jsonb, jsonb, jsonb, jsonb, jsonb, jsonb
-);
-CREATE OR REPLACE FUNCTION fsm_core.archive_event_from_fsm_type_worker_v2(
-  remove_from_current_fsm_instance_queue_id text,
-  remove_current_queue_msg_id bigint,
-  to_be_removed_schedule_queue_msg_ids jsonb,
-  to_be_removed_promise_queue_msg_ids jsonb,
-  to_be_added_schedule_queue_data jsonb,
-  to_be_added_promise_queue_data jsonb,
-  input_total_schedule_queue_data jsonb,
-  input_total_promise_queue_data jsonb,
-  fsm_instance_data_save_fsm_status jsonb,
-  fsm_instance_data_save_fsm_state jsonb,
-  fsm_instance_data_save_fsm_context jsonb,
-  fsm_instance_data_save_fsm_xstate_state jsonb,
-  send_to_parent_queue_id uuid,
-  send_to_parent_queue_type text,
-  send_to_parent_queue_id_event_name text
-) RETURNS jsonb AS $$
+CREATE OR REPLACE FUNCTION fsm_core.archive_event_from_fsm_type_worker_v2(remove_from_current_fsm_instance_queue_id text, remove_current_queue_msg_id bigint, to_be_removed_schedule_queue_msg_ids jsonb, to_be_removed_promise_queue_msg_ids jsonb, to_be_added_schedule_queue_data jsonb, to_be_added_promise_queue_data jsonb, input_total_schedule_queue_data jsonb, input_total_promise_queue_data jsonb, fsm_instance_data_save_fsm_status jsonb, fsm_instance_data_save_fsm_state jsonb, fsm_instance_data_save_fsm_context jsonb, fsm_instance_data_save_fsm_xstate_state jsonb, send_to_parent_queue_id uuid, send_to_parent_queue_type text, send_to_parent_queue_id_event_name text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+AS $function$
 DECLARE
     i int;
     
@@ -577,5 +409,7 @@ BEGIN
       );
 
 END;
-$$ LANGUAGE plpgsql;
+$function$
+;
+
 

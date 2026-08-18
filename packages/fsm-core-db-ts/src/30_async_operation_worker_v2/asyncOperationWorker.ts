@@ -10,6 +10,8 @@ const CLAIM_PENDING_PROMISE_EVENTS_FOR_WORKERS_FN =
   `${FSM_SCHEMA}.claim_pending_promise_events_for_workers_${FSM_SCHEMA_FN_VERSION}`;
 const ENSURE_PROMISE_QUEUE_FOR_WORKER_FN =
   `${FSM_SCHEMA}.ensure_promise_queue_for_worker_${FSM_SCHEMA_FN_VERSION}`;
+const COMPUTE_PROMISE_QUEUE_NAME_FN =
+  `${FSM_SCHEMA}.compute_promise_queue_name_${FSM_SCHEMA_FN_VERSION}`;
 
 /**
  * A registered promise-actor identity, as sent to
@@ -133,5 +135,42 @@ export async function ensurePromiseQueueForWorker(
     throw new Error("Failed to ensure promise queue for worker", {
       cause: err,
     });
+  }
+}
+
+/**
+ * Thin wrapper around `compute_promise_queue_name_v2()` -- computes the PGMQ
+ * queue name for one promise-actor identity, without creating or checking
+ * the queue (see `ensurePromiseQueueForWorker` for that). Callers that need
+ * to derive a promise-actor's queue name -- e.g. `fsm-async-worker-ts`'s
+ * `asyncOperationWorkerlet`, matching the same queue
+ * `create_promise_queue_and_send_event_from_fsm_instance_id_v2` (the fsmlet)
+ * writes to -- should call this instead of re-deriving the naming rule
+ * themselves, which is what let it drift out of sync before.
+ */
+export async function computePromiseQueueName(
+  deps: DBDeps,
+  identity: PromiseWorkerIdentity,
+): Promise<string> {
+  try {
+    const text =
+      `SELECT ${COMPUTE_PROMISE_QUEUE_NAME_FN}($1::text, $2::text, $3::text, $4::text, $5::text, $6::text) AS queue_name;`;
+    const values = [
+      identity.parentFsmName,
+      identity.parentFsmVersion,
+      identity.fsmType,
+      identity.fsmName,
+      identity.fsmVersion,
+      identity.fsmLanguage,
+    ];
+    const res = await deps.db.query<{ queue_name: string }>(text, values);
+    const queueName = res.rows?.[0]?.queue_name;
+    if (!queueName) {
+      throw new Error("compute_promise_queue_name_v2 returned no rows");
+    }
+    return queueName;
+  } catch (err) {
+    logger.error("Error in computePromiseQueueName: {error}", { error: err });
+    throw new Error("Failed to compute promise queue name", { cause: err });
   }
 }

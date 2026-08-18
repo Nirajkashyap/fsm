@@ -82,6 +82,7 @@ export type {
 
 export {
   claimPendingPromiseEventsForWorkers,
+  computePromiseQueueName,
   ensurePromiseQueueForWorker,
 } from "./30_async_operation_worker_v2/asyncOperationWorker.ts";
 export type {

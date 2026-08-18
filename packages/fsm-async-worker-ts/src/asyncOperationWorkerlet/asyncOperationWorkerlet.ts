@@ -7,6 +7,7 @@ import {
   asyncOperationWorkerletHeartbeat,
   asyncOperationWorkerletNotifyChannel,
   claimScheduledForAsyncOperationWorkerlet,
+  computePromiseQueueName,
   deregisterAsyncOperationWorkerlet,
   loadAsyncOperation,
   registerAsyncOperationWorkerlet,
@@ -263,18 +264,6 @@ export async function startAsyncOperationWorkerlet(
       return;
     }
 
-    // Must match the DB-side naming convention in
-    // create_promise_queue_and_send_event_from_fsm_instance_id_v2:
-    // parentFsmName || '_' || parentFsmVersion || '_' || fsmName.
-    const queueName =
-      `${entry.parent_fsm_name}_${entry.parent_fsm_version}_${entry.async_operation_name}`;
-
-    if (activeWorkers.has(queueName)) {
-      // Long-running worker already polling this queue — duplicate dispatch, skip.
-      sem.release();
-      return;
-    }
-
     const result = verified.find(
       (r) =>
         r.method === entry.async_operation_name &&
@@ -291,6 +280,24 @@ export async function startAsyncOperationWorkerlet(
           parent: entry.parent_fsm_name,
         },
       );
+      sem.release();
+      return;
+    }
+
+    // Must match the queue create_promise_queue_and_send_event_from_fsm_instance_id_v2
+    // (the fsmlet) actually writes to — both derive it from the same
+    // fsm_core.compute_promise_queue_name_v2, so they can't drift apart again.
+    const queueName = await computePromiseQueueName(deps, {
+      parentFsmName: entry.parent_fsm_name,
+      parentFsmVersion: entry.parent_fsm_version,
+      fsmType: result.fsmType,
+      fsmName: entry.async_operation_name,
+      fsmVersion: result.fsmVersion,
+      fsmLanguage: result.fsmLanguage,
+    });
+
+    if (activeWorkers.has(queueName)) {
+      // Long-running worker already polling this queue — duplicate dispatch, skip.
       sem.release();
       return;
     }
