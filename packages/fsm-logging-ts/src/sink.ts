@@ -73,6 +73,15 @@ function isPrimitive(v: unknown): boolean {
   return v === null || (typeof v !== "object" && typeof v !== "function");
 }
 
+// warning/error/fatal are operational signal that process supervisors, log
+// routers, and test harnesses expect on stderr; trace/debug/info are normal
+// program output on stdout.
+function consoleForLevel(level: LogRecord["level"]): typeof console.log {
+  return level === "warning" || level === "error" || level === "fatal"
+    ? console.error
+    : console.log;
+}
+
 // Property names referenced as `{placeholder}` in a string message template, so
 // the sink can skip properties already interpolated into the message line
 // (e.g. `{error}` in "failed: {error}"). LogTape looks up the whole trimmed
@@ -106,7 +115,8 @@ function interpolatedKeys(
 // sinks (OTel/files) and are not echoed.
 export function getTableConsoleSink(): Sink {
   return (record: LogRecord) => {
-    console.log(formatLine(record));
+    const write = consoleForLevel(record.level);
+    write(formatLine(record));
 
     const props = record.properties;
     if (!props) return;
@@ -114,7 +124,7 @@ export function getTableConsoleSink(): Sink {
     const payload = props[RENDER_KEY] as RenderPayload | undefined;
     if (payload) {
       if (isTerminal) renderPayload(payload);
-      else console.log(JSON.stringify(payload.value));
+      else write(JSON.stringify(payload.value));
     }
 
     if (!isTerminal) return;
