@@ -1,5 +1,6 @@
 import { assertEquals, assertExists } from "@std/assert";
 import {
+  formatTsFilesBestEffort,
   type OperationKind,
   type OperationLang,
   type RegisteredActor,
@@ -249,10 +250,14 @@ Deno.test("writeActorFile - typescript actor with a long name is wrapped to pass
   const dir = await Deno.makeTempDir();
   try {
     // Long enough that the single-line `return { input, msg: "..." }` stub
-    // overflows deno fmt's line width — writeActorFile must run `deno fmt`
-    // on its own output so the committed file never needs a manual pass.
+    // overflows deno fmt's line width. writeActorFile itself only writes —
+    // formatting is the caller's responsibility (batched at the end of a
+    // whole scaffolding run, see generate-async-operation-logic.ts), so this
+    // test does that one step explicitly to verify the wrapped output still
+    // matches what `deno fmt --check` expects.
     const actor: ActorReference = { src: "CheckingCreditScores3parallel" };
     const file = await writeActorFile(dir, "typescript", actor);
+    await formatTsFilesBestEffort([file]);
     const content = await Deno.readTextFile(file);
     assertEquals(
       content,
@@ -844,15 +849,18 @@ Deno.test("writeWorkerSdk - writes cli/main+sdk+protocol+manifest per language, 
       ...actorsForBarrelTests, // typescript, python, rust
       ...actorsForGoAggregateTests, // go
     ];
+    const base = `${appRootAbsPath}/worker-sdk-generated`;
     const wrote = await writeWorkerSdk(appRootAbsPath, "fsm", actors);
     assertEquals(wrote, {
       typescript: true,
       python: true,
       rust: true,
       go: true,
+      tsFiles: [`${base}/typescript/cli.ts`, `${base}/typescript/sdk.ts`],
+      rustFiles: [`${base}/rust/src/main.rs`, `${base}/rust/src/sdk.rs`],
+      goFiles: [`${base}/go/sdk.go`],
+      goModDir: `${base}/go`,
     });
-
-    const base = `${appRootAbsPath}/worker-sdk-generated`;
     assertExists(await Deno.stat(`${base}/typescript/cli.ts`));
     assertExists(await Deno.stat(`${base}/typescript/sdk.ts`));
     assertExists(await Deno.stat(`${base}/python/cli.py`));
@@ -953,6 +961,7 @@ Deno.test('writeWorkerSdk - protocol: "legacy" restores protocol.{py,rs,go} and 
       ...actorsForBarrelTests, // typescript, python, rust
       ...actorsForGoAggregateTests, // go
     ];
+    const base = `${appRootAbsPath}/worker-sdk-generated`;
     const wrote = await writeWorkerSdk(appRootAbsPath, "fsm", actors, {
       protocol: "legacy",
     });
@@ -961,9 +970,11 @@ Deno.test('writeWorkerSdk - protocol: "legacy" restores protocol.{py,rs,go} and 
       python: true,
       rust: true,
       go: true,
+      tsFiles: [`${base}/typescript/cli.ts`, `${base}/typescript/sdk.ts`],
+      rustFiles: [`${base}/rust/src/main.rs`, `${base}/rust/src/sdk.rs`],
+      goFiles: [`${base}/go/sdk.go`],
+      goModDir: `${base}/go`,
     });
-
-    const base = `${appRootAbsPath}/worker-sdk-generated`;
     assertExists(await Deno.stat(`${base}/python/protocol.py`));
     assertExists(await Deno.stat(`${base}/rust/src/protocol.rs`));
     assertExists(await Deno.stat(`${base}/go/protocol.go`));
@@ -1006,12 +1017,17 @@ Deno.test("writeWorkerSdk - writes nothing for a language with no actors", async
     const actors = [
       toRegisteredActor(CREDIT_CHECK_V01, "typescript", { src: "checkBureau" }),
     ];
+    const base = `${appRootAbsPath}/worker-sdk-generated`;
     const wrote = await writeWorkerSdk(appRootAbsPath, "fsm", actors);
     assertEquals(wrote, {
       typescript: true,
       python: false,
       rust: false,
       go: false,
+      tsFiles: [`${base}/typescript/cli.ts`, `${base}/typescript/sdk.ts`],
+      rustFiles: [],
+      goFiles: [],
+      goModDir: undefined,
     });
 
     let existsErr: unknown;
