@@ -2,13 +2,13 @@ begin;
 select plan(12);
 
 select has_function('fsm_core', 'create_promise_queue_and_send_event_from_fsm_instance_id_v2',
-  ARRAY['text', 'jsonb', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'uuid'],
+  ARRAY['text', 'jsonb', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'uuid'],
   'create_promise_queue_and_send_event_from_fsm_instance_id_v2(...) exists');
 select has_function('fsm_core', 'create_fsm_queue_and_send_event_from_fsm_instance_id_v2',
   ARRAY['text', 'jsonb', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'uuid'],
   'create_fsm_queue_and_send_event_from_fsm_instance_id_v2(...) exists');
 select has_function('fsm_core', 'send_event_to_queue_from_fsm_instance_id_v2',
-  ARRAY['text', 'jsonb', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'uuid'],
+  ARRAY['text', 'jsonb', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'uuid'],
   'send_event_to_queue_from_fsm_instance_id_v2(...) exists');
 select has_function('fsm_core', 'archive_event_from_fsm_type_worker_v2',
   ARRAY['text', 'bigint', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'uuid', 'text', 'text'],
@@ -23,25 +23,25 @@ select results_eq(
   $$ select (r->>'start_queue_worker')::boolean, (r->'queue_data'->>'queueId')
      from fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
        'evt1', '{"x": 1}'::jsonb, 'someId', 'invoke', 'someSrc', 'childOp', 'promise', 'v1',
-       'pFsm', 'v1', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) r $$,
-  $$ values (true, 'pFsm_v1_childOp'::text) $$,
-  'the first call for a not-yet-existing promise queue creates it (start_queue_worker=true)'
+       'pFsm', 'v1', 'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) r $$,
+  $$ values (true, 'pFsm_v1_p_childOp_t'::text) $$,
+  'the first call for a not-yet-existing promise queue creates it (start_queue_worker=true), naming delegated to compute_promise_queue_name_v2'
 );
 select results_eq(
   $$ select (r->>'start_queue_worker')::boolean
      from fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
        'evt2', '{"x": 2}'::jsonb, 'someId2', 'invoke', 'someSrc', 'childOp', 'promise', 'v1',
-       'pFsm', 'v1', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) r $$,
+       'pFsm', 'v1', 'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) r $$,
   $$ values (false) $$,
   'a second call for the same promise queue reuses it (start_queue_worker=false)'
 );
 select throws_ok(
   $$ select fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
        'evt', '{}'::jsonb, 'id', 'invoke', 'src', 'x', 'unsupportedType', 'v1', 'p', 'v1',
-       'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) $$,
+       'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) $$,
   'P0001',
   'create_promise_queue_and_send_event_from_fsm_instance_id_v2: unsupported fsmType: unsupportedType',
-  'an unsupported fsmType raises'
+  'an unsupported fsmType still raises (validated here, before delegating naming to compute_promise_queue_name_v2)'
 );
 
 -- Characterization test: create_fsm_queue_and_send_event_from_fsm_instance_id_v2
@@ -63,7 +63,7 @@ select throws_ok(
 select throws_ok(
   $$ select fsm_core.send_event_to_queue_from_fsm_instance_id_v2(
        'evt', '{}'::jsonb, 'id', 'invoke', 'src', 'x', 'unsupportedFsmType', 'v1', 'p', 'v1',
-       'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) $$,
+       'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) $$,
   'P0001',
   'Unsupported fsmType: unsupportedFsmType',
   'send_event_to_queue_from_fsm_instance_id_v2 rejects an unrecognized fsmType'

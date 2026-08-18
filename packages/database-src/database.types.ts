@@ -830,6 +830,7 @@ export type Database = {
           event_input: Json;
           event_name: string;
           from_source_fsm_instance_id: string;
+          fsmlanguage: string;
           fsmname: string;
           fsmtype: string;
           fsmversion: string;
@@ -1362,6 +1363,7 @@ export type Database = {
           event_input: Json;
           event_name: string;
           from_source_fsm_instance_id: string;
+          fsmlanguage: string;
           fsmname: string;
           fsmtype: string;
           fsmversion: string;
