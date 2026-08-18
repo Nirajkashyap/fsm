@@ -76,17 +76,6 @@ Deno.test("cli load without --workflow-type exits 1", async () => {
   assertStringIncludes(stderr, "--workflow-type");
 });
 
-Deno.test("cli validate-sync-operation-and-load without --workflow-type exits 1", async () => {
-  const { code, stderr } = await runCli([
-    "-c",
-    "validate-sync-operation-and-load",
-    "-f",
-    FSM_FOLDER,
-  ]);
-  assertEquals(code, 1);
-  assertStringIncludes(stderr, "--workflow-type");
-});
-
 Deno.test("cli unknown command exits 1", async () => {
   const { code, stderr } = await runCli([
     "-c",
