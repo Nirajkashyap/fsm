@@ -3,7 +3,7 @@ import { diff } from "json-diff-ts";
 import { assertEquals } from "@std/assert";
 import { Pool } from "pg";
 
-import { machineWithProvider } from "./machine-with-provider.ts";
+import { machineWithProvider } from "../machine-with-provider.ts";
 import { runFsmScheduler, startFsmlet } from "@pgfsm/sync-worker";
 import type { FsmletHandle } from "@pgfsm/sync-worker";
 import {
@@ -25,7 +25,7 @@ const fsm_version = "v01";
 
 // validateSyncOperationFromFolders / validateAsyncOperationFromFolders expect
 // the *parent* of per-FSM folders (e.g. ".../fsm", containing "creditCheck/v01").
-const FSM_FOLDER_PATH = import.meta.dirname!.split("/").slice(0, -2).join("/");
+const FSM_FOLDER_PATH = import.meta.dirname!.split("/").slice(0, -3).join("/");
 const SKIP_DIRS = ["carVitals", "taskMachineConfig"];
 
 const SUBMIT_EVENT = {
