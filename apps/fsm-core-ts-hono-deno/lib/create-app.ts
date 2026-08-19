@@ -25,7 +25,6 @@ import env from "../env.ts";
 
 import index from "../routes/index.route.ts";
 import fsm from "../routes/fsm/fsm.index.ts";
-import fsmpromise from "../routes/fsmpromise/fsmpromise.index.ts";
 
 const logger = getLogger(["@pgfsm/api", "app"]);
 
@@ -108,7 +107,6 @@ export default async function createApp(
   const routes = [
     index,
     fsm,
-    fsmpromise,
   ] as const;
 
   routes.forEach((route) => {
