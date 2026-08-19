@@ -37,7 +37,6 @@ deno test                                                        # run tests
   `create-app.ts`, superseded by `logtape-logger.ts`
 - `middlewares/supabase.ts` — Supabase client middleware
 - `routes/fsm/` — core FSM operations: list, create, send
-- `routes/fsmpromise/` — promise/callback-based workflows
 - `src/cli/index.ts` — CLI entry for the API's own control commands
 - `stoker-src/` — OpenAPI helper utilities
 

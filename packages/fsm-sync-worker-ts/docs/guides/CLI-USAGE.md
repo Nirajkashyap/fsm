@@ -375,23 +375,17 @@ before any database connection is made.
 ## HTTP API reference
 
 The API server (`apps/fsm-core-ts-hono-deno`) exposes the dispatch-queue routes
-for `/fsm` alongside in-process routes for `/fsmpromise` (the latter still run
-their worker directly inside the API process — see `fsmpromise.handlers.ts`).
-`verifiedModule` (actor/action folder) is resolved server-side from
+for `/fsm`. `verifiedModule` (actor/action folder) is resolved server-side from
 `verifiedFsmModules` context using `fsm_name` + `fsm_version`.
 
-| HTTP route                          | Model      | CLI equivalent                       | Body                                                                                            |
-| ----------------------------------- | ---------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `GET /fsm`                          | —          | —                                    | —                                                                                               |
-| `POST /fsm`                         | dispatch   | `fsmctl -c create`                   | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + enqueues to `fsm_dispatch_queue` |
-| `POST /fsm/stop`                    | dispatch   | `fsmctl -c stop`                     | `{ queue }`                                                                                     |
-| `POST /fsm/send`                    | dispatch   | `fsmctl -c send`                     | `{ fsm_instance_id, event_data }`                                                               |
-| `POST /fsm/dispatch`                | dispatch   | `fsmctl -c create`                   | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + enqueues to `fsm_dispatch_queue` |
-| `POST /fsm/resume-dispatch`         | dispatch   | `fsmctl -c resume`                   | `{ queue }`                                                                                     |
-| `GET /fsmpromise`                   | in-process | —                                    | —                                                                                               |
-| `POST /fsmpromise/resume`           | in-process | —                                    | `{ promise_name, promise_type, promise_version, fsm_name, fsm_version }`                        |
-| `POST /fsmpromise/stop`             | in-process | Ctrl+C (graceful) / `fsmctl -c stop` | `{ queue }`                                                                                     |
-| `POST /fsmpromise/create-and-start` | in-process | —                                    | `{ queue_name, fsm_name, promise_type, fsm_version }`                                           |
+| HTTP route                  | Model    | CLI equivalent     | Body                                                                                            |
+| --------------------------- | -------- | ------------------ | ----------------------------------------------------------------------------------------------- |
+| `GET /fsm`                  | —        | —                  | —                                                                                               |
+| `POST /fsm`                 | dispatch | `fsmctl -c create` | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + enqueues to `fsm_dispatch_queue` |
+| `POST /fsm/stop`            | dispatch | `fsmctl -c stop`   | `{ queue }`                                                                                     |
+| `POST /fsm/send`            | dispatch | `fsmctl -c send`   | `{ fsm_instance_id, event_data }`                                                               |
+| `POST /fsm/dispatch`        | dispatch | `fsmctl -c create` | `{ fsm_name, fsm_version, fsm_context? }` — creates instance + enqueues to `fsm_dispatch_queue` |
+| `POST /fsm/resume-dispatch` | dispatch | `fsmctl -c resume` | `{ queue }`                                                                                     |
 
 `POST /fsm` (in `fsm.handlers.ts`) and `POST /fsm/dispatch` (in
 `fsm.handlers.dispatch.ts`) both create an instance and enqueue it to
@@ -399,9 +393,10 @@ their worker directly inside the API process — see `fsmpromise.handlers.ts`).
 `POST /fsm/resume-dispatch` does the equivalent for resume. All three require a
 running `fsmscheduler` + `fsmlet` to pick the work up. `POST /fsm/resume` and
 `GET /fsm/currentActive`, the remaining in-process `/fsm` routes, were removed —
-see ADR-002. `fsmpromise` has no dispatch-model route yet —
-`async-operation-workerlet` is driven only via its own CLI, not through the HTTP
-API.
+see ADR-002. The `/fsmpromise` routes (in-process, backed by v1's
+`startFSMPromiseWorker`) were removed too — `async-operation-workerlet` (v1) and
+`fsm-core-async-op-worker` (v2) are both driven only via their own CLIs, not
+through the HTTP API.
 
 ---
 
