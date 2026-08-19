@@ -7,12 +7,11 @@
   },
   "imports": {
     "@deno/dnt": "jsr:@deno/dnt@^0.43.0",
-    "@logtape/logtape": "jsr:@logtape/logtape@^2.2",
+    "@logtape/logtape": "npm:@logtape/logtape@^2.2",
     "@std/cli": "jsr:@std/cli@1",
     "@types/pg": "npm:@types/pg@^8.18.0",
     "dotenv": "npm:dotenv@^16.5.0",
-    "pg": "npm:pg@^8.20.0",
-    "xstate": "npm:xstate@^5.26.0"
+    "pg": "npm:pg@^8.20.0"
   },
   "tasks": {
     "cli": "deno run --allow-all src/cli/fsmctl.ts",
