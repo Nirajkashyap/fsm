@@ -49,6 +49,7 @@ jobs:
           - id: sync-worker
             path: packages/fsm-sync-worker-ts
             tag_prefix: sync-worker-v
+            dnt: true
           - id: async-worker
             path: packages/fsm-async-worker-ts
             tag_prefix: async-worker-v
