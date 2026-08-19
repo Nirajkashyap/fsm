@@ -19,7 +19,7 @@ await build({
     name: "@pgfsm/compiler",
     version: Deno.args[0]?.replace(/^v/, "") ?? "0.0.0",
     description: "FSM JSON compiler for PostgreSQL-backed state machines",
-    license: "MIT",
+    license: "Apache-2.0",
     // pg ships no types of its own; dnt only auto-installs packages that
     // are themselves import specifiers, so without this the type-check
     // pass can't resolve `import ... from "pg"` (deno.json's own
