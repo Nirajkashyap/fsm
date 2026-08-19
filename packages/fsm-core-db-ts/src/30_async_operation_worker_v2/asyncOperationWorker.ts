@@ -16,7 +16,7 @@ const COMPUTE_PROMISE_QUEUE_NAME_FN =
 /**
  * A registered promise-actor identity, as sent to
  * `claimPendingPromiseEventsForWorkers` — mirrors
- * `@pgfsm/async-op-worker-gateway`'s `SidecarGateway`-registered actor shape
+ * `@pgfsm/async-worker`'s `SidecarGateway`-registered actor shape
  * minus `handler` (an in-process function reference, not serializable to
  * Postgres).
  */

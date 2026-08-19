@@ -6,7 +6,7 @@ import { Pool } from "pg";
 import { machineWithProvider } from "../machine-with-provider.ts";
 import { runFsmScheduler, startFsmlet } from "@pgfsm/sync-worker";
 import type { FsmletHandle } from "@pgfsm/sync-worker";
-import { startActivityGatewayServer } from "@pgfsm/async-op-worker-gateway";
+import { startActivityGatewayServer } from "@pgfsm/async-worker";
 import { ActorWorker } from "../../../../worker-sdk-generated/typescript/sdk.ts";
 import { ACTOR_REGISTRATIONS } from "../typescript/actors/generated-registry.ts";
 import {

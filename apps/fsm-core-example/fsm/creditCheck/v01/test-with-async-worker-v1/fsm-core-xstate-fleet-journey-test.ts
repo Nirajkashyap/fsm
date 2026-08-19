@@ -9,8 +9,8 @@ import type { FsmletHandle } from "@pgfsm/sync-worker";
 import {
   runAsyncOperationScheduler,
   startAsyncOperationWorkerlet,
-} from "@pgfsm/async-worker";
-import type { AsyncOperationWorkerletHandle } from "@pgfsm/async-worker";
+} from "@pgfsm/async-worker-old";
+import type { AsyncOperationWorkerletHandle } from "@pgfsm/async-worker-old";
 import {
   createAsyncOperationInstanceAndNotifyAsyncOperationSchedulerWork,
   createFsmInstanceFromName,

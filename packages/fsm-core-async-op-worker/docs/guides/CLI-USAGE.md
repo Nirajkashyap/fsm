@@ -2,10 +2,10 @@
 
 ## Core objective
 
-`fsm-core-async-op-worker` (`@pgfsm/async-op-worker-gateway`) is a **standalone
-alternative to `fsm-async-worker-ts`** for promise-type async FSM operations
-across polyglot (TypeScript/Python/Rust/Go) actors — not a passive service
-another orchestrator's poll/claim/archive loop calls into.
+`fsm-core-async-op-worker` (`@pgfsm/async-worker`) is a **standalone alternative
+to `fsm-async-worker-ts`** for promise-type async FSM operations across polyglot
+(TypeScript/Python/Rust/Go) actors — not a passive service another
+orchestrator's poll/claim/archive loop calls into.
 
 Concretely, it:
 
