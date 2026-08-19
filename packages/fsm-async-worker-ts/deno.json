@@ -1,5 +1,5 @@
 {
-  "name": "@pgfsm/async-worker",
+  "name": "@pgfsm/async-worker-old",
   "version": "0.1.0",
   "license": "MIT",
   "exports": {

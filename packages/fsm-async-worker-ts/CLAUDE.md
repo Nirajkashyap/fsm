@@ -1,6 +1,6 @@
 # CLAUDE.md — Async-Operation Worker Fleet (`packages/fsm-async-worker-ts/`)
 
-Scoped guidance for `@pgfsm/async-worker`. Repo-wide conventions and session
+Scoped guidance for `@pgfsm/async-worker-old`. Repo-wide conventions and session
 protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 
 ## What it is
