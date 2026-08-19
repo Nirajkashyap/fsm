@@ -51,8 +51,9 @@ jobs:
             tag_prefix: sync-worker-v
             dnt: true
           - id: async-worker
-            path: packages/fsm-async-worker-ts
+            path: packages/fsm-core-async-op-worker
             tag_prefix: async-worker-v
+            dnt: true
 
     steps:
       - name: Gate — decide if this package should publish
