@@ -1,5 +1,5 @@
 import { getLogger } from "@logtape/logtape";
-import { extractFsmPluginRefs, type WorkflowType } from "./util.ts";
+import { extractFsmPluginRefs } from "./util.ts";
 import {
   actorFileBaseName,
   type ActorsBarrelLang,
@@ -69,7 +69,6 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  */
 export async function generateAsyncOperationLogicFromFolders(
   folderPath: string,
-  _workflowType: WorkflowType,
   skipDirs: string[] = [],
   workerSdkProtocol: WorkerSdkProtocol = "grpc",
 ): Promise<void> {
