@@ -1414,7 +1414,11 @@ export type Database = {
       };
     };
     Enums: {
+      fsm_history_type: "shallow" | "deep";
+      fsm_language: "typescript" | "python" | "rust" | "go" | "llm";
+      fsm_root_type: "compound" | "parallel";
       fsm_state_type: "atomic" | "compound" | "parallel" | "final" | "history";
+      fsm_type: "internalAsyncOperation" | "sharedAsyncOperation" | "fsm";
     };
     CompositeTypes: {
       ancestor_states_result_v1: {
@@ -1810,7 +1814,11 @@ export type CompositeTypes<
 export const Constants = {
   fsm_core: {
     Enums: {
+      fsm_history_type: ["shallow", "deep"],
+      fsm_language: ["typescript", "python", "rust", "go", "llm"],
+      fsm_root_type: ["compound", "parallel"],
       fsm_state_type: ["atomic", "compound", "parallel", "final", "history"],
+      fsm_type: ["internalAsyncOperation", "sharedAsyncOperation", "fsm"],
     },
   },
   pgmq: {
