@@ -14,7 +14,7 @@ const fsmfolderPath = "apps/fsm-core-example/fsm";
 
   const skipFSMDirs = ["carVitals", "taskMachineConfig", "vitalsWorkflow"];
   logger.info("--- generate fsm (showRecommendation = true) ---");
-  await generateFsmJSONFromFolders(fsmfolderPath, "fsm", skipFSMDirs, true);
+  await generateFsmJSONFromFolders(fsmfolderPath, skipFSMDirs, true);
   logger.info("fsm generated with recommendation");
 
   logger.info("=== generateFsmJSON tests complete ===");

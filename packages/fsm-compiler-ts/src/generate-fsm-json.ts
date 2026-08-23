@@ -307,13 +307,11 @@ export function addMissingFsmTypeToInvokeActors(
  * and writes fsm.json + xstate-fsm.json alongside it.
  * @param absFolderPath Absolute path to the versioned FSM directory (e.g. /…/creditCheck/v01)
  * @param version Version string (e.g. "v01") used when filling in missing fsmVersion on invoke actors
- * @param workflowType Workflow type for the FSM
  * @param showRecommendation When true, validates fsm.json against the machine schema and logs issues
  */
 export async function generateFsmJSONFromMachineFile(
   absFolderPath: string,
   version: string,
-  _workflowType: WorkflowType,
   showRecommendation: boolean = false,
 ) {
   const machineTsPath = `${absFolderPath}/machine.ts`;
@@ -398,20 +396,17 @@ async function generateFsmJSONFromFolder(
   _folderPath: string,
   absFolderPath: string,
   _parentSource: string,
-  workflowType: WorkflowType,
   showRecommendation: boolean = false,
 ) {
   await generateFsmJSONFromMachineFile(
     absFolderPath,
     dirEntryNameVersion,
-    workflowType,
     showRecommendation,
   );
 }
 
 export async function generateFsmJSONFromFolders(
   folderPath: string,
-  workflowType: WorkflowType,
   skipDirs: string[] = [],
   showRecommendation: boolean = false,
 ) {
@@ -455,7 +450,6 @@ export async function generateFsmJSONFromFolders(
               folderPath,
               `${fsmDirPath}/${subEntry.name}`,
               dirEntry.name,
-              workflowType,
               showRecommendation,
             );
           } else {

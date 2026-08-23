@@ -294,7 +294,6 @@ try {
           await generateFsmJSONFromMachineFile(
             absDir,
             version,
-            workflowType ?? "fsm",
             args["show-recommendation"],
           );
         } else {
@@ -307,7 +306,6 @@ try {
       } else {
         await generateFsmJSONFromFolders(
           folder!,
-          workflowType ?? "fsm",
           skipDirs,
           args["show-recommendation"],
         );

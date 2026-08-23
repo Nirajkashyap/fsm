@@ -232,7 +232,7 @@ const FSM_FOLDER = `${APP_ROOT}/fsm`;
 const SHARED_FSM_SKIP_DIRS = ["carVitals", "creditCheck", "taskMachineConfig"];
 
 Deno.test("generateFsmJSONFromFolders - generates fsm.json for fsm folder", async () => {
-  await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", []);
+  await generateFsmJSONFromFolders(FSM_FOLDER, []);
 
   const stat = await Deno.stat(`${FSM_FOLDER}/creditCheck/v01/fsm.json`);
   assertEquals(stat.isFile, true);
@@ -241,7 +241,6 @@ Deno.test("generateFsmJSONFromFolders - generates fsm.json for fsm folder", asyn
 Deno.test("generateFsmJSONFromFolders - generates fsm.json for vitalsWorkflow (shared)", async () => {
   await generateFsmJSONFromFolders(
     FSM_FOLDER,
-    "fsm",
     SHARED_FSM_SKIP_DIRS,
   );
 
@@ -253,18 +252,17 @@ Deno.test("generateFsmJSONFromFolders - generates fsm.json for vitalsWorkflow (s
 
 Deno.test("generateFsmJSONFromFolders - showRecommendation=false produces no recommendation output", async () => {
   // Captures that the function completes without error when showRecommendation is false (default)
-  await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", [], false);
+  await generateFsmJSONFromFolders(FSM_FOLDER, [], false);
 });
 
 Deno.test("generateFsmJSONFromFolders - showRecommendation=true runs AJV validation without throwing", async () => {
   // Should complete without throwing even if schema issues exist
-  await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", [], true);
+  await generateFsmJSONFromFolders(FSM_FOLDER, [], true);
 });
 
 Deno.test("generateFsmJSONFromFolders - showRecommendation=true on vitalsWorkflow (shared) runs AJV validation without throwing", async () => {
   await generateFsmJSONFromFolders(
     FSM_FOLDER,
-    "fsm",
     SHARED_FSM_SKIP_DIRS,
     true,
   );
@@ -272,13 +270,13 @@ Deno.test("generateFsmJSONFromFolders - showRecommendation=true on vitalsWorkflo
 
 Deno.test("generateFsmJSONFromFolders - respects skipDirs", async () => {
   // carVitals is skipped — its fsm.json may or may not exist but no error is thrown
-  await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", ["carVitals"]);
+  await generateFsmJSONFromFolders(FSM_FOLDER, ["carVitals"]);
 });
 
 Deno.test("generateFsmJSONFromFolders - throws on path starting with '.'", async () => {
   let threw = false;
   try {
-    await generateFsmJSONFromFolders("./relative/path", "fsm");
+    await generateFsmJSONFromFolders("./relative/path");
   } catch (e) {
     threw = true;
     assertExists((e as Error).message.match(/cannot start with/i));
@@ -289,7 +287,7 @@ Deno.test("generateFsmJSONFromFolders - throws on path starting with '.'", async
 Deno.test("generateFsmJSONFromFolders - throws on path ending with '/'", async () => {
   let threw = false;
   try {
-    await generateFsmJSONFromFolders("some/path/", "fsm");
+    await generateFsmJSONFromFolders("some/path/");
   } catch (e) {
     threw = true;
     assertExists((e as Error).message.match(/cannot end with/i));
