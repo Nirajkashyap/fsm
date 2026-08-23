@@ -13,7 +13,6 @@ import type {
   ActorPluginValidationResult,
   ActorReference,
   OperationLang,
-  WorkflowType,
 } from "./types/index.ts";
 
 /**
@@ -29,7 +28,6 @@ const DENO_COMMAND_UNAVAILABLE_MESSAGE =
 
 export async function validateAsyncOperationFromFolders(
   folderPath: string,
-  _workflowType: WorkflowType,
   skipDirs: string[] = [],
   _availableActors: ActorReference[] = [],
   runtimeLanguages: OperationLang[] = [],

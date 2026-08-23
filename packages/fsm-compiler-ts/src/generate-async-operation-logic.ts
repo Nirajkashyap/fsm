@@ -72,7 +72,6 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  */
 export async function generateAsyncOperationLogicFromFolders(
   folderPath: string,
-  _workflowType: WorkflowType,
   skipDirs: string[] = [],
   workerSdkProtocol: WorkerSdkProtocol = "grpc",
 ): Promise<void> {

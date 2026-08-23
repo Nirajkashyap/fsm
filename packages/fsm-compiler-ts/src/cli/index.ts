@@ -212,7 +212,6 @@ if (workflowType && !VALID_WORKFLOW_TYPES.includes(workflowType)) {
 
 const needsWorkflowType = [
   "validate-sync-operation",
-  "validate-async-operation",
   "load",
 ];
 
@@ -315,7 +314,6 @@ try {
     case "generate-async-logic":
       await generateAsyncOperationLogicFromFolders(
         folder!,
-        workflowType ?? "fsm",
         skipDirs,
         workerSdkProtocol,
       );
@@ -337,7 +335,7 @@ try {
       );
       break;
     case "delete":
-      await deleteFsmJSONFromFolders(folder!, workflowType ?? "fsm", skipDirs);
+      await deleteFsmJSONFromFolders(folder!, skipDirs);
       break;
     case "validate-sync-operation": {
       const availableActors = await loadAvailableActors();
@@ -356,7 +354,6 @@ try {
       const availableActors = await loadAvailableActors();
       await validateAsyncOperationFromFolders(
         folder!,
-        workflowType!,
         skipDirs,
         availableActors,
         validateLangs,
