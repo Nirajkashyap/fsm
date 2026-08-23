@@ -79,7 +79,7 @@ WORKFLOW TYPES
 OPTIONS
   -c, --command <command>             Command to run (required)
   -f, --folder <folder>               Path to FSM folder or .ts file (required; a .ts file is accepted for generate only; app root for create-async-logic)
-  -w, --workflow-type <type>          Workflow type (optional for generate, generate-async-logic, generate-sync-logic, delete, defaults to "fsm"; required for validate-sync-operation, validate-async-operation, load)
+  -w, --workflow-type <type>          Workflow type (optional for generate-sync-logic, defaults to "fsm"; required for validate-sync-operation, load)
   -l, --lang <langs>                  Comma-separated language(s): typescript, python, rust, go. For generate-sync-logic defaults to typescript; for validate-async-operation defaults to all languages; for create-async-logic a single language is required
   -v, --version <version>             FSM version folder name, e.g. v01 (create-async-logic only, required)
   -n, --name <name>                   Actor function name, used for <name>/<name>.ext (create-async-logic only, required)
@@ -102,9 +102,9 @@ EXAMPLES
   deno run --allow-all src/cli/index.ts -c generate-sync-logic -f apps/fsm-core-example/fsm --lang typescript,python
   deno run --allow-all src/cli/index.ts -c create-async-logic -f apps/fsm-core-example --lang typescript --version v01 --name checkCreditScore
   deno run --allow-all src/cli/index.ts -c validate-sync-operation -f apps/fsm-core-example/fsm -w fsm
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedAsyncOperation --skip-dirs carVitals,creditCheck,taskMachineConfig
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedAsyncOperation --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedAsyncOperation --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript,python
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm --skip-dirs carVitals,creditCheck,taskMachineConfig
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript,python
 `);
 }
 
