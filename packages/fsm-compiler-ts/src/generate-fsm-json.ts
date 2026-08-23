@@ -16,13 +16,13 @@ import type { AnyStateNodeDefinition } from "xstate";
 import type {
   ActionObject,
   InvokeObject,
-} from "./generated/fsm-machine-schema.types.ts";
+} from "../../database-src/generated/fsm-machine-schema.types.ts";
 
 /**
  * Working shape for the compiler's internal transform pipeline — the space
  * between raw XState `.toJSON()` output and the fully-compiled FsmMachineJson
- * (see ./generated/fsm-machine-schema.types.ts, generated from
- * ../../database-src/fsm.machine.schema.v3.json). Entry/exit items may still
+ * (see ../../database-src/generated/fsm-machine-schema.types.ts, generated
+ * from ../../database-src/fsm.machine.schema.v3.json). Entry/exit items may still
  * be plain strings (XState 5 action shorthand, normalized to actionObjects by
  * normalizeActionsToObjects below) or `null` placeholders left by
  * conditionally-skipped actions in machine.ts (stripped by

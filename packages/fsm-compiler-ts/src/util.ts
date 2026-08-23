@@ -7,7 +7,7 @@ import type {
   FsmMachineJson,
   HistoryStateNode,
   ParallelStateNode,
-} from "./generated/fsm-machine-schema.types.ts";
+} from "../../database-src/generated/fsm-machine-schema.types.ts";
 
 /**
  * Structural stand-in for `Deno.Command`'s constructor, covering only the

@@ -4,7 +4,7 @@ import {
   isFunction,
   validateSyncOperationFromFolder,
 } from "../src/validate-sync-operation-logic.ts";
-import type { FsmMachineJson } from "../src/generated/fsm-machine-schema.types.ts";
+import type { FsmMachineJson } from "../../database-src/generated/fsm-machine-schema.types.ts";
 
 // isFunction
 Deno.test("isFunction - returns true for functions", () => {

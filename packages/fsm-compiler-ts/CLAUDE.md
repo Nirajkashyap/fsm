@@ -9,9 +9,15 @@ and session protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 deno task dev             # watch mode — src/cli/index.ts
 deno task cli             # one-shot run — src/cli/index.ts
 deno task test            # deno test --allow-all test/
-deno task generate:fsm-types  # scripts/generate-fsm-json-types.ts
 deno task build:npm       # scripts/build-npm.ts (dnt npm build)
 ```
+
+The `FsmMachineJson` type contract mirroring `fsm.machine.schema.v3.json` lives
+in `packages/database-src/generated/fsm-machine-schema.types.ts`, not in this
+package — imported here via a cross-package relative path (e.g. `src/util.ts`'s
+`from "../../database-src/generated/fsm-machine-schema.types.ts"`). Regenerated
+from `packages/database-src/`, not here — see that package's `CLAUDE.md` for
+`generate:fsm-types`.
 
 Deno version is managed by `.prototools`: `proto install deno --pin local`.
 
@@ -46,3 +52,10 @@ so anything that shells out to a language runtime — actor validation
 stubs — is unavailable in the npm/npx build. See `src/util.ts`'s `DenoCommand`
 export and its callers in `src/validate-async-operation-logic.ts` and
 `src/operation-logic-scaffold.ts`.
+
+The cross-package `import type` reaching into `../../database-src/generated/`
+(see above) is type-only, so it never appears in the emitted JS — but dnt's
+build still resolves and copies the source `.ts`/emits a `.d.ts` for it into
+`dist/{esm,script}/database-src/generated/`, self-contained inside the published
+package. Verified working as of this note; if the build ever fails type-checking
+that file, that's the first place to look.

@@ -8,7 +8,7 @@ import {
 } from "./util.ts";
 import { type DBDeps, loadFsmFromJson } from "@pgfsm/db";
 import type { Json } from "@pgfsm/db/database.types";
-import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
+import type { FsmMachineJson } from "../../database-src/generated/fsm-machine-schema.types.ts";
 
 async function loadFsmJSONFromFolder(
   dirEntryName: string,

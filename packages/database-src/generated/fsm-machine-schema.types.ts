@@ -1,7 +1,7 @@
 /**
  * AUTO-GENERATED — do not edit by hand.
  * Source: packages/database-src/fsm.machine.schema.v3.json
- * Regenerate with: deno task generate:fsm-types (run from packages/fsm-compiler-ts)
+ * Regenerate with: deno task generate:fsm-types (run from packages/database-src)
  */
 
 export type ID = string;

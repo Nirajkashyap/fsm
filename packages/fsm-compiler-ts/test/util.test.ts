@@ -5,7 +5,7 @@ import {
   isValidDateFolderName,
   isVersionFolderName,
 } from "../src/util.ts";
-import type { FsmMachineJson } from "../src/generated/fsm-machine-schema.types.ts";
+import type { FsmMachineJson } from "../../database-src/generated/fsm-machine-schema.types.ts";
 
 // Minimal fixtures — only `states` matters for extractFsmPluginRefs, but the
 // full FsmMachineJson contract (matching what real callers always have) is

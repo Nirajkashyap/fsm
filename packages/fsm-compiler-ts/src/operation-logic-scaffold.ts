@@ -6,7 +6,7 @@ import {
   isVersionFolderName,
   toGoExportedName,
 } from "./util.ts";
-import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
+import type { FsmMachineJson } from "../../database-src/generated/fsm-machine-schema.types.ts";
 import { deriveTemplateInput } from "./scaffold-templates/derive-template-input.ts";
 import { getPreamble, getTemplate } from "./scaffold-templates/registry.ts";
 import { render as renderTsActorsRegistry } from "./scaffold-templates/eta/typescript/actors-registry.generated.ts";

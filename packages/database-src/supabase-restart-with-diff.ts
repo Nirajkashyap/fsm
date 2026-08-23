@@ -135,7 +135,11 @@ async function genTypes(): Promise<void> {
     "--schema",
     "public,fsm_core,pgmq",
   ]);
-  await Deno.writeTextFile(join(SCRIPT_DIR, "database.types.ts"), types + "\n");
+  await Deno.mkdir(join(SCRIPT_DIR, "generated"), { recursive: true });
+  await Deno.writeTextFile(
+    join(SCRIPT_DIR, "generated", "database.types.ts"),
+    types + "\n",
+  );
 }
 
 // npm run supabase:restart:with:diff:withUpgradeScript:<patch|minor|major>

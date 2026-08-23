@@ -18,7 +18,7 @@ import {
   type WorkflowType,
 } from "./util.ts";
 import type { Json } from "@pgfsm/db/database.types";
-import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
+import type { FsmMachineJson } from "../../database-src/generated/fsm-machine-schema.types.ts";
 
 type AnyFunction = (...args: unknown[]) => unknown;
 
