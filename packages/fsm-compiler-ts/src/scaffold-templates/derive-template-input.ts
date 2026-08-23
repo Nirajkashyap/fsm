@@ -1,8 +1,5 @@
 import { DELAY_ACTION_NAME_PREFIX, toGoExportedName } from "../util.ts";
-import type {
-  OperationKind,
-  OperationLang,
-} from "../operation-logic-scaffold.ts";
+import type { OperationKind, OperationLang } from "../types/index.ts";
 import type { TemplateInput } from "./types.ts";
 
 /**

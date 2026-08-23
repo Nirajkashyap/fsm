@@ -8,17 +8,19 @@ import machineSchema from "../../database-src/fsm.machine.schema.v3.json" with {
   type: "json",
 };
 import {
-  type ActorReference,
   DELAY_ACTION_NAME_PREFIX,
   extractFsmPluginRefs,
-  type FailedMethod,
-  type FsmPluginValidationResult,
   isVersionFolderName,
   RAISE_CANCEL,
-  type WorkflowType,
 } from "./util.ts";
 import type { Json } from "@pgfsm/db/database.types";
-import type { FsmMachineJson } from "../../database-src/generated/fsm-machine-schema.types.ts";
+import type {
+  ActorReference,
+  FailedMethod,
+  FsmMachineJson,
+  FsmPluginValidationResult,
+  WorkflowType,
+} from "./types/index.ts";
 
 type AnyFunction = (...args: unknown[]) => unknown;
 

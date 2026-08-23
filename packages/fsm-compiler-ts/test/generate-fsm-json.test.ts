@@ -2,10 +2,10 @@ import { assertEquals, assertExists } from "@std/assert";
 import { copy } from "@std/fs/copy";
 import {
   addMissingFsmTypeToInvokeActors,
-  type FsmDraftStateNode,
   generateFsmJSONFromFolders,
   normalizeActionsToObjects,
 } from "../src/generate-fsm-json.ts";
+import type { FsmDraftStateNode } from "../src/types/index.ts";
 
 // --- addMissingFsmTypeToInvokeActors unit tests ---
 

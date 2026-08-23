@@ -1,18 +1,15 @@
 import { getLogger } from "@logtape/logtape";
-import { extractFsmPluginRefs, type WorkflowType } from "./util.ts";
+import { extractFsmPluginRefs } from "./util.ts";
 import {
   actorFileBaseName,
-  type ActorsBarrelLang,
   eachVersionedFsmFolder,
   formatGoFilesBestEffort,
   formatRustFilesBestEffort,
   formatTsFilesBestEffort,
   goModTidyManyBestEffort,
   isOperationLang,
-  type RegisteredActor,
   resolvePluginRootAbsPath,
   toRegisteredActor,
-  type WorkerSdkProtocol,
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
@@ -21,6 +18,12 @@ import {
   writeAggregateGoRegistry,
   writeWorkerSdk,
 } from "./operation-logic-scaffold.ts";
+import type {
+  ActorsBarrelLang,
+  RegisteredActor,
+  WorkerSdkProtocol,
+  WorkflowType,
+} from "./types/index.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "async-logic"]);
 

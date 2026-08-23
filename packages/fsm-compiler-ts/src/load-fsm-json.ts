@@ -1,14 +1,10 @@
 import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["@pgfsm/compiler", "load"]);
-import {
-  extractFsmPluginRefs,
-  isVersionFolderName,
-  type WorkflowType,
-} from "./util.ts";
+import { extractFsmPluginRefs, isVersionFolderName } from "./util.ts";
 import { type DBDeps, loadFsmFromJson } from "@pgfsm/db";
 import type { Json } from "@pgfsm/db/database.types";
-import type { FsmMachineJson } from "../../database-src/generated/fsm-machine-schema.types.ts";
+import type { FsmMachineJson, WorkflowType } from "./types/index.ts";
 
 async function loadFsmJSONFromFolder(
   dirEntryName: string,

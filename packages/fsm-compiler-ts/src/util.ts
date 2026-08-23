@@ -1,13 +1,14 @@
 import type { Json } from "@pgfsm/db/database.types";
 import type {
   ActionObject,
+  ActorReference,
   AtomicStateNode,
   CompoundStateNode,
   FinalStateNode,
   FsmMachineJson,
   HistoryStateNode,
   ParallelStateNode,
-} from "../../database-src/generated/fsm-machine-schema.types.ts";
+} from "./types/index.ts";
 
 /**
  * Structural stand-in for `Deno.Command`'s constructor, covering only the
@@ -38,59 +39,6 @@ type DenoCommandCtor = new (command: string, options?: {
  */
 export const DenoCommand: DenoCommandCtor | undefined =
   (Deno as unknown as { Command?: DenoCommandCtor }).Command;
-
-export type WorkflowType =
-  | "fsm"
-  | "sharedAsyncOperation"
-  | "internalAsyncOperation";
-
-export type ActorReference = {
-  src: string;
-  fsmType?: string;
-  fsmVersion?: string;
-  fsmLanguage?: string;
-};
-export type FailedMethod = {
-  method: string;
-  moduleType: string;
-  modulePath: string;
-};
-
-export type FsmPluginValidationResult = {
-  src: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmType: WorkflowType;
-  fsmAbsFolderPath: string;
-  fsmRelativeFolderPath: string;
-  fsmParentDirName: string;
-  fsmParentAbsFolderPath: string;
-  fsmParentRelativeFolderPath: string;
-  fsmJsonConfigData: FsmMachineJson | undefined;
-  fsmJsonPresent: boolean;
-  fsmJsonFollowSchema: boolean;
-  isFsmModuleVerified: boolean;
-  fsmModuleDefinition: Json;
-  failedMethods: FailedMethod[];
-  asyncOperationActors: ActorReference[];
-  isAsyncOperationActorsVerified?: boolean;
-};
-
-export type ActorPluginValidationResult = {
-  src: string;
-  method: string;
-  fsmName: string;
-  fsmType: "internalAsyncOperation";
-  fsmVersion: string;
-  fsmLanguage: string;
-  isVerified: boolean;
-  fsmModulePath: string;
-  parentFsmName: string;
-  parentFsmVersion: string;
-  comment: string;
-  parentFsmPath: string;
-  errorMessage: string | null;
-};
 
 export const DELAY_ACTION_NAME_PREFIX = "delay";
 

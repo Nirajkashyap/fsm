@@ -1,7 +1,4 @@
-import type {
-  OperationKind,
-  OperationLang,
-} from "../operation-logic-scaffold.ts";
+import type { OperationKind, OperationLang } from "../types/index.ts";
 import type { LanguageTemplateSet, TemplateFn } from "./types.ts";
 import { typescriptTemplates } from "./typescript.ts";
 import { pythonTemplates } from "./python.ts";

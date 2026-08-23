@@ -1,17 +1,19 @@
 import { getLogger } from "@logtape/logtape";
 import { isVersionFolderName } from "./util.ts";
-import type { ActorReference } from "./util.ts";
 import {
-  type ActorsBarrelLang,
   formatRustFilesBestEffort,
   formatTsFilesBestEffort,
-  type OperationLang,
-  type RegisteredActor,
   resolvePluginRootAbsPath,
   toWrittenActor,
   writeActorFile,
   writeActorsRegistry,
 } from "./operation-logic-scaffold.ts";
+import type {
+  ActorReference,
+  ActorsBarrelLang,
+  OperationLang,
+  RegisteredActor,
+} from "./types/index.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "create-async-logic"]);
 

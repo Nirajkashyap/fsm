@@ -12,12 +12,22 @@ deno task test            # deno test --allow-all test/
 deno task build:npm       # scripts/build-npm.ts (dnt npm build)
 ```
 
-The `FsmMachineJson` type contract mirroring `fsm.machine.schema.v3.json` lives
-in `packages/database-src/generated/fsm-machine-schema.types.ts`, not in this
-package — imported here via a cross-package relative path (e.g. `src/util.ts`'s
-`from "../../database-src/generated/fsm-machine-schema.types.ts"`). Regenerated
-from `packages/database-src/`, not here — see that package's `CLAUDE.md` for
-`generate:fsm-types`.
+`src/types/index.ts` is this package's one types entry point. It holds every
+hand-written type definition (`WorkflowType`, `ActorReference`,
+`RegisteredActor`, `FsmDraftStateNode`, etc.) — not colocated with the functions
+that use them — and also re-exports, by name (not a blanket `export type *`),
+only the schema-derived types this package actually imports somewhere
+(`FsmMachineJson`, `ActionObject`, `AtomicStateNode`, `CompoundStateNode`,
+`FinalStateNode`, `HistoryStateNode`, `ParallelStateNode` as of this writing —
+grep the package for the full current list). Those types actually live in
+`packages/database-src/generated/fsm-machine-schema.types.ts` (regenerated from
+`packages/database-src/`, not here — see that package's `CLAUDE.md` for
+`generate:fsm-types`). When a file needs a schema type not yet in that list, add
+it there rather than importing `database-src` directly — every other source file
+imports both kinds of types from `./types/index.ts` (or `../types/index.ts` from
+`src/cli/` and `src/scaffold-templates/`). Only genuinely file-private helper
+types (unexported, single-use, e.g. `util.ts`'s `DenoCommandCtor`) stay where
+they're defined.
 
 Deno version is managed by `.prototools`: `proto install deno --pin local`.
 
@@ -53,9 +63,9 @@ stubs — is unavailable in the npm/npx build. See `src/util.ts`'s `DenoCommand`
 export and its callers in `src/validate-async-operation-logic.ts` and
 `src/operation-logic-scaffold.ts`.
 
-The cross-package `import type` reaching into `../../database-src/generated/`
-(see above) is type-only, so it never appears in the emitted JS — but dnt's
-build still resolves and copies the source `.ts`/emits a `.d.ts` for it into
-`dist/{esm,script}/database-src/generated/`, self-contained inside the published
-package. Verified working as of this note; if the build ever fails type-checking
-that file, that's the first place to look.
+`src/types/index.ts`'s cross-package `import type`/`export type` reaching into
+`../../../database-src/generated/` (see above) is type-only, so it never appears
+in the emitted JS — but dnt's build still resolves and copies the source
+`.ts`/emits a `.d.ts` for it into `dist/{esm,script}/database-src/generated/`,
+self-contained inside the published package. Verified working as of this note;
+if the build ever fails type-checking that file, that's the first place to look.

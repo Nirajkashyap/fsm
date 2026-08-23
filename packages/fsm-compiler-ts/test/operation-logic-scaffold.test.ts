@@ -1,9 +1,6 @@
 import { assertEquals, assertExists } from "@std/assert";
 import {
   formatTsFilesBestEffort,
-  type OperationKind,
-  type OperationLang,
-  type RegisteredActor,
   renderOperationModule,
   toRegisteredActor,
   toWrittenActor,
@@ -14,9 +11,14 @@ import {
   writeAggregateActorsRegistry,
   writeAggregateGoRegistry,
   writeWorkerSdk,
-  type WrittenActor,
 } from "../src/operation-logic-scaffold.ts";
-import type { ActorReference } from "../src/util.ts";
+import type {
+  ActorReference,
+  OperationKind,
+  OperationLang,
+  RegisteredActor,
+  WrittenActor,
+} from "../src/types/index.ts";
 
 type Case = {
   lang: OperationLang;
