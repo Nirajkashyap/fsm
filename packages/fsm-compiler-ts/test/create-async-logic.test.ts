@@ -24,7 +24,7 @@ Deno.test("createAsyncOperationLogic - writes a single actor under <appRoot>/sha
   }
 });
 
-Deno.test("createAsyncOperationLogic - writes a generated-registry.ts entry with the fixed sharedAsyncOp identity", async () => {
+Deno.test("createAsyncOperationLogic - writes a generated-registry.ts entry with the fixed standaloneAsyncOp identity", async () => {
   const dir = await Deno.makeTempDir();
   try {
     await createAsyncOperationLogic(
@@ -40,9 +40,12 @@ Deno.test("createAsyncOperationLogic - writes a generated-registry.ts entry with
       registryContent,
       'import { checkCreditScore } from "./checkCreditScore/checkCreditScore.ts";',
     );
-    assertStringIncludes(registryContent, 'parentFsmName: "sharedAsyncOp",');
+    assertStringIncludes(
+      registryContent,
+      'parentFsmName: "standaloneAsyncOp",',
+    );
     assertStringIncludes(registryContent, 'parentFsmVersion: "v01",');
-    assertStringIncludes(registryContent, 'fsmType: "sharedAsyncOp",');
+    assertStringIncludes(registryContent, 'fsmType: "standaloneAsyncOp",');
     assertStringIncludes(registryContent, 'fsmName: "checkCreditScore",');
     assertStringIncludes(registryContent, 'fsmVersion: "v01",');
     assertStringIncludes(registryContent, 'fsmLanguage: "typescript",');

@@ -39,7 +39,10 @@ type DenoCommandCtor = new (command: string, options?: {
 export const DenoCommand: DenoCommandCtor | undefined =
   (Deno as unknown as { Command?: DenoCommandCtor }).Command;
 
-export type WorkflowType = "fsm" | "sharedFsm" | "sharedPromise" | "promise";
+export type WorkflowType =
+  | "fsm"
+  | "sharedAsyncOperation"
+  | "internalAsyncOperation";
 
 export type ActorReference = {
   src: string;
@@ -77,7 +80,7 @@ export type ActorPluginValidationResult = {
   src: string;
   method: string;
   fsmName: string;
-  fsmType: "promise";
+  fsmType: "internalAsyncOperation";
   fsmVersion: string;
   fsmLanguage: string;
   isVerified: boolean;

@@ -82,7 +82,7 @@ carries:
 | `type`        | yes      | `xstate.invoke`                                              |
 | `id`          | yes      | Instance id of the invocation                                |
 | `src`         | yes      | Actor name — the exported fn in its `<lang>/actors/` file    |
-| `fsmType`     | yes      | `promise \| sharedPromise \| sharedFsm \| fsm`               |
+| `fsmType`     | yes      | `internalAsyncOperation \| sharedAsyncOperation \| fsm`      |
 | `fsmVersion`  | yes      | Version of the invoked service                               |
 | `fsmLanguage` | no       | `typescript \| python \| rust \| llm` (default `typescript`) |
 

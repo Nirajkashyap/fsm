@@ -1,7 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import type { DBDeps } from "@pgfsm/db";
 
-const logger = getLogger(["@pgfsm/worker", "promise"]);
+const logger = getLogger(["@pgfsm/worker", "internalAsyncOperation"]);
 
 import {
   archiveEventFromFsmPromiseTypeWorker,

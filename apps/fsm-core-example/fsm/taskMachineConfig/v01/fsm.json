@@ -92,7 +92,7 @@
           "src": "fetchTasks",
           "type": "xstate.invoke",
           "id": "0.task.loading",
-          "fsmType": "promise",
+          "fsmType": "internalAsyncOperation",
           "fsmVersion": "v01",
           "fsmLanguage": "typescript"
         }
@@ -213,7 +213,7 @@
           "src": "updateTask",
           "type": "xstate.invoke",
           "id": "0.task.updating",
-          "fsmType": "promise",
+          "fsmType": "internalAsyncOperation",
           "fsmVersion": "v01",
           "fsmLanguage": "typescript"
         }

@@ -110,11 +110,11 @@ export interface InvokeObject {
   id: string;
   src: string;
   /**
-   * The type of the invoked service. promise for a new promise, sharedPromise for an existing promise but shared with other FSMs, and fsm for another finite state machine.
+   * The type of the invoked service. internalAsyncOperation for a new async operation, sharedAsyncOperation for an existing async operation but shared with other FSMs, and fsm for another finite state machine.
    */
-  fsmType: "promise" | "sharedPromise" | "sharedFsm" | "fsm";
+  fsmType: "internalAsyncOperation" | "sharedAsyncOperation" | "fsm";
   /**
-   * The version of the FSM being invoked, required if fsmType is fsm or sharedPromise
+   * The version of the FSM being invoked.
    */
   fsmVersion: string;
   /**

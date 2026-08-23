@@ -27,7 +27,7 @@ export const workflow = createMachine(
       DoCarVitalChecks: {
         description: "",
         invoke: {
-          fsmType: "sharedFsm",
+          fsmType: "fsm",
           fsmVersion: "v01",
           src: "vitalsWorkflow",
           onDone: {

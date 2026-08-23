@@ -95,7 +95,7 @@
       "order": 2,
       "invoke": [
         {
-          "fsmType": "sharedFsm",
+          "fsmType": "fsm",
           "fsmVersion": "v01",
           "src": "vitalsWorkflow",
           "type": "xstate.invoke",

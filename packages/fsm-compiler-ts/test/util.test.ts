@@ -16,7 +16,7 @@ const baseFsm = { id: "root", key: "root", type: "compound" as const };
 const baseInvoke = {
   type: "xstate.invoke",
   id: "0.idle",
-  fsmType: "promise" as const,
+  fsmType: "internalAsyncOperation" as const,
   fsmVersion: "v01",
 };
 const baseState = { id: "root.idle", key: "idle", type: "atomic" as const };

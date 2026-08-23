@@ -5,25 +5,25 @@
 -- out so the two functions can't drift out of sync on the naming rule,
 -- which has already changed twice.
 --
--- fsm_type is shortened to its first character (e.g. "promise" -> "p") in
--- all cases, and, specifically when fsm_type = 'promise', two further
--- reductions to help fit PGMQ's length limit (see below): fsm_version is
--- dropped entirely, and fsm_language is also shortened to its first
--- character.
+-- fsm_type is shortened to its first character (e.g. "internalAsyncOperation"
+-- -> "i") in all cases, and, specifically when fsm_type =
+-- 'internalAsyncOperation', two further reductions to help fit PGMQ's length
+-- limit (see below): fsm_version is dropped entirely, and fsm_language is
+-- also shortened to its first character.
 --
---   fsm_type = 'promise':
+--   fsm_type = 'internalAsyncOperation':
 --     <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
---   otherwise (e.g. 'sharedPromise'):
+--   otherwise (e.g. 'sharedAsyncOperation'):
 --     <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
 --
 -- unlike the existing 'sharedPromise_<fsmName>_<fsmVersion>' convention (see
 -- archive_from_fsm_instance_worker_v2.sql), this one is unique per actor
 -- identity including language, matching sidecar/protocol.ts's actorKey() --
 -- two workers of different languages serving the "same" actor never share a
--- queue (in the fsm_type = 'promise' case, this still holds since
--- fsm_language is shortened, not dropped -- two languages sharing the same
--- first letter would collide, but none do among typescript/python/rust/go
--- today: t/p/r/g).
+-- queue (in the fsm_type = 'internalAsyncOperation' case, this still holds
+-- since fsm_language is shortened, not dropped -- two languages sharing the
+-- same first letter would collide, but none do among
+-- typescript/python/rust/go today: t/p/r/g).
 --
 -- PGMQ caps queue names at 48 characters -- see CLI-USAGE.md's note on this
 -- limit. Still not guaranteed to fit for long parentFsmName/fsmName
@@ -39,7 +39,7 @@ CREATE OR REPLACE FUNCTION fsm_core.compute_promise_queue_name_v2(
 RETURNS text
 AS $$
 BEGIN
-    IF input_fsm_type = 'promise' THEN
+    IF input_fsm_type = 'internalAsyncOperation' THEN
         RETURN input_parent_fsm_name || '_' || input_parent_fsm_version
             || '_' || LEFT(input_fsm_type, 1) || '_' || input_fsm_name || '_'
             || LEFT(input_fsm_language, 1);

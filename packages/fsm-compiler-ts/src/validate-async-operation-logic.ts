@@ -352,7 +352,7 @@ export async function validateAsyncOperationFromFolders(
                       src: fnName,
                       method: fnName,
                       fsmName: fnName,
-                      fsmType: "promise",
+                      fsmType: "internalAsyncOperation",
                       fsmVersion: subEntry.name,
                       fsmLanguage: lang,
                       isVerified,
@@ -360,7 +360,7 @@ export async function validateAsyncOperationFromFolders(
                       parentFsmName: dirEntry.name,
                       parentFsmVersion: subEntry.name,
                       comment:
-                        "for fsmType promise fsmVersion will be its parentFsmVersion value",
+                        "for fsmType internalAsyncOperation fsmVersion will be its parentFsmVersion value",
                       parentFsmPath: fsmDirPath,
                       errorMessage,
                     });

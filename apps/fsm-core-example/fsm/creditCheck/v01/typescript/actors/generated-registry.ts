@@ -19,7 +19,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "verifyCredentials",
     fsmVersion: "v01",
     fsmLanguage: "typescript",
@@ -28,7 +28,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "checkReportsTable",
     fsmVersion: "v01",
     fsmLanguage: "typescript",
@@ -37,7 +37,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "checkBureau",
     fsmVersion: "v01",
     fsmLanguage: "typescript",
@@ -46,7 +46,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "determineMiddleScore",
     fsmVersion: "v01",
     fsmLanguage: "typescript",
@@ -55,7 +55,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "generateInterestRates",
     fsmVersion: "v01",
     fsmLanguage: "typescript",

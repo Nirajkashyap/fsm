@@ -16,7 +16,7 @@ pub fn actor_registrations() -> Vec<ActorRegistration> {
     vec![ActorRegistration {
         parent_fsm_name: "creditCheck",
         parent_fsm_version: "v01",
-        fsm_type: "promise",
+        fsm_type: "internalAsyncOperation",
         fsm_name: "checkBureauRust",
         fsm_version: "v01",
         fsm_language: "rust",

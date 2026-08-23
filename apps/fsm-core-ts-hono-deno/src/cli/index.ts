@@ -13,7 +13,6 @@ const args = parseArgs(Deno.args, {
     "url-path-prefix",
     "port",
     "shared-promise-path",
-    "shared-fsm-path",
     "fsm-path",
     "env-file",
   ],
@@ -38,7 +37,6 @@ OPTIONS
   -u, --url-path-prefix <prefix>    URL path prefix for all routes (default: /fsm)
   -p, --port <port>                 Port to listen on (default: 9999)
       --shared-promise-path <path>  Absolute path to sharedPromise FSM folder
-      --shared-fsm-path <path>      Absolute path to sharedFsm FSM folder
       --fsm-path <path>             Absolute path to fsm FSM folder
       --env-file <path>             Path to .env file (default: ./.env)
   -h, --help                        Show this help message
@@ -56,7 +54,6 @@ EXAMPLES
     --url-path-prefix /api/fsm \\
     --port 8080 \\
     --shared-promise-path /abs/path/to/sharedPromise \\
-    --shared-fsm-path /abs/path/to/fsm \\
     --fsm-path /abs/path/to/fsm
 
   # Use a custom env file
@@ -95,9 +92,6 @@ const pathsToCheck: Array<[string, string]> = [];
 if (args["shared-promise-path"]) {
   pathsToCheck.push(["--shared-promise-path", args["shared-promise-path"]]);
 }
-if (args["shared-fsm-path"]) {
-  pathsToCheck.push(["--shared-fsm-path", args["shared-fsm-path"]]);
-}
 if (args["fsm-path"]) pathsToCheck.push(["--fsm-path", args["fsm-path"]]);
 
 for (const [flag, path] of pathsToCheck) {
@@ -124,9 +118,6 @@ if (args["shared-promise-path"]) {
     folderPath: args["shared-promise-path"],
     skipDirs: [],
   };
-}
-if (args["shared-fsm-path"]) {
-  fsmConfig.sharedFsm = { folderPath: args["shared-fsm-path"], skipDirs: [] };
 }
 if (args["fsm-path"]) {
   fsmConfig.fsm = { folderPath: args["fsm-path"], skipDirs: [] };

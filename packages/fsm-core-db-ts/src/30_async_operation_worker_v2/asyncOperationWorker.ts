@@ -81,13 +81,14 @@ export interface EnsurePromiseQueueForWorkerResult {
 /**
  * Thin wrapper around `ensure_promise_queue_for_worker_v2()` -- ensures a
  * PGMQ queue exists for one promise-actor identity. fsmType is always
- * shortened to its first character; when fsmType is exactly `"promise"`,
- * fsmVersion is dropped entirely and fsmLanguage is also shortened to its
- * first character (both to help fit PGMQ's length limit -- see below):
+ * shortened to its first character; when fsmType is exactly
+ * `"internalAsyncOperation"`, fsmVersion is dropped entirely and fsmLanguage
+ * is also shortened to its first character (both to help fit PGMQ's length
+ * limit -- see below):
  *
- * - `fsmType === "promise"`:
+ * - `fsmType === "internalAsyncOperation"`:
  *   `<parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>`
- * - otherwise (e.g. `"sharedPromise"`):
+ * - otherwise (e.g. `"sharedAsyncOperation"`):
  *   `<parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>`
  *
  * Idempotent: safe to call every time a worker registers this actor, not
@@ -96,11 +97,11 @@ export interface EnsurePromiseQueueForWorkerResult {
  *
  * PGMQ enforces a hard 48-character queue name limit (`pgmq.validate_queue_name`)
  * -- this call throws if the computed name exceeds it. The `fsmType ===
- * "promise"` shortening above is enough for typical identities (verified:
- * `creditCheck_v01_p_checkReportsTable_t` = 37 chars for a long real
- * example), but long parentFsmName/fsmName values can still exceed it, and
- * the non-`"promise"` path (still carrying full fsmVersion + fsmLanguage)
- * remains more exposed to this limit.
+ * "internalAsyncOperation"` shortening above is enough for typical
+ * identities (verified: `creditCheck_v01_i_checkReportsTable_t` = 37 chars
+ * for a long real example), but long parentFsmName/fsmName values can still
+ * exceed it, and the non-`"internalAsyncOperation"` path (still carrying
+ * full fsmVersion + fsmLanguage) remains more exposed to this limit.
  */
 export async function ensurePromiseQueueForWorker(
   deps: DBDeps,

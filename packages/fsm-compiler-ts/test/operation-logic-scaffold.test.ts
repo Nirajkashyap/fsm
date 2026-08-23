@@ -462,7 +462,7 @@ Deno.test("writeActorsRegistry - typescript carries the full activity-registrati
         "  {\n" +
         '    parentFsmName: "creditCheck",\n' +
         '    parentFsmVersion: "v01",\n' +
-        '    fsmType: "promise",\n' +
+        '    fsmType: "internalAsyncOperation",\n' +
         '    fsmName: "checkBureau",\n' +
         '    fsmVersion: "v01",\n' +
         '    fsmLanguage: "typescript",\n' +
@@ -471,7 +471,7 @@ Deno.test("writeActorsRegistry - typescript carries the full activity-registrati
         "  {\n" +
         '    parentFsmName: "creditCheck",\n' +
         '    parentFsmVersion: "v01",\n' +
-        '    fsmType: "promise",\n' +
+        '    fsmType: "internalAsyncOperation",\n' +
         '    fsmName: "determineMiddleScore",\n' +
         '    fsmVersion: "v01",\n' +
         '    fsmLanguage: "typescript",\n' +
@@ -503,7 +503,7 @@ Deno.test("writeActorsRegistry - python carries the full activity-registration i
         "    {\n" +
         '        "parent_fsm_name": "creditCheck",\n' +
         '        "parent_fsm_version": "v01",\n' +
-        '        "fsm_type": "promise",\n' +
+        '        "fsm_type": "internalAsyncOperation",\n' +
         '        "fsm_name": "checkBureauPython",\n' +
         '        "fsm_version": "v01",\n' +
         '        "fsm_language": "python",\n' +
@@ -543,7 +543,7 @@ Deno.test("writeActorsRegistry - rust reuses the barrel's #[path] module instead
         "        ActorRegistration {\n" +
         '            parent_fsm_name: "creditCheck",\n' +
         '            parent_fsm_version: "v01",\n' +
-        '            fsm_type: "promise",\n' +
+        '            fsm_type: "internalAsyncOperation",\n' +
         '            fsm_name: "checkBureau",\n' +
         '            fsm_version: "v01",\n' +
         '            fsm_language: "rust",\n' +
@@ -703,7 +703,7 @@ Deno.test("writeAggregateActorsRegistry - rust #[path]-includes each FSM-version
         "        ActorRegistration {\n" +
         '            parent_fsm_name: "creditCheck",\n' +
         '            parent_fsm_version: "v01",\n' +
-        '            fsm_type: "promise",\n' +
+        '            fsm_type: "internalAsyncOperation",\n' +
         '            fsm_name: "checkBureau",\n' +
         '            fsm_version: "v01",\n' +
         '            fsm_language: "rust",\n' +
@@ -712,7 +712,7 @@ Deno.test("writeAggregateActorsRegistry - rust #[path]-includes each FSM-version
         "        ActorRegistration {\n" +
         '            parent_fsm_name: "otherFsm",\n' +
         '            parent_fsm_version: "v02",\n' +
-        '            fsm_type: "promise",\n' +
+        '            fsm_type: "internalAsyncOperation",\n' +
         '            fsm_name: "someActorRs",\n' +
         '            fsm_version: "v02",\n' +
         '            fsm_language: "rust",\n' +
@@ -790,7 +790,7 @@ Deno.test("writeAggregateGoRegistry - writes a standalone Go module with one req
         "\t\t{\n" +
         '\t\t\tParentFsmName:    "creditCheck",\n' +
         '\t\t\tParentFsmVersion: "v01",\n' +
-        '\t\t\tFsmType:          "promise",\n' +
+        '\t\t\tFsmType:          "internalAsyncOperation",\n' +
         '\t\t\tFsmName:          "checkBureau",\n' +
         '\t\t\tFsmVersion:       "v01",\n' +
         '\t\t\tFsmLanguage:      "go",\n' +
@@ -799,7 +799,7 @@ Deno.test("writeAggregateGoRegistry - writes a standalone Go module with one req
         "\t\t{\n" +
         '\t\t\tParentFsmName:    "otherFsm",\n' +
         '\t\t\tParentFsmVersion: "v02",\n' +
-        '\t\t\tFsmType:          "promise",\n' +
+        '\t\t\tFsmType:          "internalAsyncOperation",\n' +
         '\t\t\tFsmName:          "someActor",\n' +
         '\t\t\tFsmVersion:       "v02",\n' +
         '\t\t\tFsmLanguage:      "go",\n' +

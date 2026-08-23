@@ -71,10 +71,10 @@ COMMANDS
   create-async-logic                  Scaffold a single actor stub in the shared-async-op pool
   delete                              Delete generated fsm.json / xstate-fsm.json files
   validate-sync-operation             Validate sync operation logic (actions/guards/delays) for an FSM folder
-  validate-async-operation            [DEPRECATED] Validate async operation logic (actors) for a sharedPromise folder — unsupported under the npm/npx build, requires the Deno-native CLI
+  validate-async-operation            [DEPRECATED] Validate async operation logic (actors) for a sharedAsyncOperation folder — unsupported under the npm/npx build, requires the Deno-native CLI
   load                                Load FSM JSON into the database
 WORKFLOW TYPES
-  fsm | sharedFsm | sharedPromise | promise
+  fsm | sharedAsyncOperation | internalAsyncOperation
 
 OPTIONS
   -c, --command <command>             Command to run (required)
@@ -95,7 +95,6 @@ ENVIRONMENT
 
 EXAMPLES
   deno run --allow-all src/cli/index.ts -c generate -f apps/fsm-core-example/fsm
-  deno run --allow-all src/cli/index.ts -c generate -f apps/fsm-core-example/fsm -w sharedFsm
   deno run --allow-all src/cli/index.ts -c generate -f apps/fsm-core-example/fsm --skip-dirs carVitals,taskMachineConfig
   deno run --allow-all src/cli/index.ts -c generate -f apps/fsm-core-example/fsm/creditCheck/v01/machine.ts
   deno run --allow-all src/cli/index.ts -c generate-async-logic -f apps/fsm-core-example/fsm
@@ -103,9 +102,9 @@ EXAMPLES
   deno run --allow-all src/cli/index.ts -c generate-sync-logic -f apps/fsm-core-example/fsm --lang typescript,python
   deno run --allow-all src/cli/index.ts -c create-async-logic -f apps/fsm-core-example --lang typescript --version v01 --name checkCreditScore
   deno run --allow-all src/cli/index.ts -c validate-sync-operation -f apps/fsm-core-example/fsm -w fsm
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedPromise --skip-dirs carVitals,creditCheck,taskMachineConfig
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedPromise --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript
-  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedPromise --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript,python
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedAsyncOperation --skip-dirs carVitals,creditCheck,taskMachineConfig
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedAsyncOperation --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript
+  deno run --allow-all src/cli/index.ts -c validate-async-operation -f apps/fsm-core-example/fsm -w sharedAsyncOperation --skip-dirs carVitals,creditCheck,taskMachineConfig --lang typescript,python
 `);
 }
 
@@ -199,9 +198,8 @@ if (command === "create-async-logic") {
 
 const VALID_WORKFLOW_TYPES: string[] = [
   "fsm",
-  "sharedFsm",
-  "sharedPromise",
-  "promise",
+  "sharedAsyncOperation",
+  "internalAsyncOperation",
 ];
 if (workflowType && !VALID_WORKFLOW_TYPES.includes(workflowType)) {
   logger.error(

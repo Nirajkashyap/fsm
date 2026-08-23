@@ -95,10 +95,10 @@ export async function generateAsyncOperationLogicFromFolders(
       const seen = new Set<string>();
       const writtenActors: RegisteredActor[] = [];
       for (const actor of actors) {
-        const fsmType = actor.fsmType ?? "promise";
-        if (fsmType !== "promise") {
+        const fsmType = actor.fsmType ?? "internalAsyncOperation";
+        if (fsmType !== "internalAsyncOperation") {
           logger.info(
-            "Skipping actor {src}: fsmType is {fsmType}, not promise",
+            "Skipping actor {src}: fsmType is {fsmType}, not internalAsyncOperation",
             { src: actor.src, fsmType },
           );
           continue;

@@ -304,13 +304,13 @@
         },
         "fsmType": {
           "type": "string",
-          "default": "promise",
-          "enum": ["promise", "sharedPromise", "sharedFsm", "fsm"],
-          "description": "The type of the invoked service. promise for a new promise, sharedPromise for an existing promise but shared with other FSMs, and fsm for another finite state machine."
+          "default": "internalAsyncOperation",
+          "enum": ["internalAsyncOperation", "sharedAsyncOperation", "fsm"],
+          "description": "The type of the invoked service. internalAsyncOperation for a new async operation, sharedAsyncOperation for an existing async operation but shared with other FSMs, and fsm for another finite state machine."
         },
         "fsmVersion": {
           "type": "string",
-          "description": "The version of the FSM being invoked, required if fsmType is fsm or sharedPromise"
+          "description": "The version of the FSM being invoked."
         },
         "fsmLanguage": {
           "type": "string",

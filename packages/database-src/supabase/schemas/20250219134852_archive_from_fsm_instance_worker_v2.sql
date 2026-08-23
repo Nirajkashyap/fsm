@@ -1,6 +1,6 @@
 -- ============================================================
 -- 1. create_promise_queue_and_send_event_from_fsm_instance_id_v2 (renamed)
---    Routes promise/sharedPromise events to promise queue.
+--    Routes internalAsyncOperation/sharedAsyncOperation events to promise queue.
 --    Checks queue existence, creates if missing, returns send result.
 -- ============================================================
 DROP FUNCTION IF EXISTS fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(text, jsonb, text, text, text, text, text, text, text, text, uuid);
@@ -16,9 +16,9 @@ DROP FUNCTION IF EXISTS fsm_core.create_promise_queue_and_send_event_from_fsm_in
 --
 -- compute_promise_queue_name_v2 has no fsmType validation of its own (its
 -- "otherwise" branch happily names a queue for any fsmType, not just
--- 'sharedPromise') -- this function still validates fsmType itself, same as
--- before, so an unsupported fsmType keeps raising here rather than silently
--- getting a queue name and proceeding.
+-- 'sharedAsyncOperation') -- this function still validates fsmType itself,
+-- same as before, so an unsupported fsmType keeps raising here rather than
+-- silently getting a queue name and proceeding.
 CREATE OR REPLACE FUNCTION fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
     event_name text,
     event_input jsonb,
@@ -39,7 +39,7 @@ DECLARE
     start_queue_worker boolean := false;
     send_result jsonb;
 BEGIN
-    IF fsmType NOT IN ('promise', 'sharedPromise') THEN
+    IF fsmType NOT IN ('internalAsyncOperation', 'sharedAsyncOperation') THEN
         RAISE EXCEPTION 'create_promise_queue_and_send_event_from_fsm_instance_id_v2: unsupported fsmType: %', fsmType;
     END IF;
 
@@ -145,7 +145,7 @@ CREATE OR REPLACE FUNCTION fsm_core.send_event_to_queue_from_fsm_instance_id_v2(
     from_source_fsm_instance_id uuid
 ) RETURNS jsonb AS $$
 BEGIN
-    IF fsmType = 'promise' OR fsmType = 'sharedPromise' THEN
+    IF fsmType = 'internalAsyncOperation' OR fsmType = 'sharedAsyncOperation' THEN
         RETURN fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
             event_name := event_name,
             event_input := event_input,

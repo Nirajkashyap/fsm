@@ -26,11 +26,12 @@ const SHARED_ASYNC_OP_DIR_NAME = "shared-async-op";
 /**
  * Fixed `parentFsmName`/`fsmType` identity every shared-async-op actor
  * registers under — unlike FSM-scoped actors (whose `parentFsmName` is the
- * owning FSM and `fsmType` is `"promise"`, derived from an invoke object),
- * shared-async-op actors have no owning FSM, so both are constants.
+ * owning FSM and `fsmType` is `"internalAsyncOperation"`, derived from an
+ * invoke object), shared-async-op actors have no owning FSM, so both are
+ * constants.
  */
-const SHARED_ASYNC_OP_FSM_TYPE = "sharedAsyncOp" as const;
-const SHARED_ASYNC_OP_PARENT_FSM_NAME = "sharedAsyncOp";
+const SHARED_ASYNC_OP_FSM_TYPE = "standaloneAsyncOp" as const;
+const SHARED_ASYNC_OP_PARENT_FSM_NAME = "standaloneAsyncOp";
 
 /** Languages `create-async-logic` can also emit a `generated-registry.*` for — Go has no per-version registry (see {@linkcode ActorsBarrelLang}'s doc comment). */
 const REGISTRY_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
@@ -107,8 +108,8 @@ async function rewriteSharedAsyncOpRegistry(
  * `typescript`/`python`/`rust` (see {@linkcode ActorsBarrelLang}), also
  * rewrites that language's `generated-registry.*` from every actor currently
  * on disk (see {@linkcode rewriteSharedAsyncOpRegistry}), each entry's
- * identity fixed to `parentFsmName`/`fsmType` `"sharedAsyncOp"` since these
- * actors have no owning FSM. Returns the actor file's absolute path.
+ * identity fixed to `parentFsmName`/`fsmType` `"standaloneAsyncOp"` since
+ * these actors have no owning FSM. Returns the actor file's absolute path.
  */
 export async function createAsyncOperationLogic(
   appRootFolder: string,

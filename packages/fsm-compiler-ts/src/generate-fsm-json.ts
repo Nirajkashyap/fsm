@@ -288,7 +288,7 @@ export function addMissingFsmTypeToInvokeActors(
 
   function fillInvokeDefaults(invokeObj: FsmDraftInvoke) {
     if (!("fsmType" in invokeObj)) {
-      invokeObj.fsmType = "promise";
+      invokeObj.fsmType = "internalAsyncOperation";
     }
     if (!("fsmVersion" in invokeObj)) {
       invokeObj.fsmVersion = parentFsmVersion;
@@ -299,7 +299,7 @@ export function addMissingFsmTypeToInvokeActors(
     if (invokeObj.src) {
       childActorsInfo.push({
         child_actor_src: invokeObj.src,
-        child_actor_fsmType: invokeObj.fsmType ?? "promise",
+        child_actor_fsmType: invokeObj.fsmType ?? "internalAsyncOperation",
         child_actor_fsmVersion: invokeObj.fsmVersion ?? parentFsmVersion,
         child_actor_fsmLanguage: invokeObj.fsmLanguage ?? "typescript",
       });

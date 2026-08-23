@@ -16,8 +16,8 @@ function. This is part of §3 ("Validate operation logic") of the root
 
 **Async operation logic** is the set of actors named by each state's `invoke`
 objects (`invoke.src`). Each actor is authored in the language declared by its
-`fsmLanguage` and lives in `<lang>/actors/<src>/`; `sharedPromise` modules are
-the reusable dependency modules those actors build on.
+`fsmLanguage` and lives in `<lang>/actors/<src>/`; `sharedAsyncOperation`
+modules are the reusable dependency modules those actors build on.
 
 This stage confirms each filled-in actor / async module exports the named
 function with the expected shape, per its `fsmLanguage`.
@@ -46,7 +46,7 @@ function with the expected shape, per its `fsmLanguage`.
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
   -f apps/fsm-core-example/fsm \
-  -w sharedPromise \
+  -w sharedAsyncOperation \
   --skip-dirs carVitals,creditCheck,taskMachineConfig
 ```
 
@@ -71,7 +71,7 @@ Actors with an unsupported `fsmLanguage` are skipped with a warning.
 **Status:** ✅ Implemented — `validateAsyncOperationFromFoldersV2`
 (`src/validate-async-operation-logic-v2.ts`), wired to the
 `validate-async-operation` command. This validates each invoke's actor per its
-own `fsmLanguage` folder directly — it is not scoped to `sharedPromise`
+own `fsmLanguage` folder directly — it is not scoped to `sharedAsyncOperation`
 dependency modules only.
 
 ### R1a — Language filter (`--lang`)
@@ -81,7 +81,7 @@ dependency modules only.
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
   -f apps/fsm-core-example/fsm \
-  -w sharedPromise \
+  -w sharedAsyncOperation \
   --skip-dirs carVitals,creditCheck,taskMachineConfig \
   --lang typescript
 
@@ -89,7 +89,7 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
   -f apps/fsm-core-example/fsm \
-  -w sharedPromise \
+  -w sharedAsyncOperation \
   --skip-dirs carVitals,creditCheck,taskMachineConfig \
   --lang typescript,python
 ```
@@ -125,6 +125,6 @@ Tracked in [TODO.md](../todo/TODO.md):
 - `--lang` restricts which languages are validated; omitting it validates all.
   ✅
 - Each invoke's actor is validated per its own `fsmLanguage`, not just
-  `sharedPromise` dependency modules. ✅
+  `sharedAsyncOperation` dependency modules. ✅
 - Stubs whose signature does not match the worker's calling convention are
   reported as failures. ❌ pending gap 1.

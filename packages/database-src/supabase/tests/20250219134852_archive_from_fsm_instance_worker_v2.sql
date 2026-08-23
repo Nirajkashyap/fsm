@@ -22,15 +22,15 @@ values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid, 'srcFsm', 'v1');
 select results_eq(
   $$ select (r->>'start_queue_worker')::boolean, (r->'queue_data'->>'queueId')
      from fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
-       'evt1', '{"x": 1}'::jsonb, 'someId', 'invoke', 'someSrc', 'childOp', 'promise', 'v1',
+       'evt1', '{"x": 1}'::jsonb, 'someId', 'invoke', 'someSrc', 'childOp', 'internalAsyncOperation', 'v1',
        'pFsm', 'v1', 'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) r $$,
-  $$ values (true, 'pFsm_v1_p_childOp_t'::text) $$,
+  $$ values (true, 'pFsm_v1_i_childOp_t'::text) $$,
   'the first call for a not-yet-existing promise queue creates it (start_queue_worker=true), naming delegated to compute_promise_queue_name_v2'
 );
 select results_eq(
   $$ select (r->>'start_queue_worker')::boolean
      from fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
-       'evt2', '{"x": 2}'::jsonb, 'someId2', 'invoke', 'someSrc', 'childOp', 'promise', 'v1',
+       'evt2', '{"x": 2}'::jsonb, 'someId2', 'invoke', 'someSrc', 'childOp', 'internalAsyncOperation', 'v1',
        'pFsm', 'v1', 'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) r $$,
   $$ values (false) $$,
   'a second call for the same promise queue reuses it (start_queue_worker=false)'

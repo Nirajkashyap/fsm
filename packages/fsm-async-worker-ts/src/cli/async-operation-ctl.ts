@@ -54,7 +54,7 @@ OPTIONS
       --instance-id <uuid>             Async-operation instance ID (dispatch only; default: random UUID)
   -n, --name <name>                    Async-operation name (required for dispatch)
   -v, --version <version>              Async-operation version (required for dispatch)
-  -t, --type <type>                    Async-operation type, e.g. promise | sharedPromise (required for dispatch)
+  -t, --type <type>                    Async-operation type, e.g. internalAsyncOperation | sharedAsyncOperation (required for dispatch)
       --parent-fsm-name <name>         Parent FSM name (required for dispatch)
       --parent-fsm-version <version>   Parent FSM version (required for dispatch)
   -l, --language <lang>                Async-operation language, e.g. typescript (required for dispatch)
@@ -65,7 +65,7 @@ EXAMPLES
   deno run --allow-all src/cli/async-operation-ctl.ts -c list-instances
   deno run --allow-all src/cli/async-operation-ctl.ts -c list-meta
   deno run --allow-all src/cli/async-operation-ctl.ts -c dispatch \\
-    -n checkBureau -v 1 -t promise \\
+    -n checkBureau -v 1 -t internalAsyncOperation \\
     --parent-fsm-name creditCheck --parent-fsm-version 1 \\
     -l typescript
 `);
