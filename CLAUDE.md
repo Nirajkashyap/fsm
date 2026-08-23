@@ -46,7 +46,8 @@ packages/
   fsm-compiler-ts/        # JSON → database object compiler (TypeScript) — see CLAUDE.md
   fsm-core-db-ts/         # Raw pg client helpers (TypeScript) — see CLAUDE.md
   fsm-sync-worker-ts/     # Worker fleet: fsmlet/fsmscheduler dispatch-queue CLIs — see CLAUDE.md
-  fsm-async-worker-ts/    # Worker fleet: async-operation-workerlet/scheduler dispatch-queue CLIs — see CLAUDE.md
+  fsm-core-async-op-worker/ # Activity Gateway: async-op worker-registration/dispatch CLIs (@pgfsm/async-worker) — see CLAUDE.md
+  fsm-async-worker-ts/    # Deprecated v1 async-op worker fleet (@pgfsm/async-worker-old); superseded by fsm-core-async-op-worker — see CLAUDE.md
   fsm-logging-ts/         # Shared LogTape logging config, @pgfsm/logging — see CLAUDE.md
   fsm-proto-codegen/      # Buf-driven multi-language proto stub generation — see CLAUDE.md
 ```
