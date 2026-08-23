@@ -31,7 +31,45 @@ deno task fsmscheduler # control-plane router (run once per cluster)
 deno task cli          # fsmctl — one-shot create/resume/send/stop
 deno task pgcron       # one-shot: (re)register the pg_cron drain job
 deno task check        # deno check src/index.ts
+deno task build:npm    # scripts/build-npm.ts (dnt npm build)
 ```
+
+Deno version is managed by `.prototools`: `proto install deno --pin local`.
+`README.md` is the npm/npx-consumer-facing document (published to `dist/` — see
+below); keep source-only detail here instead of there.
+
+## npm publish (`deno task build:npm`)
+
+`scripts/build-npm.ts` builds the npm package via `@deno/dnt`, not `deno pack`
+(used for this repo's other npm-published packages) — see
+`packages/fsm-compiler-ts/CLAUDE.md`'s "npm publish" section for why dnt is
+required to ship CLI `bin` entries. Registers the library export alongside four
+shebanged bins (`fsmlet`, `fsmscheduler`, `fsmctl`, `pgcron`) in one pass.
+`.github/workflows/npm-publish.yml` builds this package's `sync-worker` matrix
+entry through the dnt path.
+
+`postBuild()` only copies `README.md` into `dist/` when `--copy-readme` is
+passed (`deno task build:npm <version> --copy-readme`, as CI does) — a plain
+local `deno task build:npm` skips it.
+
+**Multi-bin `npx` gotcha**: because this package registers four bins and none of
+them is named `sync-worker` (the derived executable name from the package name),
+a plain `npx @pgfsm/sync-worker fsmlet ...` does **not** work — npm can't
+determine which bin to run and errors `could not determine executable
+to run`
+(verified empirically against a scratch multi-bin package). The correct form is
+`npx -p @pgfsm/sync-worker -- fsmlet ...` (or a real install, after which each
+bin is callable directly) — see `README.md`'s Install section, which documents
+this.
+
+**Known issue**: as of the last check, `deno task build:npm` fails its
+type-check pass with `TS2345` errors in `src/fsmlet/fsmlet.ts` around
+`asyncActors` — `ActorReference[]` (from `@pgfsm/compiler`) isn't assignable to
+the `AsyncActor[]` dnt's bundled compiler expects, because
+`ActorReference.fsmVersion` is `string | undefined` while `AsyncActor`
+presumably wants `string`. Not caused by anything in this doc pass; reproduce
+with `deno task build:npm 0.0.0 --copy-readme` before assuming a docs/README
+change broke it.
 
 ## Structure (`src/`)
 

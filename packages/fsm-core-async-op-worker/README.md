@@ -1,81 +1,121 @@
-# fsm-core-async-op-worker — Activity Gateway
+# @pgfsm/async-worker
 
 The Activity Gateway for promise-type async FSM operations across polyglot
-(TypeScript/Python/Rust/Go) actors — a standalone alternative to
-`fsm-async-worker-ts` (v1), not something that integrates with or is invoked by
-it. Runs on Deno.
+(TypeScript/Python/Rust/Go) actors: a standalone gateway process that accepts
+worker registrations over a Unix socket, polls Postgres for pending work
+matching those registrations, dispatches it to the right worker, and archives
+the result. Optionally exposes a client-facing gRPC/Connect `Invoke` API.
 
-## What it does
+## Install
 
-- **Accepts worker registrations** — TS/Python/Rust/Go worker processes connect
-  over a Unix socket (the "sidecar") and announce which actors they serve.
-- **Owns its own Postgres connection and poll loop** — every 30 seconds
-  (default), asks Postgres which pending work matches its currently-registered
-  workers, with zero dependency on any external orchestrator's poll loop.
-- **Dispatches and archives** — for each claimed item, invokes the right worker
-  over the sidecar socket and archives the result.
-- **Optionally exposes a client-facing gRPC/Connect API** (`Invoke`,
-  `ListRegisteredActors`).
-
-Full flag reference, examples, and the PGMQ dispatch model behind this live in
-[`docs/guides/CLI-USAGE.md`](./docs/guides/CLI-USAGE.md); the goal-vs-current
-scoping record is [`GOAL.md`](./GOAL.md).
-
-## How to run
+This package ships two CLI bins, so a plain `npx @pgfsm/async-worker` can't tell
+which one to run — pass `-p`/`--package` and name the bin after `--`:
 
 ```bash
-# From this package's directory
-deno task gateway
-deno task gateway-ctl -c list
+npx -p @pgfsm/async-worker -- async-operation-worker-gateway --help
 ```
 
-### Via npx (no Deno required)
+or install it as a dependency / global CLI, after which each bin is callable
+directly:
 
 ```bash
-npx @pgfsm/async-worker async-operation-worker-gateway
-npx @pgfsm/async-worker async-operation-worker-gateway-ctl -c list
+npm install @pgfsm/async-worker
+npm install -g @pgfsm/async-worker   # for global `async-operation-worker-gateway`/`-ctl` commands
 ```
 
-This package is published to npm as `@pgfsm/async-worker` with
-`async-operation-worker-gateway` and `async-operation-worker-gateway-ctl` `bin`
-entries, so each can be run via `npx`/`npm install -g` on plain Node — no Deno
-install needed.
+No Deno install is required to use the CLIs this way.
 
-Those bin entries only exist because publishing goes through
-`deno task build:npm` (`scripts/build-npm.ts`, using `@deno/dnt`), which
-transpiles + Node-shims the source into `dist/` and registers the library export
-alongside the shebanged CLI bins in one pass. `deno pack` (used for this repo's
-other npm-published packages) does **not** synthesize a `package.json` `bin`
-field, so a CLI packed that way would be unreachable from `npx` —
-`.github/workflows/npm-publish.yml` builds this package's `async-worker` matrix
-entry through the dnt path instead.
+## Usage
+
+Two CLIs ship in this package. Run either with `--help` for its full flag
+reference. Examples below assume a global install
+(`async-operation-worker-gateway ...`); via plain `npx` prefix each with
+`npx -p @pgfsm/async-worker --`.
+
+### `async-operation-worker-gateway` — start the gateway process
+
+**Input** — all flags optional:
+
+- `-b`/`--bind <target>` — gRPC bind target for the client-facing API (default
+  `unix:/tmp/pgfsm-activity-gateway.sock`)
+- `-s`/`--sidecar-socket <path>` — Unix socket worker processes connect to and
+  register actors on (default `/tmp/pgfsm-activity-gateway-workers.sock`)
+- `-t`/`--invoke-timeout-ms <ms>` — default per-invoke timeout (default `10000`)
+- `-d`/`--db-url <url>` — Postgres connection string (falls back to
+  `DATABASE_URL` from `.env`); required unless both `--disable-poll-loop` and
+  `--ensure-queue-on-register` are omitted/off
+- `--poll-interval-ms <ms>` — poll-loop interval (default `30000`)
+- `--disable-poll-loop` — run the gateway/sidecar only, no Postgres poll loop
+- `--ensure-queue-on-register` — also ensure a PGMQ queue exists for every actor
+  a worker registers (default off; best-effort — a name that exceeds PGMQ's
+  48-character limit fails only this step, not the registration)
+
+**Output/side effect** — starts a long-running process: a gRPC service
+(client-facing) backed by a Unix-socket sidecar (worker-facing), plus — unless
+disabled — its own Postgres poll loop that claims and dispatches pending
+promise-type async operations to whichever actors are currently registered, then
+archives each result. Runs until `SIGINT`/`SIGTERM` (a second signal
+force-exits).
+
+```bash
+async-operation-worker-gateway
+async-operation-worker-gateway --disable-poll-loop
+async-operation-worker-gateway --db-url "$DATABASE_URL" --ensure-queue-on-register
+```
+
+### `async-operation-worker-gateway-ctl` — debug/test client
+
+**Input** — first positional argument is the subcommand, `list` or `invoke`;
+`--target <target>` (default `unix:/tmp/pgfsm-activity-gateway.sock`) selects
+which running gateway to talk to.
+
+- `list` — no further flags.
+- `invoke` — requires `--parent-fsm-name`, `--parent-fsm-version`, `--fsm-type`,
+  `--fsm-name`, `--fsm-version`, `--fsm-language`; optional `--input <json>`
+  (default `null`), `--instance-id`/`--correlation-id` (default random UUIDs),
+  `--timeout-ms` (default `5000`).
+
+**Output** — writes nothing; `list` prints the actor keys currently registered
+with the target gateway, `invoke` calls that actor and prints its result JSON.
+
+```bash
+async-operation-worker-gateway-ctl list
+
+async-operation-worker-gateway-ctl invoke \
+  --parent-fsm-name creditCheck --parent-fsm-version v01 \
+  --fsm-type promise --fsm-name checkBureau --fsm-version v01 \
+  --fsm-language rust --input '{"ssn":"123"}'
+```
 
 ## Prerequisites
 
-- **Deno** (see `.prototools` for pinned version) — always required to run from
-  source
-- **Database connection** — `DATABASE_URL` in `.env`, or `--db-url`/`-d` passed
-  to the CLI (only needed for the poll loop; see `--disable-poll-loop` in
-  `CLI-USAGE.md`)
-- **At least one worker-sdk process** to register actors and actually serve
-  invocations — see `packages/fsm-proto-codegen/`'s generated stubs, or
-  `apps/fsm-core-example/worker-sdk-generated/<lang>/`
+- **A Postgres database** — `DATABASE_URL`, needed for the poll loop and/or
+  `--ensure-queue-on-register` (omit both to run the gateway/sidecar only)
+- **At least one worker-sdk process** connected to the sidecar socket, to
+  register actors and actually serve invocations — generate one from an FSM's
+  compiled actors (see `@pgfsm/compiler`'s `generate-async-logic`), or see
+  `apps/fsm-core-example/worker-sdk-generated/<lang>/` in the
+  [repo](https://github.com/pgfsm/fsm) for a worked example
 
-## Key exports
+## Programmatic usage
 
 ```typescript
 import {
   ActivityGatewayClient, // invoke actors through the gateway's client-facing API
   SidecarGateway, // the sidecar itself — worker registration + dispatch
   startActivityGatewayServer, // sidecar + gRPC/Connect server + poll loop, all in one process
-  startAsyncOpPollLoop, // the 30s Postgres poll/claim/archive loop
+  startAsyncOpPollLoop, // the poll/claim/archive loop, standalone
+} from "@pgfsm/async-worker";
+
+import type {
+  ActivityGatewayClientOptions,
+  AsyncOpPollLoopOptions,
+  GatewayServerOptions,
+  InvokeActorRequest,
+  InvokeActorResult,
 } from "@pgfsm/async-worker";
 ```
 
-## Deno version
+## License
 
-Managed by `.prototools`. Install with:
-
-```bash
-proto install deno --pin local
-```
+Apache-2.0

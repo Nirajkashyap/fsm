@@ -1,71 +1,192 @@
-# fsm-compiler-ts — FSM Compiler
+# @pgfsm/compiler
 
-Validates FSM JSON definitions and generates polyglot plugin artifacts (actions,
-guards, delays, actor stubs) that workers load at startup. Runs on Deno.
+FSM JSON compiler for PostgreSQL-backed state machines: generates `fsm.json`
+from a folder of state machine definitions, scaffolds the action/guard/delay/
+actor stub code each language needs to implement, validates that every reference
+in the JSON has a matching implementation, and loads the compiled result into
+the database.
 
-## What it does
-
-**Input:** an `fsm.json` file in a versioned FSM folder\
-**Output:** a validated plugin — confirmed that every action, guard, delay, and
-actor referenced in the JSON has a matching export in its declared language
-
-Each actor is validated by calling its language's runtime directly:
-
-| Language     | Runtime called                               |
-| ------------ | -------------------------------------------- |
-| `typescript` | `deno run src/checkers/check_fn.ts`          |
-| `python`     | `python3 src/checkers/check_fn.py`           |
-| `go`         | `go build src/checkers/check_fn.go` → binary |
-| `rust`       | `rustc src/checkers/check_fn.rs` → binary    |
-
-Unresolved references are reported as errors so they're caught before
-deployment, not at runtime.
-
-## How to run
+## Install
 
 ```bash
-# Interactive CLI (dev mode with file watching)
-deno run --allow-all --watch src/main.ts
-
-# One-shot validation + generation
-deno run --allow-all src/main.ts
+npx @pgfsm/compiler --help
 ```
 
-### Via npx (no Deno required)
+or install it as a dependency / global CLI:
 
 ```bash
-npx @pgfsm/compiler --command <cmd> --folder <path> ...
+npm install @pgfsm/compiler
+npm install -g @pgfsm/compiler   # for a global `fsm-compiler` command
 ```
 
-This package is published to npm as `@pgfsm/compiler` with a `fsm-compiler`
-`bin` entry, so it can be run via `npx`/`npm install -g` on plain Node — no Deno
-install needed.
+## Usage
 
-That bin entry only exists because publishing goes through `deno task build:npm`
-(`scripts/build-npm.ts`, using `@deno/dnt`), which transpiles + Node-shims the
-source into `dist/` and registers both the library export and the shebanged CLI
-bin. `deno pack` (used for this repo's other npm-published packages) does
-**not** synthesize a `package.json` `bin` field — per the Deno docs' own
-"Limitations" section (https://docs.deno.com/runtime/reference/cli/pack/), it's
-library-publishing only. A CLI packed that way would be unreachable from `npx`,
-so `.github/workflows/npm-publish.yml` builds this package's `compiler` matrix
-entry through the dnt path instead.
+Run `npx @pgfsm/compiler --help` for the full flag reference. Every command
+below that takes `-f`/`--folder` for a directory applies the same rule to that
+path: it must **not** start with `.` (use a bare relative path like `fsm`, or an
+absolute path — not `./fsm`) and must **not** end with `/`.
 
-## Prerequisites
+### `generate` — compile `fsm.json` from a state machine definition
 
-- **Deno** (see `.prototools` for pinned version) — always required
-- **Python 3** (`python3` on `PATH`) — required when validating `python` actors
-- **Go** (`go` on `PATH`) — required when validating `go` actors
-- **Rust** (`rustc` on `PATH`) — required when validating `rust` actors
+**Input** — `-f`/`--folder` accepts either:
 
-## Key exports
+- A **plugin-root directory** containing one subfolder per FSM name, each with
+  version subfolders (`v01`, `v02`, …), each containing a `machine.ts` whose
+  default export is an XState machine (from `createMachine(...)`). Version
+  folders without a `machine.ts` are skipped, not an error.
+- A **single `.ts` file path** — only its containing directory is used; that
+  directory must contain a file literally named `machine.ts` (the filename you
+  pass is only used to locate the directory). The version name is taken from the
+  directory's own name, e.g. `.../creditCheck/v01/machine.ts` → `v01`.
+
+Other flags: `-w`/`--workflow-type`
+(`fsm | sharedFsm | sharedPromise |
+promise`, default `fsm`), `-s`/`--skip-dirs`
+(comma-separated FSM names to skip, directory mode only),
+`-r`/`--show-recommendation` (also validates the generated `fsm.json` against
+the FSM JSON schema and logs any errors — doesn't change what's written).
+
+**Output** — per version folder:
+
+- `xstate-fsm.json` — the machine's raw XState-exported JSON
+- `fsm.json` — that JSON normalized (actions coerced to `{ type }` objects,
+  raise/cancel delay names filled in, invoke actors' `fsmType`/`fsmVersion`
+  resolved). This is what every other command below reads.
+
+```bash
+npx @pgfsm/compiler -c generate -f fsm
+npx @pgfsm/compiler -c generate -f fsm -w sharedFsm --skip-dirs carVitals
+npx @pgfsm/compiler -c generate -f apps/fsm-core-example/fsm/creditCheck/v01/machine.ts
+```
+
+The full `fsm.json` spec (states, transitions, guards, actions, actors, delays)
+is documented in
+[`docs/reference/fsm-definition-format.md`](./docs/reference/fsm-definition-format.md).
+
+### `generate-sync-logic` — scaffold action/guard/delay stubs
+
+Reads each version folder's `fsm.json`, so `generate` must have already run.
+
+**Input** — `-f`/`--folder`: plugin-root directory (directory mode only, no
+single-file mode). `-l`/`--lang`: comma-separated `typescript,python,rust,go`
+(default `typescript`). `-s`/`--skip-dirs`.
+
+**Output** — per version folder, per requested language:
+
+- `<lang>/actions/index.{ts,py}` / `mod.rs` / `index.go` — one exported stub per
+  action name in `fsm.json` (built-in `xstate.raise`/`xstate.cancel` excluded)
+- `<lang>/guards/...` — one stub per guard
+- `<lang>/delays/...` — one stub per delay
+
+Every stub has a `// TODO: implement` body.
+
+```bash
+npx @pgfsm/compiler -c generate-sync-logic -f fsm --lang typescript,python
+```
+
+### `generate-async-logic` — scaffold actor stubs
+
+Reads each version folder's `fsm.json` (every `invoke` object), so `generate`
+must have already run.
+
+**Input** — `-f`/`--folder`: plugin-root directory.
+`-p`/`--worker-sdk-protocol`: `grpc` (default) or `legacy`. `-s`/`--skip-dirs`.
+
+**Output** — per version folder:
+
+- One file per distinct actor: `<lang>/actors/<name>/<name>.<ext>`, where
+  `<lang>` is that invoke object's own `fsmLanguage` (default `typescript`)
+- `actors-manifest.json` — every actor across all languages
+- A per-language barrel re-exporting each actor: `typescript/actors/index.ts`,
+  `python/actors/__init__.py`, `rust/actors/mod.rs` (Go has no barrel)
+- A per-language `generated-registry.*`, written only when that language has at
+  least one actor
+
+Once per app root (not per version folder), at
+`<appRoot>/worker-sdk-generated/<lang>/`: an aggregate registry plus worker SDK
+combining every FSM version's actors for that language — a worker process serves
+its language's actors across every FSM, not just one.
+
+```bash
+npx @pgfsm/compiler -c generate-async-logic -f fsm
+npx @pgfsm/compiler -c generate-async-logic -f fsm --worker-sdk-protocol legacy
+```
+
+### `create-async-logic` — scaffold one actor outside any FSM's `invoke` list
+
+For actors in the shared, non-FSM-scoped async-operation pool. For actors that
+belong to an FSM's `invoke` list, use `generate-async-logic` instead.
+
+**Input** — `-f`/`--folder`: the **app root** (one level above the FSM
+plugin-root directory — e.g. `apps/fsm-core-example`, not
+`apps/fsm-core-example/fsm`). `-l`/`--lang`: exactly one language, required.
+`-v`/`--version`: version name matching `v\d{2}` (e.g. `v01`), required.
+`-n`/`--name`: actor function name, required.
+
+**Output**:
+
+- `<appRoot>/shared-async-op/<version>/<lang>/actors/<name>/<name>.<ext>`
+- That language's registry file, rewritten from every actor currently on disk
+  under that folder (`typescript`/`python`/`rust` only — Go has no shared
+  registry)
+
+```bash
+npx @pgfsm/compiler -c create-async-logic -f apps/fsm-core-example --lang typescript --version v01 --name checkCreditScore
+```
+
+### `delete` — remove generated files
+
+**Input** — `-f`/`--folder`: plugin-root directory. `-w`/`--workflow-type`
+(default `fsm`). `-s`/`--skip-dirs`.
+
+**Output/side effect** — per version folder, removes `fsm.json`,
+`xstate-fsm.json`, and the `typescript/` and `python/` subdirectories if present
+(`rust/`/`go/` are left alone). Missing files are skipped silently, not an
+error.
+
+```bash
+npx @pgfsm/compiler -c delete -f fsm
+```
+
+### `validate-sync-operation` — check action/guard/delay stubs are implemented
+
+**Input** — `-f`/`--folder`: plugin-root directory. `-w`/`--workflow-type`:
+required. `-a`/`--available-actors`: path to a JSON file of
+`{ src, fsmType?, fsmVersion?, fsmLanguage? }[]` — actors resolvable from
+elsewhere (e.g. a shared pool) so invoke references pointing at them aren't
+reported as unresolved. `-s`/`--skip-dirs`.
+
+**Output** — writes nothing; validates that every action/guard/delay in
+`fsm.json` has a matching export in `<lang>/actions|guards|delays/index.*` and
+logs a pass/fail result per method.
+
+```bash
+npx @pgfsm/compiler -c validate-sync-operation -f fsm -w fsm
+```
+
+### `load` — load a compiled `fsm.json` into the database
+
+**Input** — `-f`/`--folder`: plugin-root directory (each version folder's
+`fsm.json` must already exist). `-w`/`--workflow-type`: required.
+`-d`/`--db-url` (or the `DATABASE_URL` env var). `-s`/`--skip-dirs`.
+
+**Output/side effect** — inserts each FSM's states/transitions into the
+`fsm_core` PostgreSQL schema, resolving `dependent_children` from any invoke
+actors whose `fsmType` is `"fsm"`. No local files are written.
+
+```bash
+npx @pgfsm/compiler -c load -f fsm -w fsm -d "$DATABASE_URL"
+```
+
+## Programmatic usage
 
 ```typescript
 import {
-  validateAndLoadFsmFromFolders, // validate all FSMs in a folder tree, then load if valid
-  validateAndLoadPromiseFromFolders, // validate all promise actors in a folder tree, then load if valid
-  validateAsyncOperationFromFolders, // validate actor exports per fsmLanguage, optionally filtered by lang
-  validateFsmPluginLoadFromFolder, // validate one specific FSM plugin
+  generateAsyncOperationLogicFromFolders, // scaffold actor stubs
+  generateFsmJSONFromFolders, // generate fsm.json for every FSM under a folder tree
+  generateSyncOperationLogicFromFolders, // scaffold action/guard/delay stubs
+  loadFsmJSONFromFolders, // load compiled fsm.json into the database
+  validateSyncOperationFromFolders, // check action/guard/delay stubs are implemented
 } from "@pgfsm/compiler";
 
 import type { OperationLang, WorkflowType } from "@pgfsm/compiler";
@@ -76,46 +197,6 @@ import type { OperationLang, WorkflowType } from "@pgfsm/compiler";
 The REST API and workers use these at startup to discover and validate FSM
 plugins before accepting requests.
 
-## Plugin structure
+## License
 
-After running the compiler against an FSM definition, the version folder
-contains:
-
-```
-fsm/<name>/v01/
-  fsm.json
-  xstate-fsm.json
-  typescript/
-    actions/index.ts              ← one export per action name in fsm.json
-    guards/index.ts               ← one export per guard name
-    delays/index.ts               ← one export per delay name
-    actors/promise_v01_<src>.ts   ← one file per actor, one export named <src>
-  python/
-    actors/promise_v01_<src>.py
-  rust/
-    actors/promise_v01_<src>.rs
-  go/
-    actors/promise_v01_<src>.go
-```
-
-Generated stubs have `// TODO: implement` bodies — fill them in before running a
-worker against the FSM.
-
-## Reference
-
-- [FSM definition format](./docs/fsm-definition-format.md) — full spec for
-  `fsm.json` (states, transitions, guards, actions, actors, delays)
-
-## Tests
-
-```bash
-deno test
-```
-
-## Deno version
-
-Managed by `.prototools`. Install with:
-
-```bash
-proto install deno --pin local
-```
+Apache-2.0

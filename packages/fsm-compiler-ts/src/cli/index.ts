@@ -71,7 +71,7 @@ COMMANDS
   create-async-logic                  Scaffold a single actor stub in the shared-async-op pool
   delete                              Delete generated fsm.json / xstate-fsm.json files
   validate-sync-operation             Validate sync operation logic (actions/guards/delays) for an FSM folder
-  validate-async-operation            Validate async operation logic (actors) for a sharedPromise folder
+  validate-async-operation            [DEPRECATED] Validate async operation logic (actors) for a sharedPromise folder — unsupported under the npm/npx build, requires the Deno-native CLI
   load                                Load FSM JSON into the database
 WORKFLOW TYPES
   fsm | sharedFsm | sharedPromise | promise
@@ -354,6 +354,9 @@ try {
       break;
     }
     case "validate-async-operation": {
+      logger.warn(
+        "validate-async-operation is deprecated: it shells out to each actor's own language runtime and only works under the Deno-native CLI, never via the npm/npx build.",
+      );
       const availableActors = await loadAvailableActors();
       await validateAsyncOperationFromFolders(
         folder!,
