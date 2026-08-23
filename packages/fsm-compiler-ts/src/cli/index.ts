@@ -79,7 +79,7 @@ WORKFLOW TYPES
 OPTIONS
   -c, --command <command>             Command to run (required)
   -f, --folder <folder>               Path to FSM folder or .ts file (required; a .ts file is accepted for generate only; app root for create-async-logic)
-  -w, --workflow-type <type>          Workflow type (optional for generate-sync-logic, defaults to "fsm"; required for validate-sync-operation, load)
+  -w, --workflow-type <type>          Workflow type (required for validate-sync-operation, load)
   -l, --lang <langs>                  Comma-separated language(s): typescript, python, rust, go. For generate-sync-logic defaults to typescript; for validate-async-operation defaults to all languages; for create-async-logic a single language is required
   -v, --version <version>             FSM version folder name, e.g. v01 (create-async-logic only, required)
   -n, --name <name>                   Actor function name, used for <name>/<name>.ext (create-async-logic only, required)
@@ -321,7 +321,6 @@ try {
     case "generate-sync-logic":
       await generateSyncOperationLogicFromFolders(
         folder!,
-        workflowType ?? "fsm",
         langs,
         skipDirs,
       );

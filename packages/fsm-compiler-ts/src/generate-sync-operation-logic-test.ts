@@ -10,7 +10,6 @@ dotenv.config({ path: "./../../.env" });
   // Sync operation logic (actions/guards/delays) — generated in TypeScript.
   await generateSyncOperationLogicFromFolders(
     fsmfolderPath,
-    "fsm",
     ["typescript"],
     skipFSMDirs,
   );

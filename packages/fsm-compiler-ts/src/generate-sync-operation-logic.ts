@@ -19,7 +19,6 @@ const logger = getLogger(["@pgfsm/compiler", "sync-logic"]);
  */
 export async function generateSyncOperationLogicFromFolders(
   folderPath: string,
-  _workflowType: WorkflowType,
   langs: OperationLang[],
   skipDirs: string[] = [],
 ): Promise<void> {
