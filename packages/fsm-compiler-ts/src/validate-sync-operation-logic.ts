@@ -256,11 +256,13 @@ export async function validateSyncOperationFromFolders(
                   availableActors,
                 );
 
+                /*
                 logger.info("Validation result for {dir}/{sub}: {result}", {
                   dir: dirEntry.name,
                   sub: subEntry.name,
                   result: folderResult,
                 });
+                */
 
                 allFolderResults.push(folderResult);
               } catch (err) {

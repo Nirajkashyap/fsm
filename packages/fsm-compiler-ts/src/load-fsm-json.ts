@@ -35,10 +35,12 @@ async function loadFsmJSONFromFolder(
       src: actor.src,
     }));
 
-    logger.info("Found dependent children for {fsm}: {children}", {
-      fsm: `${dirEntryName}/${dirEntryNameVersion}`,
-      children: dependentChildren,
-    });
+    if (dependentChildren.length > 0) {
+      logger.info("Found dependent children for {fsm}: {children}", {
+        fsm: `${dirEntryName}/${dirEntryNameVersion}`,
+        children: dependentChildren,
+      });
+    }
 
     // 2. Process fsmData and insert into database using helper functions
     // Call loadFsmStateFromJsonV2 and loadFsmTransitionFromJsonV2 with fsmData
