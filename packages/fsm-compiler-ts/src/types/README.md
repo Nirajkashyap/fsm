@@ -1,0 +1,43 @@
+# `src/types/`
+
+This package's one types entry point (`index.ts`). It holds every hand-written
+domain type `@pgfsm/compiler` uses internally, plus a curated, by-name re-export
+of the schema-derived types it actually consumes from
+[`fsm-machine-schema.types.ts`](../../../database-src/generated/fsm-machine-schema.types.ts)
+(generated from `fsm.machine.schema.v3.json` — see
+`packages/database-src/CLAUDE.md`'s `generate:fsm-types`).
+
+Some hand-written types started life as ad-hoc shapes and turned out to
+duplicate — fully or partially — something the schema already generates. Where a
+hand-written type is genuinely just the schema's type restated, it should be
+defined _in terms of_ the schema type (e.g. `InvokeObject["fsmType"]`) rather
+than retyped, so a schema change doesn't require a matching hand-edit here to
+stay in sync. This table tracks that audit — update it whenever a new
+hand-written type is added, so the same question doesn't need re-investigating
+later.
+
+## Already tied to the schema — no action needed
+
+| Type                                         | Definition                                                                                                                         | Why                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WorkflowType`                               | `InvokeObject["fsmType"]`                                                                                                          | Exact duplicate of the schema enum — fixed to reference it directly.                                                                                                                                                                                                                                                                                                                          |
+| `ActorReference.fsmType` / `.fsmLanguage`    | `InvokeObject["fsmType"]` / `["fsmLanguage"]`                                                                                      | Was hand-loosened to plain `string` — tightened, since every real construction site already populates it from a parsed `InvokeObject` (or a subset enum like `OperationLang`).                                                                                                                                                                                                                |
+| `RegisteredActor.fsmType`                    | `InvokeObject["fsmType"]`                                                                                                          | Previously added a non-schema sentinel (`"standaloneAsyncOp"`) for actors with no owning FSM (`create-async-logic.ts`'s shared-async-op pool). Those actors now use the real `"sharedAsyncOperation"` value instead — same as a real shared-queue invoke object — so this ties directly to the schema too.                                                                                    |
+| `FsmDraftTransition`                         | `Partial<Omit<TransitionObject, "cond" \| "actions">> & { actions?: FsmDraftAction[] }`                                            | Was a hand-written shape duplicating `TransitionObject` field-for-field — now derived from it, matching `FsmDraftInvoke`'s pattern.                                                                                                                                                                                                                                                           |
+| `FsmDraftInvoke`                             | `Partial<InvokeObject> & { src?: string }`                                                                                         | Already derived from `InvokeObject`.                                                                                                                                                                                                                                                                                                                                                          |
+| `FsmDraftAction`                             | `string \| ActionObject`                                                                                                           | Already reuses `ActionObject` directly.                                                                                                                                                                                                                                                                                                                                                       |
+| `OperationLang` / `WrittenActor.fsmLanguage` | `Exclude<NonNullable<InvokeObject["fsmLanguage"]>, "llm">`                                                                         | `fsmLanguage` is optional in the schema, so the indexed-access type also carries `undefined` — `NonNullable` strips that before `Exclude` removes `"llm"` (not a scaffoldable language yet; every `switch (lang)` in `operation-logic-scaffold.ts` relies on exhaustiveness over the remaining 4). Renaming `typescript`/`python`/`rust`/`go` in the schema still follows automatically here. |
+| `ActorPluginValidationResult.fsmType`        | `Extract<InvokeObject["fsmType"], "internalAsyncOperation">`                                                                       | Narrowed to the single literal this validator ever produces, but expressed as an `Extract` of the schema type rather than a bare string literal, so a schema rename of that literal still follows automatically.                                                                                                                                                                              |
+| `FsmDraftStateNode.initial`                  | `Partial<Omit<InitialTransitionObject, "eventType" \| "actions" \| "target">> & { actions?: FsmDraftAction[]; target?: string[] }` | The one nested shape inside `FsmDraftStateNode` that does map onto a single schema type — derived the same way as `FsmDraftTransition`.                                                                                                                                                                                                                                                       |
+
+## Intentionally distinct — do not "fix"
+
+| Type                | Superficially resembles             | Why it stays hand-written                                                                                                                                                                                                                                 |
+| ------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FsmDraftStateNode` | `FsmMachineJson` / state-node union | A loose, all-optional, recursive merge of several schema types — the pre-validation "anything XState's raw `.toJSON()` might contain" shape, not a 1:1 match for any single schema type (its `initial` field is the one exception — see the table above). |
+
+## No schema equivalent at all
+
+`FailedMethod`, `OperationKind`, `ActorsBarrelLang`, `WorkerSdkProtocol`,
+`WriteWorkerSdkOptions` — pure compiler-internal concepts with nothing in
+`fsm.machine.schema.v3.json` to derive from.

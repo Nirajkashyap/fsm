@@ -2,7 +2,9 @@ import type { Json } from "@pgfsm/db/database.types";
 import type {
   ActionObject,
   FsmMachineJson,
+  InitialTransitionObject,
   InvokeObject,
+  TransitionObject,
 } from "../../../database-src/generated/fsm-machine-schema.types.ts";
 
 /**
@@ -26,16 +28,32 @@ export type {
   ParallelStateNode,
 } from "../../../database-src/generated/fsm-machine-schema.types.ts";
 
-export type WorkflowType =
-  | "fsm"
-  | "sharedAsyncOperation"
-  | "internalAsyncOperation";
+/**
+ * Tied directly to the schema's `invokeObject.fsmType` enum
+ * (`InvokeObject["fsmType"]`, imported above) instead of a hand-written
+ * literal union, so renaming/adding/removing an `fsmType` value only
+ * requires editing `fsm.machine.schema.v3.json` — this type (and every CLI
+ * flag/function param typed with it) follows automatically instead of
+ * needing a matching hand-edit here.
+ */
+export type WorkflowType = InvokeObject["fsmType"];
 
+/**
+ * `fsmType`/`fsmLanguage` are tied to `InvokeObject`'s own field types
+ * (rather than hand-loosened to plain `string`) since every real construction
+ * site already populates them from a parsed `InvokeObject` (or a value drawn
+ * from its enum, e.g. `OperationLang`), and callers already do literal
+ * comparisons like `actor.fsmType === "fsm"` — the tighter type catches typos
+ * there instead of just widening past them. The one path that bypasses this
+ * (`cli/index.ts`'s `--available-actors` file, loaded via a raw `JSON.parse`
+ * `as ActorReference[]` cast) isn't affected either way, since a type
+ * assertion from `any` skips structural checking regardless.
+ */
 export type ActorReference = {
   src: string;
-  fsmType?: string;
+  fsmType?: InvokeObject["fsmType"];
   fsmVersion?: string;
-  fsmLanguage?: string;
+  fsmLanguage?: InvokeObject["fsmLanguage"];
 };
 
 export type FailedMethod = {
@@ -68,7 +86,14 @@ export type ActorPluginValidationResult = {
   src: string;
   method: string;
   fsmName: string;
-  fsmType: "internalAsyncOperation";
+  /**
+   * Narrowed to the one value `validateAsyncOperationFromFolders` ever
+   * produces, but via `Extract<>` from the schema enum rather than a bare
+   * hand-written literal — if `"internalAsyncOperation"` is ever renamed in
+   * the schema, this becomes `never` and every assignment site fails to
+   * compile instead of silently drifting.
+   */
+  fsmType: Extract<InvokeObject["fsmType"], "internalAsyncOperation">;
   fsmVersion: string;
   fsmLanguage: string;
   isVerified: boolean;
@@ -81,11 +106,23 @@ export type ActorPluginValidationResult = {
 };
 
 /**
- * Languages an operation-logic module can be scaffolded in.
- * Aligns with the `fsmLanguage` enum on invoke objects and the actor folder
- * convention (`typescript/`, `python/`, `rust/`, `go/`).
+ * Languages an operation-logic module can be scaffolded in. Tied to the
+ * schema's `InvokeObject["fsmLanguage"]` enum minus `"llm"` — every
+ * `switch (lang)` over `OperationLang` in this file relies on exhaustiveness
+ * (no `default` case) for its declared return type, so `"llm"` must stay
+ * excluded until scaffolding actually supports it; widening to the full
+ * schema enum would make those switches fail to compile (a real signal, not
+ * a false alarm, for whoever adds `"llm"` support later — they'd need to add
+ * a case everywhere this type is switched on). `fsmLanguage` is an optional
+ * schema field, so the indexed-access type also carries `undefined` —
+ * `NonNullable` strips that before `Exclude` removes `"llm"`. Still
+ * schema-derived for the other four: renaming one of
+ * `typescript`/`python`/`rust`/`go` in the schema follows automatically here.
  */
-export type OperationLang = "typescript" | "python" | "rust" | "go";
+export type OperationLang = Exclude<
+  NonNullable<InvokeObject["fsmLanguage"]>,
+  "llm"
+>;
 
 /** The kind of operation logic being scaffolded. */
 export type OperationKind = "actions" | "guards" | "delays" | "actors";
@@ -115,15 +152,16 @@ export type WrittenActor = {
  * already used: `fsmName` is the actor's own `src` (not a separate sub-FSM
  * reference), `fsmVersion` is the parent FSM's version. `fsmType` is
  * `"internalAsyncOperation"` for actors scaffolded from an invoke object (the
- * only kind `toRegisteredActor` builds) or `"standaloneAsyncOp"` for the
- * standalone, non-FSM-scoped pool `create-async-logic.ts` writes into —
- * downstream, `fsmType` is an opaque string (used only inside `actorKey()`'s
- * composite key), so this is safe to extend.
+ * only kind `toRegisteredActor` builds) or `"sharedAsyncOperation"` for the
+ * standalone, non-FSM-scoped pool `create-async-logic.ts` writes into (see
+ * that file's `SHARED_ASYNC_OP_FSM_TYPE`) — both are real `InvokeObject`
+ * `fsmType` values, tied directly to the schema below rather than
+ * hand-written, since neither actually needs a value outside that enum.
  */
 export type RegisteredActor = WrittenActor & {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: "internalAsyncOperation" | "standaloneAsyncOp";
+  fsmType: InvokeObject["fsmType"];
   fsmName: string;
   fsmVersion: string;
 };
@@ -177,24 +215,45 @@ export interface WriteWorkerSdkOptions {
  */
 export type FsmDraftAction = string | ActionObject;
 
-export type FsmDraftTransition = {
-  actions?: FsmDraftAction[];
-  eventType?: string;
-  delay?: string | number;
-  guard?: string;
-  source?: string;
-  target?: string[];
-};
+/**
+ * `Partial<TransitionObject>` minus the legacy `cond` field (dropped — see
+ * `TransitionObject`'s own doc comment: not emitted by this compiler) and
+ * with `actions` widened to `FsmDraftAction[]` (pre-normalization, may still
+ * contain bare action-name strings) instead of strict `ActionObject[]`.
+ */
+export type FsmDraftTransition =
+  & Partial<Omit<TransitionObject, "cond" | "actions">>
+  & { actions?: FsmDraftAction[] };
 
 export type FsmDraftInvoke = Partial<InvokeObject> & { src?: string };
 
+/**
+ * A flattened, all-optional, recursive merge of `FsmMachineJson` and every
+ * state-node variant (`AtomicStateNode`/`CompoundStateNode`/etc.) — the
+ * "anything XState's raw `.toJSON()` might contain, before we know which
+ * kind of node we're looking at" shape, so it isn't a 1:1 match for any
+ * single schema type the way `FsmDraftAction`/`FsmDraftTransition`/
+ * `FsmDraftInvoke` are. Those three *are* schema-derived though, and this
+ * type is built from them (`entry`/`exit`/`invoke`/`on`/`transitions`), so
+ * schema drift there still propagates here. `id`/`key`/`states` stay plain
+ * `string`/`Record` — schema-deriving them would gain nothing, since
+ * `BaseStateNode.id`/`.key` are themselves just `string`, and `states`
+ * recurses into this draft type, not the schema's compiled `StatesObject`.
+ * `type` is deliberately loosened past the schema's node-kind literal union
+ * (`"atomic" | "compound" | ...`) since a draft node's kind isn't validated
+ * yet. `initial` is the one nested shape that does map onto a single schema
+ * type, `InitialTransitionObject` — derived the same way as
+ * `FsmDraftTransition`.
+ */
 export type FsmDraftStateNode = {
   id?: string;
   key?: string;
   type?: string;
   entry?: FsmDraftAction[];
   exit?: FsmDraftAction[];
-  initial?: { actions?: FsmDraftAction[]; source?: string; target?: string[] };
+  initial?:
+    & Partial<Omit<InitialTransitionObject, "eventType" | "actions" | "target">>
+    & { actions?: FsmDraftAction[]; target?: string[] };
   on?: Record<string, FsmDraftTransition[]>;
   transitions?: FsmDraftTransition[];
   invoke?: FsmDraftInvoke[];
