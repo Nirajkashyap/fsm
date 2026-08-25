@@ -379,6 +379,7 @@
                   "order": 8,
                   "invoke": [
                     {
+                      "asyncOperationLanguage": "rust",
                       "src": "checkBureauRust",
                       "id": "equiGavinFetchActor",
                       "type": "xstate.invoke"
@@ -518,6 +519,7 @@
                   "order": 11,
                   "invoke": [
                     {
+                      "asyncOperationLanguage": "go",
                       "src": "CheckReportsTable",
                       "id": "gavUnionDBActor",
                       "type": "xstate.invoke"
@@ -618,6 +620,7 @@
                   "order": 13,
                   "invoke": [
                     {
+                      "asyncOperationLanguage": "python",
                       "src": "checkBureau",
                       "id": "gavUnionFetchActor",
                       "type": "xstate.invoke"

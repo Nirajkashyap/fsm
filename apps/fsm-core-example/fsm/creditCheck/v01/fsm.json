@@ -385,12 +385,12 @@
                   "order": 8,
                   "invoke": [
                     {
+                      "asyncOperationLanguage": "rust",
                       "src": "checkBureauRust",
                       "id": "equiGavinFetchActor",
                       "type": "xstate.invoke",
                       "asyncOperationType": "internalAsyncOperation",
-                      "asyncOperationVersion": "v01",
-                      "asyncOperationLanguage": "rust"
+                      "asyncOperationVersion": "v01"
                     }
                   ],
                   "tags": []
@@ -527,12 +527,12 @@
                   "order": 11,
                   "invoke": [
                     {
+                      "asyncOperationLanguage": "go",
                       "src": "CheckReportsTable",
                       "id": "gavUnionDBActor",
                       "type": "xstate.invoke",
                       "asyncOperationType": "internalAsyncOperation",
-                      "asyncOperationVersion": "v01",
-                      "asyncOperationLanguage": "go"
+                      "asyncOperationVersion": "v01"
                     }
                   ],
                   "tags": []
@@ -630,12 +630,12 @@
                   "order": 13,
                   "invoke": [
                     {
+                      "asyncOperationLanguage": "python",
                       "src": "checkBureau",
                       "id": "gavUnionFetchActor",
                       "type": "xstate.invoke",
                       "asyncOperationType": "internalAsyncOperation",
-                      "asyncOperationVersion": "v01",
-                      "asyncOperationLanguage": "python"
+                      "asyncOperationVersion": "v01"
                     }
                   ],
                   "tags": []
