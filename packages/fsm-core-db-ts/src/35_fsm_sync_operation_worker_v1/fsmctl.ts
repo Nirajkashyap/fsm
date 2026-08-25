@@ -289,20 +289,20 @@ export async function archiveEventFromFsmTypeWorker(
   to_be_removed_schedule_queue_msg_ids:
     | ArchiveWorkerArgs["to_be_removed_schedule_queue_msg_ids"]
     | null,
-  to_be_removed_promise_queue_msg_ids:
-    | ArchiveWorkerArgs["to_be_removed_promise_queue_msg_ids"]
+  to_be_removed_async_operation_queue_msg_ids:
+    | ArchiveWorkerArgs["to_be_removed_async_operation_queue_msg_ids"]
     | null,
   to_be_added_schedule_queue_data:
     | ArchiveWorkerArgs["to_be_added_schedule_queue_data"]
     | null,
-  to_be_added_promise_queue_data:
-    | ArchiveWorkerArgs["to_be_added_promise_queue_data"]
+  to_be_added_async_operation_queue_data:
+    | ArchiveWorkerArgs["to_be_added_async_operation_queue_data"]
     | null,
   total_schedule_queue_data:
     | ArchiveWorkerArgs["input_total_schedule_queue_data"]
     | null,
-  total_promise_queue_data:
-    | ArchiveWorkerArgs["input_total_promise_queue_data"]
+  total_async_operation_queue_data:
+    | ArchiveWorkerArgs["input_total_async_operation_queue_data"]
     | null,
   fsm_instance_data_save_fsm_status:
     ArchiveWorkerArgs["fsm_instance_data_save_fsm_status"],
@@ -340,11 +340,11 @@ export async function archiveEventFromFsmTypeWorker(
       remove_from_current_fsm_instance_queue_id,
       remove_current_queue_msg_id,
       toJsonbParam(to_be_removed_schedule_queue_msg_ids),
-      toJsonbParam(to_be_removed_promise_queue_msg_ids),
+      toJsonbParam(to_be_removed_async_operation_queue_msg_ids),
       toJsonbParam(to_be_added_schedule_queue_data),
-      toJsonbParam(to_be_added_promise_queue_data),
+      toJsonbParam(to_be_added_async_operation_queue_data),
       toJsonbParam(total_schedule_queue_data),
-      toJsonbParam(total_promise_queue_data),
+      toJsonbParam(total_async_operation_queue_data),
       toJsonbParam(fsm_instance_data_save_fsm_status),
       toJsonbParam(fsm_instance_data_save_fsm_state),
       toJsonbParam(fsm_instance_data_save_fsm_context),

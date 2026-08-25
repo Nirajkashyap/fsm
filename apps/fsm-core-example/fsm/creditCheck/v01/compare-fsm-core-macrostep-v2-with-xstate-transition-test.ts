@@ -72,7 +72,7 @@ Deno.test({
         id: "test-instance-id",
         parent: null,
         started_at: "2025-01-02T03:04:05.000Z",
-        total_promise_queue_data: null,
+        total_async_operation_queue_data: null,
         total_schedule_queue_data: null,
       };
       const msg = {
@@ -160,7 +160,7 @@ Deno.test({
         id: "test-instance-id",
         parent: null,
         started_at: "2025-01-02T03:04:05.000Z",
-        total_promise_queue_data: null,
+        total_async_operation_queue_data: null,
         total_schedule_queue_data: null,
       };
 
@@ -271,7 +271,7 @@ Deno.test({
         id: "test-instance-id",
         parent: null,
         started_at: "2025-01-02T03:04:05.000Z",
-        total_promise_queue_data: null,
+        total_async_operation_queue_data: null,
         total_schedule_queue_data: null,
       };
 

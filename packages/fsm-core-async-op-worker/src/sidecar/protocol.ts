@@ -29,7 +29,7 @@ export interface WireEnvelope {
 }
 
 // One actor entrypoint a worker process serves, e.g. a single Rust function
-// behind an FSM promise-actor. Mirrors ActorPluginValidationResult's identity
+// behind an FSM async-operation-actor. Mirrors ActorPluginValidationResult's identity
 // fields (see @pgfsm/compiler's util.ts) — `actorKey()` is what the gateway
 // routes on. `asyncOperationLanguage` is part of the key (not just a display
 // field) because the identity fields alone aren't guaranteed unique across

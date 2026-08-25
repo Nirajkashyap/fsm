@@ -123,6 +123,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      fsm_async_operation_queue_event_logs: {
+        Row: {
+          async_operation_fn_name: string | null;
+          async_operation_queue_event_log_id: string;
+          async_operation_queue_msg_id: number | null;
+          async_operation_queue_name: string | null;
+          async_operation_queue_type: string | null;
+          async_operation_queue_version: string | null;
+          error_message: string | null;
+          event_data: Json | null;
+          event_delay: number | null;
+          event_name: string | null;
+          event_output: Json | null;
+          event_status: string | null;
+          execution_duration: number | null;
+          execution_finished_at: string | null;
+          execution_started_at: string | null;
+          send_to_parent_queue_id: string | null;
+          send_to_parent_queue_id_event_name: string | null;
+        };
+        Insert: {
+          async_operation_fn_name?: string | null;
+          async_operation_queue_event_log_id?: string;
+          async_operation_queue_msg_id?: number | null;
+          async_operation_queue_name?: string | null;
+          async_operation_queue_type?: string | null;
+          async_operation_queue_version?: string | null;
+          error_message?: string | null;
+          event_data?: Json | null;
+          event_delay?: number | null;
+          event_name?: string | null;
+          event_output?: Json | null;
+          event_status?: string | null;
+          execution_duration?: number | null;
+          execution_finished_at?: string | null;
+          execution_started_at?: string | null;
+          send_to_parent_queue_id?: string | null;
+          send_to_parent_queue_id_event_name?: string | null;
+        };
+        Update: {
+          async_operation_fn_name?: string | null;
+          async_operation_queue_event_log_id?: string;
+          async_operation_queue_msg_id?: number | null;
+          async_operation_queue_name?: string | null;
+          async_operation_queue_type?: string | null;
+          async_operation_queue_version?: string | null;
+          error_message?: string | null;
+          event_data?: Json | null;
+          event_delay?: number | null;
+          event_name?: string | null;
+          event_output?: Json | null;
+          event_status?: string | null;
+          execution_duration?: number | null;
+          execution_finished_at?: string | null;
+          execution_started_at?: string | null;
+          send_to_parent_queue_id?: string | null;
+          send_to_parent_queue_id_event_name?: string | null;
+        };
+        Relationships: [];
+      };
       fsm_dependencies: {
         Row: {
           child_fsm_name: string;
@@ -160,7 +220,7 @@ export type Database = {
           id: string;
           parent: string | null;
           started_at: string | null;
-          total_promise_queue_data: Json | null;
+          total_async_operation_queue_data: Json | null;
           total_schedule_queue_data: Json | null;
           worker_lock_expires_at: string | null;
           worker_locked: boolean | null;
@@ -182,7 +242,7 @@ export type Database = {
           id?: string;
           parent?: string | null;
           started_at?: string | null;
-          total_promise_queue_data?: Json | null;
+          total_async_operation_queue_data?: Json | null;
           total_schedule_queue_data?: Json | null;
           worker_lock_expires_at?: string | null;
           worker_locked?: boolean | null;
@@ -204,7 +264,7 @@ export type Database = {
           id?: string;
           parent?: string | null;
           started_at?: string | null;
-          total_promise_queue_data?: Json | null;
+          total_async_operation_queue_data?: Json | null;
           total_schedule_queue_data?: Json | null;
           worker_lock_expires_at?: string | null;
           worker_locked?: boolean | null;
@@ -419,66 +479,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      fsm_promise_queue_event_logs: {
-        Row: {
-          error_message: string | null;
-          event_data: Json | null;
-          event_delay: number | null;
-          event_name: string | null;
-          event_output: Json | null;
-          event_status: string | null;
-          execution_duration: number | null;
-          execution_finished_at: string | null;
-          execution_started_at: string | null;
-          promise_fn_name: string | null;
-          promise_queue_event_log_id: string;
-          promise_queue_msg_id: number | null;
-          promise_queue_name: string | null;
-          promise_queue_type: string | null;
-          promise_queue_version: string | null;
-          send_to_parent_queue_id: string | null;
-          send_to_parent_queue_id_event_name: string | null;
-        };
-        Insert: {
-          error_message?: string | null;
-          event_data?: Json | null;
-          event_delay?: number | null;
-          event_name?: string | null;
-          event_output?: Json | null;
-          event_status?: string | null;
-          execution_duration?: number | null;
-          execution_finished_at?: string | null;
-          execution_started_at?: string | null;
-          promise_fn_name?: string | null;
-          promise_queue_event_log_id?: string;
-          promise_queue_msg_id?: number | null;
-          promise_queue_name?: string | null;
-          promise_queue_type?: string | null;
-          promise_queue_version?: string | null;
-          send_to_parent_queue_id?: string | null;
-          send_to_parent_queue_id_event_name?: string | null;
-        };
-        Update: {
-          error_message?: string | null;
-          event_data?: Json | null;
-          event_delay?: number | null;
-          event_name?: string | null;
-          event_output?: Json | null;
-          event_status?: string | null;
-          execution_duration?: number | null;
-          execution_finished_at?: string | null;
-          execution_started_at?: string | null;
-          promise_fn_name?: string | null;
-          promise_queue_event_log_id?: string;
-          promise_queue_msg_id?: number | null;
-          promise_queue_name?: string | null;
-          promise_queue_type?: string | null;
-          promise_queue_version?: string | null;
-          send_to_parent_queue_id?: string | null;
-          send_to_parent_queue_id_event_name?: string | null;
-        };
-        Relationships: [];
-      };
       fsm_states: {
         Row: {
           computed_state_id_ltree: unknown;
@@ -634,8 +634,12 @@ export type Database = {
       api_system_event_name: { Args: never; Returns: string };
       api_system_queue_type: { Args: never; Returns: string };
       api_system_queue_uuid: { Args: never; Returns: string };
-      archive_event_from_fsm_promise_type_worker_v2: {
+      archive_event_from_fsm_async_operation_type_worker_v2: {
         Args: {
+          input_async_operation_queue_msg_id: number;
+          input_async_operation_queue_name: string;
+          input_async_operation_queue_type: string;
+          input_async_operation_queue_version: string;
           input_error_message: string;
           input_event_action_type: string;
           input_event_data: Json;
@@ -646,10 +650,6 @@ export type Database = {
           input_execution_duration: number;
           input_execution_finished_at: string;
           input_execution_started_at: string;
-          input_promise_queue_msg_id: number;
-          input_promise_queue_name: string;
-          input_promise_queue_type: string;
-          input_promise_queue_version: string;
           input_send_to_parent_queue_id: string;
           input_send_to_parent_queue_id_event_name: string;
         };
@@ -661,16 +661,16 @@ export type Database = {
           fsm_instance_data_save_fsm_state: Json;
           fsm_instance_data_save_fsm_status: Json;
           fsm_instance_data_save_fsm_xstate_state: Json;
-          input_total_promise_queue_data: Json;
+          input_total_async_operation_queue_data: Json;
           input_total_schedule_queue_data: Json;
           remove_current_queue_msg_id: number;
           remove_from_current_fsm_instance_queue_id: string;
           send_to_parent_queue_id: string;
           send_to_parent_queue_id_event_name: string;
           send_to_parent_queue_type: string;
-          to_be_added_promise_queue_data: Json;
+          to_be_added_async_operation_queue_data: Json;
           to_be_added_schedule_queue_data: Json;
-          to_be_removed_promise_queue_msg_ids: Json;
+          to_be_removed_async_operation_queue_msg_ids: Json;
           to_be_removed_schedule_queue_msg_ids: Json;
         };
         Returns: Json;
@@ -680,8 +680,11 @@ export type Database = {
         Returns: boolean;
       };
       build_nested_json_recursive: { Args: { paths: string[] }; Returns: Json };
-      cancel_event_for_fsm_promise_type_worker_v2: {
-        Args: { promise_type_worker_name: string; queue_msg_id: number };
+      cancel_event_for_fsm_async_operation_type_worker_v2: {
+        Args: {
+          async_operation_type_worker_name: string;
+          queue_msg_id: number;
+        };
         Returns: Json;
       };
       check_registry_and_working_for_async_actors_for_fsm_instance_an: {
@@ -700,7 +703,7 @@ export type Database = {
         };
         Returns: Json;
       };
-      claim_pending_promise_events_for_workers_v2: {
+      claim_pending_async_operation_events_for_workers_v2: {
         Args: { input_workers: Json };
         Returns: Json[];
       };
@@ -711,6 +714,17 @@ export type Database = {
       claim_scheduled_for_fsmlet: {
         Args: { input_fsmlet_id: string };
         Returns: Json;
+      };
+      compute_async_operation_queue_name_v2: {
+        Args: {
+          input_async_operation_language: string;
+          input_async_operation_name: string;
+          input_async_operation_type: string;
+          input_async_operation_version: string;
+          input_parent_fsm_name: string;
+          input_parent_fsm_version: string;
+        };
+        Returns: string;
       };
       compute_child_exit_set_v1: {
         Args: { state_node_set: unknown[]; transition_domain_lca: unknown };
@@ -776,16 +790,22 @@ export type Database = {
         };
         Returns: string[];
       };
-      compute_promise_queue_name_v2: {
+      create_async_op_queue_and_send_event_from_fsm_instance_id_v2: {
         Args: {
-          input_async_operation_language: string;
-          input_async_operation_name: string;
-          input_async_operation_type: string;
-          input_async_operation_version: string;
-          input_parent_fsm_name: string;
-          input_parent_fsm_version: string;
+          action_type: string;
+          event_input: Json;
+          event_name: string;
+          from_source_fsm_instance_id: string;
+          fsmlanguage: string;
+          fsmname: string;
+          fsmtype: string;
+          fsmversion: string;
+          id: string;
+          parentfsmname: string;
+          parentfsmversion: string;
+          src: string;
         };
-        Returns: string;
+        Returns: Json;
       };
       create_async_operation_instance_and_notify_async_operation_sche: {
         Args: {
@@ -824,23 +844,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      create_promise_queue_and_send_event_from_fsm_instance_id_v2: {
-        Args: {
-          action_type: string;
-          event_input: Json;
-          event_name: string;
-          from_source_fsm_instance_id: string;
-          fsmlanguage: string;
-          fsmname: string;
-          fsmtype: string;
-          fsmversion: string;
-          id: string;
-          parentfsmname: string;
-          parentfsmversion: string;
-          src: string;
-        };
-        Returns: Json;
-      };
       enqueue_fsm_dispatch_v1: {
         Args: {
           input_dispatch_type?: string;
@@ -859,7 +862,7 @@ export type Database = {
         };
         Returns: undefined;
       };
-      ensure_promise_queue_for_worker_v2: {
+      ensure_async_operation_queue_for_worker_v2: {
         Args: {
           input_async_operation_language: string;
           input_async_operation_name: string;
@@ -1314,6 +1317,28 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      send_event_to_async_operation_queue_with_event_logs_v2: {
+        Args: {
+          input_async_operation_fn_name: string;
+          input_async_operation_queue_name: string;
+          input_async_operation_queue_type: string;
+          input_async_operation_queue_version: string;
+          input_error_message?: string;
+          input_event_action_type: string;
+          input_event_data: Json;
+          input_event_delay?: number;
+          input_event_name: string;
+          input_event_output?: Json;
+          input_event_status?: string;
+          input_execution_duration?: number;
+          input_execution_finished_at?: string;
+          input_execution_started_at?: string;
+          input_send_to_parent_queue_id: string;
+          input_send_to_parent_queue_id_event_name: string;
+          input_send_to_parent_queue_type: string;
+        };
+        Returns: Json;
+      };
       send_event_to_fsm_queue_with_event_logs_v2: {
         Args: {
           input_error_message?: string;
@@ -1329,28 +1354,6 @@ export type Database = {
           input_fsm_instance_id: string;
           input_fsm_instance_id_fsm_type: string;
           input_fsm_instance_id_fsm_version: string;
-          input_send_to_parent_queue_id: string;
-          input_send_to_parent_queue_id_event_name: string;
-          input_send_to_parent_queue_type: string;
-        };
-        Returns: Json;
-      };
-      send_event_to_promise_queue_with_event_logs_v2: {
-        Args: {
-          input_error_message?: string;
-          input_event_action_type: string;
-          input_event_data: Json;
-          input_event_delay?: number;
-          input_event_name: string;
-          input_event_output?: Json;
-          input_event_status?: string;
-          input_execution_duration?: number;
-          input_execution_finished_at?: string;
-          input_execution_started_at?: string;
-          input_promise_fn_name: string;
-          input_promise_queue_name: string;
-          input_promise_queue_type: string;
-          input_promise_queue_version: string;
           input_send_to_parent_queue_id: string;
           input_send_to_parent_queue_id_event_name: string;
           input_send_to_parent_queue_type: string;

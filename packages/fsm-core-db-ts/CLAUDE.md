@@ -28,10 +28,11 @@ protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 - `25_async_operation_worker_v1/asyncOperationWorkerlet.ts` —
   `async_operation_workerlet` table ops for the async-operation node-agent
 - `30_async_operation_worker_v2/asyncOperationWorker.ts` —
-  `claimPendingPromiseEventsForWorkers` (PGMQ promise-queue polling) and
-  `ensurePromiseQueueForWorker` (PGMQ promise-queue creation)
+  `claimPendingAsyncOperationEventsForWorkers` (PGMQ async-operation-queue
+  polling) and `ensureAsyncOperationQueueForWorker` (PGMQ async-operation-queue
+  creation)
 - `30_async_operation_worker_v2/asyncOperationCtl.ts` —
-  `archiveEventFromFsmPromiseTypeWorker`
+  `archiveEventFromFsmAsyncOperationTypeWorker`
 - `pg-utils.ts` — small pg param helpers (e.g. `toJsonbParam`)
 - `const.ts` — schema/table name constants (`FSM_SCHEMA`,
   `FSM_SCHEMA_FN_VERSION`, `QUEUE_SCHEMA`, …)

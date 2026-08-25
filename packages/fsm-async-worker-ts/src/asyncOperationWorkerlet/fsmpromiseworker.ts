@@ -4,7 +4,7 @@ import type { DBDeps } from "@pgfsm/db";
 const logger = getLogger(["@pgfsm/worker", "internalAsyncOperation"]);
 
 import {
-  archiveEventFromFsmPromiseTypeWorker,
+  archiveEventFromFsmAsyncOperationTypeWorker,
   pgmqQueueExists,
   readMessage,
 } from "@pgfsm/db";
@@ -83,25 +83,26 @@ export async function startFSMPromiseWorker(
           );
 
           if (archiveData) {
-            const archiveResult = await archiveEventFromFsmPromiseTypeWorker(
-              deps,
-              archiveData.promise_queue_name,
-              archiveData.promise_queue_type,
-              archiveData.promise_queue_version,
-              archiveData.msg_id!,
-              archiveData.event_name,
-              archiveData.event_action_type,
-              archiveData.event_data,
-              archiveData.event_delay,
-              archiveData.send_to_parent_queue_id,
-              archiveData.send_to_parent_queue_id_msg_id,
-              archiveData.execution_started_at,
-              archiveData.execution_duration,
-              archiveData.execution_finished_at,
-              archiveData.event_status,
-              archiveData.event_output,
-              archiveData.error_message,
-            );
+            const archiveResult =
+              await archiveEventFromFsmAsyncOperationTypeWorker(
+                deps,
+                archiveData.promise_queue_name,
+                archiveData.promise_queue_type,
+                archiveData.promise_queue_version,
+                archiveData.msg_id!,
+                archiveData.event_name,
+                archiveData.event_action_type,
+                archiveData.event_data,
+                archiveData.event_delay,
+                archiveData.send_to_parent_queue_id,
+                archiveData.send_to_parent_queue_id_msg_id,
+                archiveData.execution_started_at,
+                archiveData.execution_duration,
+                archiveData.execution_finished_at,
+                archiveData.event_status,
+                archiveData.event_output,
+                archiveData.error_message,
+              );
             logger.info("Message archived with result: {result}", {
               result: archiveResult,
             });

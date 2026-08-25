@@ -74,18 +74,18 @@ package's own `CLAUDE.md` for the exact commands.
 5. **`packages/fsm-core-async-op-worker/` is usually _not_ in this chain.** Its
    `fsmType`/`fsmLanguage`-carrying types (`RegisteredActor` in both
    `sidecar/protocol.ts` and `sidecar/gateway.ts`, `InvokeBody`,
-   `ActivityInvokeInput`, `ClaimedPromiseEvent`, …) are deliberately `string`,
-   mirroring wire formats — a hand-rolled JSON socket protocol and a `.proto`
-   file (checked directly: `fsm_type`/`fsm_language` are plain `string` in
-   `sidecar_gateway.proto`, no enum) — that cross a Python/Rust/Go language
+   `ActivityInvokeInput`, `ClaimedAsyncOperationEvent`, …) are deliberately
+   `string`, mirroring wire formats — a hand-rolled JSON socket protocol and a
+   `.proto` file (checked directly: `fsm_type`/`fsm_language` are plain `string`
+   in `sidecar_gateway.proto`, no enum) — that cross a Python/Rust/Go language
    boundary before this package ever sees the value. Don't reflexively tie them
    to `InvokeObject`/DB-generated types; that constraint wouldn't actually be
    enforced by the wire protocol or the non-TS workers. Only `fsm-core-db-ts`'s
-   `PromiseWorkerIdentity` (itself hand-written `string`, for the same reason —
-   it flows through an opaque `jsonb` PG argument with no per-field generated
-   type) is worth re-checking, and only if the DB change touches
-   `claim_pending_promise_events_for_workers_v2` or
-   `ensure_promise_queue_for_worker_v2` specifically.
+   `AsyncOperationWorkerIdentity` (itself hand-written `string`, for the same
+   reason — it flows through an opaque `jsonb` PG argument with no per-field
+   generated type) is worth re-checking, and only if the DB change touches
+   `claim_pending_async_operation_events_for_workers_v2` or
+   `ensure_async_operation_queue_for_worker_v2` specifically.
 
 ## General principle
 

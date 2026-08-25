@@ -14,7 +14,7 @@ select col_type_is('fsm_core', 'fsm_instance', 'fsm_instance_output', 'jsonb', '
 select col_type_is('fsm_core', 'fsm_instance', 'fsm_instance_error', 'jsonb', 'fsm_instance_error is jsonb');
 select col_type_is('fsm_core', 'fsm_instance', 'fsm_instance_xstate_state', 'jsonb', 'fsm_instance_xstate_state is jsonb');
 select has_column('fsm_core', 'fsm_instance', 'total_schedule_queue_data', 'has total_schedule_queue_data column');
-select has_column('fsm_core', 'fsm_instance', 'total_promise_queue_data', 'has total_promise_queue_data column');
+select has_column('fsm_core', 'fsm_instance', 'total_async_operation_queue_data', 'has total_async_operation_queue_data column');
 select col_type_is('fsm_core', 'fsm_instance', 'parent', 'uuid', 'parent is uuid');
 select has_column('fsm_core', 'fsm_instance', 'childrens', 'has childrens column');
 select has_column('fsm_core', 'fsm_instance', 'started_at', 'has started_at column');

@@ -6,21 +6,21 @@ import { toJsonbParam } from "../pg-utils.ts";
 
 const logger = getLogger(["@pgfsm/db", "async-operation-worker"]);
 
-const CLAIM_PENDING_PROMISE_EVENTS_FOR_WORKERS_FN =
-  `${FSM_SCHEMA}.claim_pending_promise_events_for_workers_${FSM_SCHEMA_FN_VERSION}`;
-const ENSURE_PROMISE_QUEUE_FOR_WORKER_FN =
-  `${FSM_SCHEMA}.ensure_promise_queue_for_worker_${FSM_SCHEMA_FN_VERSION}`;
-const COMPUTE_PROMISE_QUEUE_NAME_FN =
-  `${FSM_SCHEMA}.compute_promise_queue_name_${FSM_SCHEMA_FN_VERSION}`;
+const CLAIM_PENDING_ASYNC_OPERATION_EVENTS_FOR_WORKERS_FN =
+  `${FSM_SCHEMA}.claim_pending_async_operation_events_for_workers_${FSM_SCHEMA_FN_VERSION}`;
+const ENSURE_ASYNC_OPERATION_QUEUE_FOR_WORKER_FN =
+  `${FSM_SCHEMA}.ensure_async_operation_queue_for_worker_${FSM_SCHEMA_FN_VERSION}`;
+const COMPUTE_ASYNC_OPERATION_QUEUE_NAME_FN =
+  `${FSM_SCHEMA}.compute_async_operation_queue_name_${FSM_SCHEMA_FN_VERSION}`;
 
 /**
- * A registered promise-actor identity, as sent to
- * `claimPendingPromiseEventsForWorkers` — mirrors
+ * A registered async-operation-actor identity, as sent to
+ * `claimPendingAsyncOperationEventsForWorkers` — mirrors
  * `@pgfsm/async-worker`'s `SidecarGateway`-registered actor shape
  * minus `handler` (an in-process function reference, not serializable to
  * Postgres).
  */
-export interface PromiseWorkerIdentity {
+export interface AsyncOperationWorkerIdentity {
   parentFsmName: string;
   parentFsmVersion: string;
   asyncOperationType: string;
@@ -30,21 +30,21 @@ export interface PromiseWorkerIdentity {
 }
 
 /**
- * Thin wrapper around `claim_pending_promise_events_for_workers_v2()` — takes
+ * Thin wrapper around `claim_pending_async_operation_events_for_workers_v2()` — takes
  * the caller's currently-registered worker identities (no `handler`) and
- * returns pending promise-queue work matching them: for each identity, reads
+ * returns pending async-operation-queue work matching them: for each identity, reads
  * up to one message (if any) from that identity's PGMQ queue, skipping
  * identities with no queue yet. See that function's own comment (and
  * `packages/fsm-core-async-op-worker/docs/guides/CLI-USAGE.md`'s "PGMQ
  * message payload shape" section) for the row shape returned.
  */
-export async function claimPendingPromiseEventsForWorkers(
+export async function claimPendingAsyncOperationEventsForWorkers(
   deps: DBDeps,
-  workers: PromiseWorkerIdentity[],
+  workers: AsyncOperationWorkerIdentity[],
 ): Promise<Json[]> {
   try {
     const text =
-      `SELECT * FROM ${CLAIM_PENDING_PROMISE_EVENTS_FOR_WORKERS_FN}($1::jsonb);`;
+      `SELECT * FROM ${CLAIM_PENDING_ASYNC_OPERATION_EVENTS_FOR_WORKERS_FN}($1::jsonb);`;
     const values = [
       toJsonbParam(
         workers.map((w) => ({
@@ -58,29 +58,35 @@ export async function claimPendingPromiseEventsForWorkers(
       ),
     ];
     const res = await deps.db.query<{
-      claim_pending_promise_events_for_workers_v2: Json;
+      claim_pending_async_operation_events_for_workers_v2: Json;
     }>(text, values);
     return res.rows.map((row) =>
-      row.claim_pending_promise_events_for_workers_v2
+      row.claim_pending_async_operation_events_for_workers_v2
     );
   } catch (err) {
-    logger.error("Error in claimPendingPromiseEventsForWorkers: {error}", {
-      error: err,
-    });
-    throw new Error("Failed to claim pending promise events for workers", {
-      cause: err,
-    });
+    logger.error(
+      "Error in claimPendingAsyncOperationEventsForWorkers: {error}",
+      {
+        error: err,
+      },
+    );
+    throw new Error(
+      "Failed to claim pending async-operation events for workers",
+      {
+        cause: err,
+      },
+    );
   }
 }
 
-export interface EnsurePromiseQueueForWorkerResult {
+export interface EnsureAsyncOperationQueueForWorkerResult {
   queueName: string;
   alreadyExisted: boolean;
 }
 
 /**
- * Thin wrapper around `ensure_promise_queue_for_worker_v2()` -- ensures a
- * PGMQ queue exists for one promise-actor identity. asyncOperationType is
+ * Thin wrapper around `ensure_async_operation_queue_for_worker_v2()` -- ensures a
+ * PGMQ queue exists for one async-operation-actor identity. asyncOperationType is
  * always shortened to its first character; when asyncOperationType is
  * exactly `"internalAsyncOperation"`, asyncOperationVersion is dropped
  * entirely and asyncOperationLanguage is also shortened to its first
@@ -104,13 +110,13 @@ export interface EnsurePromiseQueueForWorkerResult {
  * carrying full asyncOperationVersion + asyncOperationLanguage) remains more
  * exposed to this limit.
  */
-export async function ensurePromiseQueueForWorker(
+export async function ensureAsyncOperationQueueForWorker(
   deps: DBDeps,
-  identity: PromiseWorkerIdentity,
-): Promise<EnsurePromiseQueueForWorkerResult> {
+  identity: AsyncOperationWorkerIdentity,
+): Promise<EnsureAsyncOperationQueueForWorkerResult> {
   try {
     const text =
-      `SELECT * FROM ${ENSURE_PROMISE_QUEUE_FOR_WORKER_FN}($1::text, $2::text, $3::text, $4::text, $5::text, $6::text) AS result;`;
+      `SELECT * FROM ${ENSURE_ASYNC_OPERATION_QUEUE_FOR_WORKER_FN}($1::text, $2::text, $3::text, $4::text, $5::text, $6::text) AS result;`;
     const values = [
       identity.parentFsmName,
       identity.parentFsmVersion,
@@ -124,39 +130,41 @@ export async function ensurePromiseQueueForWorker(
     >(text, values);
     const result = res.rows?.[0]?.result;
     if (!result) {
-      throw new Error("ensure_promise_queue_for_worker_v2 returned no rows");
+      throw new Error(
+        "ensure_async_operation_queue_for_worker_v2 returned no rows",
+      );
     }
     return {
       queueName: result.queue_name,
       alreadyExisted: result.already_existed,
     };
   } catch (err) {
-    logger.error("Error in ensurePromiseQueueForWorker: {error}", {
+    logger.error("Error in ensureAsyncOperationQueueForWorker: {error}", {
       error: err,
     });
-    throw new Error("Failed to ensure promise queue for worker", {
+    throw new Error("Failed to ensure async-operation queue for worker", {
       cause: err,
     });
   }
 }
 
 /**
- * Thin wrapper around `compute_promise_queue_name_v2()` -- computes the PGMQ
- * queue name for one promise-actor identity, without creating or checking
- * the queue (see `ensurePromiseQueueForWorker` for that). Callers that need
- * to derive a promise-actor's queue name -- e.g. `fsm-async-worker-ts`'s
+ * Thin wrapper around `compute_async_operation_queue_name_v2()` -- computes the PGMQ
+ * queue name for one async-operation-actor identity, without creating or checking
+ * the queue (see `ensureAsyncOperationQueueForWorker` for that). Callers that need
+ * to derive an async-operation-actor's queue name -- e.g. `fsm-async-worker-ts`'s
  * `asyncOperationWorkerlet`, matching the same queue
- * `create_promise_queue_and_send_event_from_fsm_instance_id_v2` (the fsmlet)
+ * `create_async_op_queue_and_send_event_from_fsm_instance_id_v2` (the fsmlet)
  * writes to -- should call this instead of re-deriving the naming rule
  * themselves, which is what let it drift out of sync before.
  */
-export async function computePromiseQueueName(
+export async function computeAsyncOperationQueueName(
   deps: DBDeps,
-  identity: PromiseWorkerIdentity,
+  identity: AsyncOperationWorkerIdentity,
 ): Promise<string> {
   try {
     const text =
-      `SELECT ${COMPUTE_PROMISE_QUEUE_NAME_FN}($1::text, $2::text, $3::text, $4::text, $5::text, $6::text) AS queue_name;`;
+      `SELECT ${COMPUTE_ASYNC_OPERATION_QUEUE_NAME_FN}($1::text, $2::text, $3::text, $4::text, $5::text, $6::text) AS queue_name;`;
     const values = [
       identity.parentFsmName,
       identity.parentFsmVersion,
@@ -168,11 +176,15 @@ export async function computePromiseQueueName(
     const res = await deps.db.query<{ queue_name: string }>(text, values);
     const queueName = res.rows?.[0]?.queue_name;
     if (!queueName) {
-      throw new Error("compute_promise_queue_name_v2 returned no rows");
+      throw new Error("compute_async_operation_queue_name_v2 returned no rows");
     }
     return queueName;
   } catch (err) {
-    logger.error("Error in computePromiseQueueName: {error}", { error: err });
-    throw new Error("Failed to compute promise queue name", { cause: err });
+    logger.error("Error in computeAsyncOperationQueueName: {error}", {
+      error: err,
+    });
+    throw new Error("Failed to compute async-operation queue name", {
+      cause: err,
+    });
   }
 }

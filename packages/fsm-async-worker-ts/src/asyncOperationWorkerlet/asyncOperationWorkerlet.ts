@@ -7,7 +7,7 @@ import {
   asyncOperationWorkerletHeartbeat,
   asyncOperationWorkerletNotifyChannel,
   claimScheduledForAsyncOperationWorkerlet,
-  computePromiseQueueName,
+  computeAsyncOperationQueueName,
   deregisterAsyncOperationWorkerlet,
   loadAsyncOperation,
   registerAsyncOperationWorkerlet,
@@ -284,10 +284,10 @@ export async function startAsyncOperationWorkerlet(
       return;
     }
 
-    // Must match the queue create_promise_queue_and_send_event_from_fsm_instance_id_v2
+    // Must match the queue create_async_op_queue_and_send_event_from_fsm_instance_id_v2
     // (the fsmlet) actually writes to — both derive it from the same
-    // fsm_core.compute_promise_queue_name_v2, so they can't drift apart again.
-    const queueName = await computePromiseQueueName(deps, {
+    // fsm_core.compute_async_operation_queue_name_v2, so they can't drift apart again.
+    const queueName = await computeAsyncOperationQueueName(deps, {
       parentFsmName: entry.parent_fsm_name,
       parentFsmVersion: entry.parent_fsm_version,
       asyncOperationType: result.asyncOperationType,
