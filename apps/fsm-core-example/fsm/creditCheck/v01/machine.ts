@@ -91,6 +91,7 @@ export const machine = createMachine({
                       bureauName: "EquiGavin",
                       ssn: SSN,
                     }),
+                    asyncOperationLanguage: "rust",
                     src: "checkBureauRust",
                     id: "equiGavinFetchActor",
                     onDone: [
@@ -120,6 +121,7 @@ export const machine = createMachine({
                       bureauName: "GavUnion",
                       ssn: SSN,
                     }),
+                    asyncOperationLanguage: "go",
                     src: "CheckReportsTable",
                     id: "gavUnionDBActor",
                     onDone: [
@@ -149,6 +151,7 @@ export const machine = createMachine({
                       bureauName: "GavUnion",
                       ssn: SSN,
                     }),
+                    asyncOperationLanguage: "python",
                     src: "checkBureau",
                     id: "gavUnionFetchActor",
                     onDone: [
