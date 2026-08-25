@@ -27,7 +27,7 @@ export type FsmFolderConfig = {
 
 // Used in: fsmlet.ts, cli/fsmlet.ts, index.ts (direct import)
 export type FsmStartupConfig = {
-  sharedPromise?: FsmFolderConfig;
+  sharedAsyncOperation?: FsmFolderConfig;
   fsm?: FsmFolderConfig;
 };
 

@@ -5,9 +5,9 @@ import createApp from "../fsm-core-ts-hono-deno/lib/create-app.ts";
 const urlPathPrefix = "/fsm";
 
 const fsmRouter = await createApp(urlPathPrefix, {
-  sharedPromise: {
-    folderPath:
-      new URL("../fsm-core-example/sharedPromise", import.meta.url).pathname,
+  sharedAsyncOperation: {
+    folderPath: new URL("../fsm-core-example/shared-async-op", import.meta.url)
+      .pathname,
     skipDirs: [],
   },
   fsm: {
