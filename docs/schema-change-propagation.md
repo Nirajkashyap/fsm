@@ -17,6 +17,8 @@ package's own `CLAUDE.md` for the exact commands.
      `packages/database-src/generated/fsm-machine-schema.types.ts`
    - `npm run generate:pg-types` — rewrites
      `packages/database-src/supabase/schemas/10_ext_helper/fsm_core_enums.generated.sql`
+     and `.../fsm_core_json_schema.generated.sql` (the latter is
+     `fsm_core.fsm_json_schema()`, returning the whole schema as JSON)
 
    Never hand-edit either generated file.
 2. **Review `packages/fsm-compiler-ts/src/types/index.ts`.** Every hand-written

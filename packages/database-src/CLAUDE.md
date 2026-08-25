@@ -41,18 +41,26 @@ types from it via a relative path and re-exports them as
 `@pgfsm/db/database.types` for every other package.
 
 `generate:pg-types` (`scripts/generate-fsm-json-postgres-types.ts`) reads the
-same schema and writes `CREATE TYPE ... AS ENUM (...)` statements to
-`supabase/schemas/10_ext_helper/fsm_core_enums.generated.sql` — one per
-enum-valued schema field, **except** two deliberately skipped (documented in the
-script itself): the state-node `type` enum, which already exists as
-`fsm_core.fsm_state_type`
-(`supabase/schemas/11_ext_base/20241219134646_fsm_table.sql`), and
-`actionObject`'s `if`/`then` conditional enum, which isn't a real field
-constraint. The enum-to-type-name mapping is a small hand-picked list in the
-script, not derived automatically — good Postgres type names don't fall out of
-JSON-schema paths mechanically. These generated types aren't wired into any
-existing function signature yet (those still take `text`); that's a separate,
-larger follow-up.
+same schema and writes two generated files:
+
+- `supabase/schemas/10_ext_helper/fsm_core_enums.generated.sql` —
+  `CREATE TYPE ... AS ENUM (...)` statements, one per enum-valued schema field,
+  **except** two deliberately skipped (documented in the script itself): the
+  state-node `type` enum, which already exists as `fsm_core.fsm_state_type`
+  (`supabase/schemas/11_ext_base/20241219134646_fsm_table.sql`), and
+  `actionObject`'s `if`/`then` conditional enum, which isn't a real field
+  constraint. The enum-to-type-name mapping is a small hand-picked list in the
+  script, not derived automatically — good Postgres type names don't fall out of
+  JSON-schema paths mechanically. These generated types aren't wired into any
+  existing function signature yet (those still take `text`); that's a separate,
+  larger follow-up.
+- `supabase/schemas/10_ext_helper/fsm_core_json_schema.generated.sql` —
+  `fsm_core.fsm_json_schema()`, a SQL function returning the entire schema as
+  JSON, with the file's contents embedded as the literal (re-serialized via
+  `JSON.parse`/`JSON.stringify`, not the raw file bytes). Replaces a hand-copied
+  version that used to live directly in
+  `10_ext_helper/20241218134635_fsm_module_config.sql` and had drifted out of
+  sync with the real schema.
 
 PostgreSQL is the source of truth for the schema — see
 `packages/fsm-core-db-ts/CLAUDE.md` for the naming rules TypeScript wrappers
