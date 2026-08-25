@@ -7,17 +7,13 @@ const _checkerDir = new URL("./checkers", import.meta.url).pathname;
 let _rustCheckerBin: string | null | false = null;
 let _goCheckerBin: string | null | false = null;
 
-import {
-  operationFileExtension,
-  type OperationLang,
-} from "./operation-logic-scaffold.ts";
-import {
-  type ActorPluginValidationResult,
-  type ActorReference,
-  DenoCommand,
-  isVersionFolderName,
-  type WorkflowType,
-} from "./util.ts";
+import { operationFileExtension } from "./operation-logic-scaffold.ts";
+import { DenoCommand, isVersionFolderName } from "./util.ts";
+import type {
+  ActorPluginValidationResult,
+  ActorReference,
+  OperationLang,
+} from "./types/index.ts";
 
 /**
  * Every actor-language checker below shells out to that language's runtime
@@ -32,7 +28,6 @@ const DENO_COMMAND_UNAVAILABLE_MESSAGE =
 
 export async function validateAsyncOperationFromFolders(
   folderPath: string,
-  _workflowType: WorkflowType,
   skipDirs: string[] = [],
   _availableActors: ActorReference[] = [],
   runtimeLanguages: OperationLang[] = [],
@@ -352,7 +347,7 @@ export async function validateAsyncOperationFromFolders(
                       src: fnName,
                       method: fnName,
                       fsmName: fnName,
-                      fsmType: "promise",
+                      fsmType: "internalAsyncOperation",
                       fsmVersion: subEntry.name,
                       fsmLanguage: lang,
                       isVerified,
@@ -360,7 +355,7 @@ export async function validateAsyncOperationFromFolders(
                       parentFsmName: dirEntry.name,
                       parentFsmVersion: subEntry.name,
                       comment:
-                        "for fsmType promise fsmVersion will be its parentFsmVersion value",
+                        "for fsmType internalAsyncOperation fsmVersion will be its parentFsmVersion value",
                       parentFsmPath: fsmDirPath,
                       errorMessage,
                     });

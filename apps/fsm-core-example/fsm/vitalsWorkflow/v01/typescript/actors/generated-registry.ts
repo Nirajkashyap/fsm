@@ -18,7 +18,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "vitalsWorkflow",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "checkTirePressure",
     fsmVersion: "v01",
     fsmLanguage: "typescript",
@@ -27,7 +27,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "vitalsWorkflow",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "checkOilPressure",
     fsmVersion: "v01",
     fsmLanguage: "typescript",
@@ -36,7 +36,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "vitalsWorkflow",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "checkCoolantLevel",
     fsmVersion: "v01",
     fsmLanguage: "typescript",
@@ -45,7 +45,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "vitalsWorkflow",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "checkBattery",
     fsmVersion: "v01",
     fsmLanguage: "typescript",

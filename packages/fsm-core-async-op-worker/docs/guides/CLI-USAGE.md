@@ -3,8 +3,8 @@
 ## Core objective
 
 `fsm-core-async-op-worker` (`@pgfsm/async-worker`) is a **standalone alternative
-to `fsm-async-worker-ts`** for promise-type async FSM operations across polyglot
-(TypeScript/Python/Rust/Go) actors — not a passive service another
+to `fsm-async-worker-ts`** for async-operation-type async FSM operations across
+polyglot (TypeScript/Python/Rust/Go) actors — not a passive service another
 orchestrator's poll/claim/archive loop calls into.
 
 Concretely, it:
@@ -128,29 +128,30 @@ For every actor a worker registers, calls `ensurePromiseQueueForWorker`
 (`fsm_core.ensure_promise_queue_for_worker_v2` under the hood), which ensures a
 PGMQ queue exists — idempotent, safe on every re-registration, not just the
 first. `fsmType` is always shortened to its first character; when `fsmType` is
-exactly `"promise"`, `fsmVersion` is dropped entirely and `fsmLanguage` is also
-shortened to its first character:
+exactly `"internalAsyncOperation"`, `fsmVersion` is dropped entirely and
+`fsmLanguage` is also shortened to its first character:
 
 ```
-fsmType "promise":  <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
-otherwise:          <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
+fsmType "internalAsyncOperation":  <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
+otherwise:                         <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
 ```
 
 Unlike the older `sharedPromise_<fsmName>_<fsmVersion>` convention, this one is
-still unique per actor identity _including language_ in the `"promise"` case —
-two workers of different languages never share a queue, since no two of
-`typescript`/`python`/`rust`/`go` share a first letter (`t`/`p`/`r`/`g`) today.
+still unique per actor identity _including language_ in the
+`"internalAsyncOperation"` case — two workers of different languages never share
+a queue, since no two of `typescript`/`python`/`rust`/`go` share a first letter
+(`t`/`p`/`r`/`g`) today.
 
-> **PGMQ enforces a hard 48-character queue name limit.** The `"promise"`
-> shortening is enough for typical identities — verified:
-> `creditCheck_v01_p_checkReportsTable_t` is 37 characters, well under the
-> limit, for a real long-name example that _didn't_ fit before this change
-> (`creditCheck_v01_p_checkReportsTable_v01_typescript` was 50 characters). The
-> non-`"promise"` path (`sharedPromise` etc.) still carries the full
-> `fsmVersion` + `fsmLanguage` and remains more exposed to the limit — long
-> `parentFsmName`/`fsmName` values can still exceed it either way. The
-> queue-ensure call throws in that case (logged as an error), but registration
-> itself still succeeds; the actor just won't have a queue.
+> **PGMQ enforces a hard 48-character queue name limit.** The
+> `"internalAsyncOperation"` shortening is enough for typical identities —
+> verified: `creditCheck_v01_i_checkReportsTable_t` is 37 characters, well under
+> the limit, for a real long-name example that _didn't_ fit before this change
+> (`creditCheck_v01_i_checkReportsTable_v01_typescript` was 50 characters). The
+> non-`"internalAsyncOperation"` path (`sharedAsyncOperation` etc.) still
+> carries the full `fsmVersion` + `fsmLanguage` and remains more exposed to the
+> limit — long `parentFsmName`/`fsmName` values can still exceed it either way.
+> The queue-ensure call throws in that case (logged as an error), but
+> registration itself still succeeds; the actor just won't have a queue.
 
 ### Poll loop behavior (when enabled)
 
@@ -171,8 +172,9 @@ Every `--poll-interval-ms` (default 30s):
 
 #### PGMQ message payload shape
 
-The poll loop reads whatever `pgmq.send()` put in a promise actor's queue — same
-shape `fsm_core.send_event_to_promise_queue_with_event_logs_v2` already builds:
+The poll loop reads whatever `pgmq.send()` put in an internalAsyncOperation
+actor's queue — same shape
+`fsm_core.send_event_to_promise_queue_with_event_logs_v2` already builds:
 
 ```json
 {
@@ -181,9 +183,9 @@ shape `fsm_core.send_event_to_promise_queue_with_event_logs_v2` already builds:
     "eventPayload": { "ssn": "123-45-6789", "applicantName": "Jane Doe" },
     "actionType": "invoke"
   },
-  "queueId": "creditCheck_v01_p_checkBureau_t",
+  "queueId": "creditCheck_v01_i_checkBureau_t",
   "queueFnName": "checkBureau",
-  "queueType": "promise",
+  "queueType": "internalAsyncOperation",
   "queueVersion": "v01",
   "sendToParentQueueId": "d88bbbf6-1083-4ec8-8e53-a8add4f69e72",
   "sendToParentQueueType": "fsm",
@@ -224,7 +226,7 @@ FSM instance), once a queue exists (e.g. via `--ensure-queue-on-register` or a
 direct call to `ensure_promise_queue_for_worker_v2`):
 
 ```sql
-SELECT pgmq.send('creditCheck_v01_p_checkBureau_t', jsonb_build_object(
+SELECT pgmq.send('creditCheck_v01_i_checkBureau_t', jsonb_build_object(
     'eventData', jsonb_build_object(
         'eventType', 'checkBureau',
         'eventPayload', jsonb_build_object('ssn', '123-45-6789', 'applicantName', 'Jane Doe'),
@@ -237,10 +239,10 @@ SELECT pgmq.send('creditCheck_v01_p_checkBureau_t', jsonb_build_object(
 
 #### Sample: no real parent (API sentinel)
 
-A promise actor invoked with no real FSM instance waiting on the result (e.g.
-triggered directly via the API) uses `fsm_core.api_system_queue_uuid()`
-(`00000000-0000-0000-0000-000000000001`) as `sendToParentQueueId` instead of a
-real `fsm_instance` id:
+An internalAsyncOperation actor invoked with no real FSM instance waiting on the
+result (e.g. triggered directly via the API) uses
+`fsm_core.api_system_queue_uuid()` (`00000000-0000-0000-0000-000000000001`) as
+`sendToParentQueueId` instead of a real `fsm_instance` id:
 
 ```json
 {
@@ -249,9 +251,9 @@ real `fsm_instance` id:
     "eventPayload": { "ssn": "123-45-6789", "applicantName": "Jane Doe" },
     "actionType": "invoke"
   },
-  "queueId": "creditCheck_v01_p_checkBureau_t",
+  "queueId": "creditCheck_v01_i_checkBureau_t",
   "queueFnName": "checkBureau",
-  "queueType": "promise",
+  "queueType": "internalAsyncOperation",
   "queueVersion": "v01",
   "sendToParentQueueId": "00000000-0000-0000-0000-000000000001",
   "sendToParentQueueType": "fsm",
@@ -273,7 +275,7 @@ and the send is attempted as normal.
 To enqueue it directly for testing:
 
 ```sql
-SELECT pgmq.send('creditCheck_v01_p_checkBureau_t', jsonb_build_object(
+SELECT pgmq.send('creditCheck_v01_i_checkBureau_t', jsonb_build_object(
     'eventData', jsonb_build_object(
         'eventType', 'checkBureau',
         'eventPayload', jsonb_build_object('ssn', '123-45-6789', 'applicantName', 'Jane Doe'),
@@ -329,7 +331,7 @@ deno task gateway-ctl <list|invoke> [options]
 | `--target <target>`          | no           | `unix:/tmp/pgfsm-activity-gateway.sock` | gRPC target to connect to — must match the gateway's `--bind` |
 | `--parent-fsm-name <name>`   | `invoke`     | —                                       | Parent FSM name                                               |
 | `--parent-fsm-version <ver>` | `invoke`     | —                                       | Parent FSM version                                            |
-| `--fsm-type <type>`          | `invoke`     | —                                       | e.g. `promise`                                                |
+| `--fsm-type <type>`          | `invoke`     | —                                       | e.g. `internalAsyncOperation`                                 |
 | `--fsm-name <name>`          | `invoke`     | —                                       | Actor name                                                    |
 | `--fsm-version <ver>`        | `invoke`     | —                                       | Actor version                                                 |
 | `--fsm-language <lang>`      | `invoke`     | —                                       | `typescript` \| `python` \| `rust` \| `go`                    |
@@ -351,7 +353,7 @@ deno task gateway-ctl list
 # Invoke a specific actor
 deno task gateway-ctl invoke \
   --parent-fsm-name creditCheck --parent-fsm-version v01 \
-  --fsm-type promise --fsm-name checkBureau --fsm-version v01 \
+  --fsm-type internalAsyncOperation --fsm-name checkBureau --fsm-version v01 \
   --fsm-language typescript \
   --input '{"ssn":"123"}'
 

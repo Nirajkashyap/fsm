@@ -5,7 +5,7 @@ import {
   isValidDateFolderName,
   isVersionFolderName,
 } from "../src/util.ts";
-import type { FsmMachineJson } from "../src/generated/fsm-machine-schema.types.ts";
+import type { FsmMachineJson } from "../src/types/index.ts";
 
 // Minimal fixtures — only `states` matters for extractFsmPluginRefs, but the
 // full FsmMachineJson contract (matching what real callers always have) is
@@ -16,7 +16,7 @@ const baseFsm = { id: "root", key: "root", type: "compound" as const };
 const baseInvoke = {
   type: "xstate.invoke",
   id: "0.idle",
-  fsmType: "promise" as const,
+  fsmType: "internalAsyncOperation" as const,
   fsmVersion: "v01",
 };
 const baseState = { id: "root.idle", key: "idle", type: "atomic" as const };

@@ -21,26 +21,26 @@ END IF;
 
 ## How queue names are built in fsm_core
 
-| FSM type          | Queue name pattern                             | Example                                                        |
-| ----------------- | ---------------------------------------------- | -------------------------------------------------------------- |
-| `worker` instance | `{fsm_instance_id}` (UUID)                     | `550e8400-e29b-41d4-a716-446655440000` — 36 chars, always safe |
-| `promise`         | `{parentFsmName}_{parentFsmVersion}_{fsmName}` | `creditCheck_v01_verifyCredentials`                            |
-| `sharedPromise`   | `sharedPromise_{fsmName}_{fsmVersion}`         | `sharedPromise_verifyCredentials_v01`                          |
+| FSM type                 | Queue name pattern                             | Example                                                        |
+| ------------------------ | ---------------------------------------------- | -------------------------------------------------------------- |
+| `worker` instance        | `{fsm_instance_id}` (UUID)                     | `550e8400-e29b-41d4-a716-446655440000` — 36 chars, always safe |
+| `internalAsyncOperation` | `{parentFsmName}_{parentFsmVersion}_{fsmName}` | `creditCheck_v01_verifyCredentials`                            |
+| `sharedAsyncOperation`   | `sharedAsyncOperation_{fsmName}_{fsmVersion}`  | `sharedAsyncOperation_verifyCredentials_v01`                   |
 
 Source:
 `supabase/schemas/20250219134852_archive_from_fsm_instance_worker_v2.sql`
 
 ## Where this limits FSM naming
 
-`promise` queues are the tightest: the name combines three segments with two
-underscores.
+`internalAsyncOperation` queues are the tightest: the name combines three
+segments with two underscores.
 
 ```
 {parentFsmName} _ {parentFsmVersion} _ {fsmName}
                                                ^ must total ≤ 47 chars
 ```
 
-**Budget breakdown for `promise` type:**
+**Budget breakdown for `internalAsyncOperation` type:**
 
 | Segment            | Chars used                | Budget consumed |
 | ------------------ | ------------------------- | --------------- |

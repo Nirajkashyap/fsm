@@ -24,7 +24,7 @@ the original 8 steps) are listed at the end of §3.
    {
      parentFsmName: "creditCheck",
      parentFsmVersion: "v01",
-     fsmType: "promise",
+     fsmType: "internalAsyncOperation",
      fsmName: "checkReportsTable",
      fsmVersion: "v01",
      fsmLanguage: "typescript",
@@ -41,7 +41,7 @@ the original 8 steps) are listed at the end of §3.
      {
        parentFsmName: "creditCheck",
        parentFsmVersion: "v01",
-       fsmType: "promise",
+       fsmType: "internalAsyncOperation",
        fsmName: "checkReportsTable",
        fsmVersion: "v01",
        fsmLanguage: "typescript",
@@ -157,11 +157,12 @@ helpers, callable from anywhere):
   the actor invoke itself succeeded — caught via a real end-to-end run, not just
   unit coverage.
 - **PGMQ's 48-character queue name limit** isn't fully solved. The
-  `fsm_type = "promise"` shortening (drop `fsm_version`, first-char
-  `fsm_language`) fits typical identities, but the non-`"promise"` path
-  (`sharedPromise` etc.) still carries the full identity and remains exposed;
-  very long `parentFsmName`/`fsmName` values can exceed it either way. The
-  queue-ensure and claim-read calls both just throw/skip in that case today — no
+  `fsm_type = "internalAsyncOperation"` shortening (drop `fsm_version`,
+  first-char `fsm_language`) fits typical identities, but the
+  non-`"internalAsyncOperation"` path (`sharedAsyncOperation` etc.) still
+  carries the full identity and remains exposed; very long
+  `parentFsmName`/`fsmName` values can exceed it either way. The queue-ensure
+  and claim-read calls both just throw/skip in that case today — no
   truncation/hashing fallback.
 - **No automated test coverage.** Everything in §3 above was verified manually
   this session (real local DB, real Unix socket connections, real enqueued PGMQ

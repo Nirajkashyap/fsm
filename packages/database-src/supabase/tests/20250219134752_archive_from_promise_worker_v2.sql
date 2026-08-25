@@ -19,7 +19,7 @@ select results_eq(
   $$ select (r->>'promise_queue_archive_result')::boolean, (r->>'promise_queue_name'),
             (r->>'promise_queue_msg_id')::bigint, (r->'send_to_parent_result'->'queue_data'->'eventData'->>'eventType')
      from fsm_core.archive_event_from_fsm_promise_type_worker_v2(
-       'archPromiseQ1', 'promise', 'v1', 1::bigint,
+       'archPromiseQ1', 'internalAsyncOperation', 'v1', 1::bigint,
        'promiseDone', 'promise', '{"result": "ok"}'::jsonb, 0,
        'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid, 'promiseDoneEvt',
        now(), NULL, now(), 'success', '{"result": "ok"}'::jsonb, NULL) r $$,
@@ -41,7 +41,7 @@ select results_eq(
 
 select throws_ok(
   $$ select fsm_core.archive_event_from_fsm_promise_type_worker_v2(
-       'neverCreatedPromiseQ', 'promise', 'v1', 1::bigint,
+       'neverCreatedPromiseQ', 'internalAsyncOperation', 'v1', 1::bigint,
        'promiseDone', 'promise', '{}'::jsonb, 0,
        'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid, 'promiseDoneEvt',
        now(), NULL, now(), 'success', '{}'::jsonb, NULL) $$,

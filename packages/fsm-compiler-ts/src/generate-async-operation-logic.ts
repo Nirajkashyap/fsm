@@ -1,18 +1,15 @@
 import { getLogger } from "@logtape/logtape";
-import { extractFsmPluginRefs, type WorkflowType } from "./util.ts";
+import { extractFsmPluginRefs } from "./util.ts";
 import {
   actorFileBaseName,
-  type ActorsBarrelLang,
   eachVersionedFsmFolder,
   formatGoFilesBestEffort,
   formatRustFilesBestEffort,
   formatTsFilesBestEffort,
   goModTidyManyBestEffort,
   isOperationLang,
-  type RegisteredActor,
   resolvePluginRootAbsPath,
   toRegisteredActor,
-  type WorkerSdkProtocol,
   writeActorFile,
   writeActorsBarrel,
   writeActorsManifest,
@@ -21,6 +18,12 @@ import {
   writeAggregateGoRegistry,
   writeWorkerSdk,
 } from "./operation-logic-scaffold.ts";
+import type {
+  ActorsBarrelLang,
+  RegisteredActor,
+  WorkerSdkProtocol,
+  WorkflowType,
+} from "./types/index.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "async-logic"]);
 
@@ -69,7 +72,6 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  */
 export async function generateAsyncOperationLogicFromFolders(
   folderPath: string,
-  _workflowType: WorkflowType,
   skipDirs: string[] = [],
   workerSdkProtocol: WorkerSdkProtocol = "grpc",
 ): Promise<void> {
@@ -95,10 +97,10 @@ export async function generateAsyncOperationLogicFromFolders(
       const seen = new Set<string>();
       const writtenActors: RegisteredActor[] = [];
       for (const actor of actors) {
-        const fsmType = actor.fsmType ?? "promise";
-        if (fsmType !== "promise") {
+        const fsmType = actor.fsmType ?? "internalAsyncOperation";
+        if (fsmType !== "internalAsyncOperation") {
           logger.info(
-            "Skipping actor {src}: fsmType is {fsmType}, not promise",
+            "Skipping actor {src}: fsmType is {fsmType}, not internalAsyncOperation",
             { src: actor.src, fsmType },
           );
           continue;

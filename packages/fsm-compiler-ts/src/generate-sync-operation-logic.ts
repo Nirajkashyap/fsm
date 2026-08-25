@@ -1,14 +1,10 @@
 import { getLogger } from "@logtape/logtape";
-import {
-  extractFsmPluginRefs,
-  RAISE_CANCEL,
-  type WorkflowType,
-} from "./util.ts";
+import { extractFsmPluginRefs, RAISE_CANCEL } from "./util.ts";
 import {
   eachVersionedFsmFolder,
-  type OperationLang,
   writeOperationModule,
 } from "./operation-logic-scaffold.ts";
+import type { OperationLang, WorkflowType } from "./types/index.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "sync-logic"]);
 
@@ -23,7 +19,6 @@ const logger = getLogger(["@pgfsm/compiler", "sync-logic"]);
  */
 export async function generateSyncOperationLogicFromFolders(
   folderPath: string,
-  _workflowType: WorkflowType,
   langs: OperationLang[],
   skipDirs: string[] = [],
 ): Promise<void> {

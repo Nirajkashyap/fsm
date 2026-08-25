@@ -10,16 +10,9 @@ const fsmRouter = await createApp(urlPathPrefix, {
       new URL("../fsm-core-example/sharedPromise", import.meta.url).pathname,
     skipDirs: [],
   },
-  // vitalsWorkflow is a shared, reusable sub-workflow (fsmType "sharedFsm"),
-  // living alongside the top-level FSMs (fsmType "fsm") under the same fsm/
-  // folder — split here via skipDirs rather than a separate folder.
-  sharedFsm: {
-    folderPath: new URL("../fsm-core-example/fsm", import.meta.url).pathname,
-    skipDirs: ["carVitals", "creditCheck", "taskMachineConfig"],
-  },
   fsm: {
     folderPath: new URL("../fsm-core-example/fsm", import.meta.url).pathname,
-    skipDirs: ["vitalsWorkflow"],
+    skipDirs: [],
   },
 });
 

@@ -11,7 +11,6 @@ dotenv.config({ path: "./../../.env" });
   // Async operation logic (actors) — routed by each invoke's fsmLanguage.
   await generateAsyncOperationLogicFromFolders(
     fsmfolderPath,
-    "fsm",
     skipFSMDirs,
   );
 })();

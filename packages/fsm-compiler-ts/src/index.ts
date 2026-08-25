@@ -11,9 +11,7 @@ export { createAsyncOperationLogic } from "./create-async-logic.ts";
 export { generateSyncOperationLogicFromFolders } from "./generate-sync-operation-logic.ts";
 export {
   isOperationLang,
-  type OperationLang,
   SUPPORTED_OPERATION_LANGS,
-  type WorkerSdkProtocol,
 } from "./operation-logic-scaffold.ts";
 export { loadFsmJSONFromFolders } from "./load-fsm-json.ts";
 export {
@@ -39,8 +37,10 @@ export type {
   ActorReference,
   FailedMethod,
   FsmPluginValidationResult,
-} from "./util.ts";
-export type { WorkflowType } from "./util.ts";
+  OperationLang,
+  WorkerSdkProtocol,
+  WorkflowType,
+} from "./types/index.ts";
 export {
   validateAsyncOperationFromFolders,
 } from "./validate-async-operation-logic.ts";

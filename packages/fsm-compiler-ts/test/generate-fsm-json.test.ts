@@ -2,10 +2,10 @@ import { assertEquals, assertExists } from "@std/assert";
 import { copy } from "@std/fs/copy";
 import {
   addMissingFsmTypeToInvokeActors,
-  type FsmDraftStateNode,
   generateFsmJSONFromFolders,
   normalizeActionsToObjects,
 } from "../src/generate-fsm-json.ts";
+import type { FsmDraftStateNode } from "../src/types/index.ts";
 
 // --- addMissingFsmTypeToInvokeActors unit tests ---
 
@@ -22,12 +22,18 @@ Deno.test("addMissingFsmTypeToInvokeActors - adds missing fsmType and fsmVersion
     "v01",
   );
 
-  assertEquals(fulljson.states!.idle.invoke![0].fsmType, "promise");
+  assertEquals(
+    fulljson.states!.idle.invoke![0].fsmType,
+    "internalAsyncOperation",
+  );
   assertEquals(fulljson.states!.idle.invoke![0].fsmVersion, "v01");
   assertEquals(fulljson.states!.idle.invoke![0].fsmLanguage, "typescript");
   assertEquals(childActorsInfo.length, 1);
   assertEquals(childActorsInfo[0].child_actor_src, "someActor");
-  assertEquals(childActorsInfo[0].child_actor_fsmType, "promise");
+  assertEquals(
+    childActorsInfo[0].child_actor_fsmType,
+    "internalAsyncOperation",
+  );
   assertEquals(childActorsInfo[0].child_actor_fsmVersion, "v01");
   assertEquals(childActorsInfo[0].child_actor_fsmLanguage, "typescript");
 });
@@ -38,7 +44,7 @@ Deno.test("addMissingFsmTypeToInvokeActors - preserves existing fsmType and fsmV
       idle: {
         invoke: [{
           src: "sharedActor",
-          fsmType: "sharedFsm",
+          fsmType: "fsm",
           fsmVersion: "v02",
           fsmLanguage: "python",
         }],
@@ -50,10 +56,10 @@ Deno.test("addMissingFsmTypeToInvokeActors - preserves existing fsmType and fsmV
     "v01",
   );
 
-  assertEquals(fulljson.states!.idle.invoke![0].fsmType, "sharedFsm");
+  assertEquals(fulljson.states!.idle.invoke![0].fsmType, "fsm");
   assertEquals(fulljson.states!.idle.invoke![0].fsmVersion, "v02");
   assertEquals(fulljson.states!.idle.invoke![0].fsmLanguage, "python");
-  assertEquals(childActorsInfo[0].child_actor_fsmType, "sharedFsm");
+  assertEquals(childActorsInfo[0].child_actor_fsmType, "fsm");
   assertEquals(childActorsInfo[0].child_actor_fsmVersion, "v02");
   assertEquals(childActorsInfo[0].child_actor_fsmLanguage, "python");
 });
@@ -221,13 +227,12 @@ const FIXTURE_ROOT = await Deno.makeTempDir({
 const APP_ROOT = `${FIXTURE_ROOT}/fsm-core-example`;
 await copy("apps/fsm-core-example", APP_ROOT);
 const FSM_FOLDER = `${APP_ROOT}/fsm`;
-// vitalsWorkflow is a shared, reusable sub-workflow (fsmType "sharedFsm"),
-// living alongside the top-level FSMs (fsmType "fsm") under the same fsm/
-// folder.
+// vitalsWorkflow is a reusable sub-workflow invoked by carVitals, living
+// alongside the top-level FSMs under the same fsm/ folder.
 const SHARED_FSM_SKIP_DIRS = ["carVitals", "creditCheck", "taskMachineConfig"];
 
 Deno.test("generateFsmJSONFromFolders - generates fsm.json for fsm folder", async () => {
-  await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", []);
+  await generateFsmJSONFromFolders(FSM_FOLDER, []);
 
   const stat = await Deno.stat(`${FSM_FOLDER}/creditCheck/v01/fsm.json`);
   assertEquals(stat.isFile, true);
@@ -236,7 +241,6 @@ Deno.test("generateFsmJSONFromFolders - generates fsm.json for fsm folder", asyn
 Deno.test("generateFsmJSONFromFolders - generates fsm.json for vitalsWorkflow (shared)", async () => {
   await generateFsmJSONFromFolders(
     FSM_FOLDER,
-    "sharedFsm",
     SHARED_FSM_SKIP_DIRS,
   );
 
@@ -248,18 +252,17 @@ Deno.test("generateFsmJSONFromFolders - generates fsm.json for vitalsWorkflow (s
 
 Deno.test("generateFsmJSONFromFolders - showRecommendation=false produces no recommendation output", async () => {
   // Captures that the function completes without error when showRecommendation is false (default)
-  await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", [], false);
+  await generateFsmJSONFromFolders(FSM_FOLDER, [], false);
 });
 
 Deno.test("generateFsmJSONFromFolders - showRecommendation=true runs AJV validation without throwing", async () => {
   // Should complete without throwing even if schema issues exist
-  await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", [], true);
+  await generateFsmJSONFromFolders(FSM_FOLDER, [], true);
 });
 
 Deno.test("generateFsmJSONFromFolders - showRecommendation=true on vitalsWorkflow (shared) runs AJV validation without throwing", async () => {
   await generateFsmJSONFromFolders(
     FSM_FOLDER,
-    "sharedFsm",
     SHARED_FSM_SKIP_DIRS,
     true,
   );
@@ -267,13 +270,13 @@ Deno.test("generateFsmJSONFromFolders - showRecommendation=true on vitalsWorkflo
 
 Deno.test("generateFsmJSONFromFolders - respects skipDirs", async () => {
   // carVitals is skipped — its fsm.json may or may not exist but no error is thrown
-  await generateFsmJSONFromFolders(FSM_FOLDER, "fsm", ["carVitals"]);
+  await generateFsmJSONFromFolders(FSM_FOLDER, ["carVitals"]);
 });
 
 Deno.test("generateFsmJSONFromFolders - throws on path starting with '.'", async () => {
   let threw = false;
   try {
-    await generateFsmJSONFromFolders("./relative/path", "fsm");
+    await generateFsmJSONFromFolders("./relative/path");
   } catch (e) {
     threw = true;
     assertExists((e as Error).message.match(/cannot start with/i));
@@ -284,7 +287,7 @@ Deno.test("generateFsmJSONFromFolders - throws on path starting with '.'", async
 Deno.test("generateFsmJSONFromFolders - throws on path ending with '/'", async () => {
   let threw = false;
   try {
-    await generateFsmJSONFromFolders("some/path/", "fsm");
+    await generateFsmJSONFromFolders("some/path/");
   } catch (e) {
     threw = true;
     assertExists((e as Error).message.match(/cannot end with/i));

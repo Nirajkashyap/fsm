@@ -8,17 +8,19 @@ import machineSchema from "../../database-src/fsm.machine.schema.v3.json" with {
   type: "json",
 };
 import {
-  type ActorReference,
   DELAY_ACTION_NAME_PREFIX,
   extractFsmPluginRefs,
-  type FailedMethod,
-  type FsmPluginValidationResult,
   isVersionFolderName,
   RAISE_CANCEL,
-  type WorkflowType,
 } from "./util.ts";
 import type { Json } from "@pgfsm/db/database.types";
-import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
+import type {
+  ActorReference,
+  FailedMethod,
+  FsmMachineJson,
+  FsmPluginValidationResult,
+  WorkflowType,
+} from "./types/index.ts";
 
 type AnyFunction = (...args: unknown[]) => unknown;
 
@@ -254,11 +256,13 @@ export async function validateSyncOperationFromFolders(
                   availableActors,
                 );
 
+                /*
                 logger.info("Validation result for {dir}/{sub}: {result}", {
                   dir: dirEntry.name,
                   sub: subEntry.name,
                   result: folderResult,
                 });
+                */
 
                 allFolderResults.push(folderResult);
               } catch (err) {

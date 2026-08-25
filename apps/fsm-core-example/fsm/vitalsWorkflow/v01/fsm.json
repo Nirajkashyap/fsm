@@ -148,7 +148,7 @@
           "src": "checkTirePressure",
           "type": "xstate.invoke",
           "id": "0.vitalscheck.CheckVitals",
-          "fsmType": "promise",
+          "fsmType": "internalAsyncOperation",
           "fsmVersion": "v01",
           "fsmLanguage": "typescript"
         },
@@ -156,7 +156,7 @@
           "src": "checkOilPressure",
           "type": "xstate.invoke",
           "id": "1.vitalscheck.CheckVitals",
-          "fsmType": "promise",
+          "fsmType": "internalAsyncOperation",
           "fsmVersion": "v01",
           "fsmLanguage": "typescript"
         },
@@ -164,7 +164,7 @@
           "src": "checkCoolantLevel",
           "type": "xstate.invoke",
           "id": "2.vitalscheck.CheckVitals",
-          "fsmType": "promise",
+          "fsmType": "internalAsyncOperation",
           "fsmVersion": "v01",
           "fsmLanguage": "typescript"
         },
@@ -172,7 +172,7 @@
           "src": "checkBattery",
           "type": "xstate.invoke",
           "id": "3.vitalscheck.CheckVitals",
-          "fsmType": "promise",
+          "fsmType": "internalAsyncOperation",
           "fsmVersion": "v01",
           "fsmLanguage": "typescript"
         }

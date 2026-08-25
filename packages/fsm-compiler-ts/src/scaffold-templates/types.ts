@@ -1,7 +1,4 @@
-import type {
-  OperationKind,
-  OperationLang,
-} from "../operation-logic-scaffold.ts";
+import type { OperationKind, OperationLang } from "../types/index.ts";
 
 /** Values derived from a `(kind, name, lang)` triple, passed to every template function. */
 export type TemplateInput = {

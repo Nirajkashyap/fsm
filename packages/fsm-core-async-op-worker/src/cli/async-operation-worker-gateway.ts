@@ -36,7 +36,7 @@ const args = parseArgs(Deno.args, {
 function printHelp(): void {
   logger.info(`
 async-operation-worker-gateway — standalone async-op worker: Activity Gateway
-+ 30s Postgres poll loop for compiled-language promise actors
++ 30s Postgres poll loop for compiled-language async-operation actors
 
 USAGE
   deno run --allow-all src/cli/async-operation-worker-gateway.ts [options]
@@ -57,7 +57,7 @@ DESCRIPTION
   connect to the sidecar socket and register the actors they serve.
 
   Unless --disable-poll-loop is set, this process also owns its own Postgres
-  connection and drives promise-type async operations for its
+  connection and drives internalAsyncOperation-type async operations for its
   currently-registered actors itself, on a 30-second poll (see
   asyncOpPollLoop.ts / GOAL.md) -- a standalone alternative to
   fsm-async-worker-ts's poll/claim/archive loop, not something that needs it
@@ -65,12 +65,13 @@ DESCRIPTION
 
   With --ensure-queue-on-register, every actor a worker registers also gets
   a PGMQ queue ensured to exist (idempotent). fsmType is always shortened to
-  its first character; when fsmType is exactly "promise", fsmVersion is
-  dropped and fsmLanguage is also shortened to its first character:
-    fsmType "promise":  <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
-    otherwise:          <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
+  its first character; when fsmType is exactly "internalAsyncOperation",
+  fsmVersion is dropped and fsmLanguage is also shortened to its first
+  character:
+    fsmType "internalAsyncOperation":  <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
+    otherwise:                         <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
   PGMQ enforces a 48-character limit on that name -- long identities can
-  still exceed it (more likely on the non-"promise" path) and will fail
+  still exceed it (more likely on the non-"internalAsyncOperation" path) and will fail
   this step (registration itself still succeeds; only the queue-ensure call
   fails, logged as an error).
 `);

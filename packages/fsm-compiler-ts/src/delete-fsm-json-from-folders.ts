@@ -1,7 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["@pgfsm/compiler", "delete"]);
-import { isVersionFolderName, type WorkflowType } from "./util.ts";
+import { isVersionFolderName } from "./util.ts";
 
 async function deleteFsmJSONFromFolder(
   dirEntryName: string,
@@ -9,7 +9,6 @@ async function deleteFsmJSONFromFolder(
   _folderPath: string,
   absFolderPath: string,
   _parentSource: string,
-  _workflowType: WorkflowType,
 ) {
   try {
     await Deno.remove(`${absFolderPath}/xstate-fsm.json`);
@@ -38,7 +37,6 @@ async function deleteFsmJSONFromFolder(
 
 export async function deleteFsmJSONFromFolders(
   folderPath: string,
-  workflowType: WorkflowType,
   skipDirs: string[] = [],
 ) {
   if (folderPath.startsWith(".")) {
@@ -81,7 +79,6 @@ export async function deleteFsmJSONFromFolders(
               folderPath,
               `${fsmDirPath}/${subEntry.name}`,
               dirEntry.name,
-              workflowType,
             );
           } else {
             logger.info("Skipping non-timestamped folder: {name} in {dir}", {

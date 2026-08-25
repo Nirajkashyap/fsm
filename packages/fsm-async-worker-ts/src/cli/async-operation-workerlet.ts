@@ -29,7 +29,10 @@ const args = parseArgs(Deno.args, {
   },
 });
 
-const VALID_WORKFLOW_TYPES: WorkflowType[] = ["promise", "sharedPromise"];
+const VALID_WORKFLOW_TYPES: WorkflowType[] = [
+  "internalAsyncOperation",
+  "sharedAsyncOperation",
+];
 const VALID_LANGS: OperationLang[] = ["typescript", "python", "go", "rust"];
 
 function printHelp(): void {
@@ -47,7 +50,7 @@ OPTIONS
   -i, --workerlet-id <id>           Stable workerlet identity (default: random UUID per startup)
   -t, --workflow-type <type>        Workflow type: ${
     VALID_WORKFLOW_TYPES.join(" | ")
-  } (default: promise)
+  } (default: internalAsyncOperation)
   -h, --help                        Show this help message
 
 DESCRIPTION
@@ -61,7 +64,7 @@ EXAMPLE
   deno run --allow-all src/cli/async-operation-workerlet.ts \\
     --folder-path /abs/path/to/fsm-core-example/fsm \\
     --runtime-languages typescript \\
-    --workflow-type promise
+    --workflow-type internalAsyncOperation
 `);
 }
 
@@ -75,7 +78,7 @@ const dbUrl = args["db-url"];
 const maxConcurrencyArg = args["max-concurrency"];
 const workerletId = args["workerlet-id"] ??
   Deno.env.get("ASYNC_OP_WORKERLET_ID");
-const workflowTypeArg = args["workflow-type"] ?? "promise";
+const workflowTypeArg = args["workflow-type"] ?? "internalAsyncOperation";
 const runtimeLanguagesArg = args["runtime-languages"];
 
 if (!VALID_WORKFLOW_TYPES.includes(workflowTypeArg as WorkflowType)) {

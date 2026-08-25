@@ -20,7 +20,7 @@ func ActorRegistrations() []ActorRegistration {
 		{
 			ParentFsmName:    "creditCheck",
 			ParentFsmVersion: "v01",
-			FsmType:          "promise",
+			FsmType:          "internalAsyncOperation",
 			FsmName:          "CheckReportsTable",
 			FsmVersion:       "v01",
 			FsmLanguage:      "go",

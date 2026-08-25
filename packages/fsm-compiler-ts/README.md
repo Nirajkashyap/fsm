@@ -39,12 +39,10 @@ absolute path — not `./fsm`) and must **not** end with `/`.
   pass is only used to locate the directory). The version name is taken from the
   directory's own name, e.g. `.../creditCheck/v01/machine.ts` → `v01`.
 
-Other flags: `-w`/`--workflow-type`
-(`fsm | sharedFsm | sharedPromise |
-promise`, default `fsm`), `-s`/`--skip-dirs`
-(comma-separated FSM names to skip, directory mode only),
-`-r`/`--show-recommendation` (also validates the generated `fsm.json` against
-the FSM JSON schema and logs any errors — doesn't change what's written).
+Other flags: `-s`/`--skip-dirs` (comma-separated FSM names to skip, directory
+mode only), `-r`/`--show-recommendation` (also validates the generated
+`fsm.json` against the FSM JSON schema and logs any errors — doesn't change
+what's written).
 
 **Output** — per version folder:
 
@@ -55,7 +53,7 @@ the FSM JSON schema and logs any errors — doesn't change what's written).
 
 ```bash
 npx @pgfsm/compiler -c generate -f fsm
-npx @pgfsm/compiler -c generate -f fsm -w sharedFsm --skip-dirs carVitals
+npx @pgfsm/compiler -c generate -f fsm --skip-dirs carVitals
 npx @pgfsm/compiler -c generate -f apps/fsm-core-example/fsm/creditCheck/v01/machine.ts
 ```
 
@@ -136,8 +134,7 @@ npx @pgfsm/compiler -c create-async-logic -f apps/fsm-core-example --lang typesc
 
 ### `delete` — remove generated files
 
-**Input** — `-f`/`--folder`: plugin-root directory. `-w`/`--workflow-type`
-(default `fsm`). `-s`/`--skip-dirs`.
+**Input** — `-f`/`--folder`: plugin-root directory. `-s`/`--skip-dirs`.
 
 **Output/side effect** — per version folder, removes `fsm.json`,
 `xstate-fsm.json`, and the `typescript/` and `python/` subdirectories if present
@@ -190,7 +187,7 @@ import {
 } from "@pgfsm/compiler";
 
 import type { OperationLang, WorkflowType } from "@pgfsm/compiler";
-// WorkflowType  = "fsm" | "sharedFsm" | "sharedPromise" | "promise"
+// WorkflowType  = "fsm" | "sharedAsyncOperation" | "internalAsyncOperation"
 // OperationLang = "typescript" | "python" | "rust" | "go"
 ```
 
