@@ -20,7 +20,6 @@ dotenv.config({ path: "./../../.env" });
   // const skipFSMDirs = [];
   await deleteFsmJSONFromFolders(
     fsmfolderPath,
-    "fsm",
     skipFSMDirs,
   );
 })();
