@@ -64,12 +64,12 @@ DESCRIPTION
   running alongside this process.
 
   With --ensure-queue-on-register, every actor a worker registers also gets
-  a PGMQ queue ensured to exist (idempotent). fsmType is always shortened to
-  its first character; when fsmType is exactly "internalAsyncOperation",
-  fsmVersion is dropped and fsmLanguage is also shortened to its first
-  character:
-    fsmType "internalAsyncOperation":  <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
-    otherwise:                         <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
+  a PGMQ queue ensured to exist (idempotent). asyncOperationType is always
+  shortened to its first character; when asyncOperationType is exactly
+  "internalAsyncOperation", asyncOperationVersion is dropped and
+  asyncOperationLanguage is also shortened to its first character:
+    asyncOperationType "internalAsyncOperation":  <parentFsmName>_<parentFsmVersion>_<asyncOperationType[0]>_<asyncOperationName>_<asyncOperationLanguage[0]>
+    otherwise:                                    <parentFsmName>_<parentFsmVersion>_<asyncOperationType[0]>_<asyncOperationName>_<asyncOperationVersion>_<asyncOperationLanguage>
   PGMQ enforces a 48-character limit on that name -- long identities can
   still exceed it (more likely on the non-"internalAsyncOperation" path) and will fail
   this step (registration itself still succeeds; only the queue-ensure call

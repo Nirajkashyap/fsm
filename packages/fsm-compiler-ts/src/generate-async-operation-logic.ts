@@ -34,14 +34,16 @@ const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
  * FSM under `folderPath`.
  *
  * Each invoke object gets its **own file** at
- * `<lang>/actors/<fsmType>_<fsmVersion>_<src>.<ext>`, where `<lang>` is the
- * actor's `fsmLanguage` (defaulting to typescript). The file exports one
- * function named after the actor `src` (Go: exported/capitalized, plus its
- * own `go.mod` — see {@linkcode writeActorFile}). Invokes that resolve to the
- * same `<fsmType>_<fsmVersion>_<src>` within a language are written once.
+ * `<lang>/actors/<asyncOperationType>_<asyncOperationVersion>_<src>.<ext>`,
+ * where `<lang>` is the actor's `asyncOperationLanguage` (defaulting to
+ * typescript). The file exports one function named after the actor `src`
+ * (Go: exported/capitalized, plus its own `go.mod` — see
+ * {@linkcode writeActorFile}). Invokes that resolve to the same
+ * `<asyncOperationType>_<asyncOperationVersion>_<src>` within a language are
+ * written once.
  *
  * Per version folder: `actors-manifest.json` (every actor across all
- * languages — `{ src, fsmLanguage, filePath, exportedName }`), a per-language
+ * languages — `{ src, asyncOperationLanguage, filePath, exportedName }`), a per-language
  * barrel (`typescript/actors/index.ts`, `python/actors/__init__.py`,
  * `rust/actors/mod.rs`) re-exporting each actor by name, and a per-language
  * generated registry (`generated-registry.ts`/`generated_registry.py`/
@@ -91,24 +93,25 @@ export async function generateAsyncOperationLogicFromFolders(
     async (absFolderPath, fsmData) => {
       const { actors } = extractFsmPluginRefs(fsmData);
 
-      // Dedupe by language + `<fsmType>_<fsmVersion>_<src>` so identical invokes
-      // are written once, while actors that differ in type/version/src get
-      // their own files.
+      // Dedupe by language + `<asyncOperationType>_<asyncOperationVersion>_<src>`
+      // so identical invokes are written once, while actors that differ in
+      // type/version/src get their own files.
       const seen = new Set<string>();
       const writtenActors: RegisteredActor[] = [];
       for (const actor of actors) {
-        const fsmType = actor.fsmType ?? "internalAsyncOperation";
-        if (fsmType !== "internalAsyncOperation") {
+        const asyncOperationType = actor.asyncOperationType ??
+          "internalAsyncOperation";
+        if (asyncOperationType !== "internalAsyncOperation") {
           logger.info(
-            "Skipping actor {src}: fsmType is {fsmType}, not internalAsyncOperation",
-            { src: actor.src, fsmType },
+            "Skipping actor {src}: asyncOperationType is {asyncOperationType}, not internalAsyncOperation",
+            { src: actor.src, asyncOperationType },
           );
           continue;
         }
-        const lang = actor.fsmLanguage ?? "typescript";
+        const lang = actor.asyncOperationLanguage ?? "typescript";
         if (!isOperationLang(lang)) {
           logger.warning(
-            "Skipping actor {src}: unsupported fsmLanguage {lang}",
+            "Skipping actor {src}: unsupported asyncOperationLanguage {lang}",
             {
               src: actor.src,
               lang,

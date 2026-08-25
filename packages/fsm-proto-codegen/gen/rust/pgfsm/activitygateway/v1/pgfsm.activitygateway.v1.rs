@@ -7,13 +7,13 @@ pub struct InvokeRequest {
     #[prost(string, tag = "2")]
     pub parent_fsm_version: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
-    pub fsm_type: ::prost::alloc::string::String,
+    pub async_operation_type: ::prost::alloc::string::String,
     #[prost(string, tag = "4")]
-    pub fsm_name: ::prost::alloc::string::String,
+    pub async_operation_name: ::prost::alloc::string::String,
     #[prost(string, tag = "5")]
-    pub fsm_version: ::prost::alloc::string::String,
+    pub async_operation_version: ::prost::alloc::string::String,
     #[prost(string, tag = "6")]
-    pub fsm_language: ::prost::alloc::string::String,
+    pub async_operation_language: ::prost::alloc::string::String,
     #[prost(string, tag = "7")]
     pub input_json: ::prost::alloc::string::String,
     #[prost(string, tag = "8")]
@@ -41,7 +41,7 @@ pub struct ListRegisteredActorsRequest {
 }
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct ListRegisteredActorsResponse {
-    /// "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
+    /// "parentFsmName@parentFsmVersion@asyncOperationType@asyncOperationName@asyncOperationVersion@asyncOperationLanguage"
     /// keys, one per actor currently registered by a live worker process.
     #[prost(string, repeated, tag = "1")]
     pub actor_keys: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,

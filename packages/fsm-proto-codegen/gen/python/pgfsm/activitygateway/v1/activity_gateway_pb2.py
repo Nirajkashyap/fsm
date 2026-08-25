@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n/pgfsm/activitygateway/v1/activity_gateway.proto\x12\x18pgfsm.activitygateway.v1\"\xe5\x02\n\rInvokeRequest\x12&\n\x0fparent_fsm_name\x18\x01 \x01(\tR\rparentFsmName\x12,\n\x12parent_fsm_version\x18\x02 \x01(\tR\x10parentFsmVersion\x12\x19\n\x08\x66sm_type\x18\x03 \x01(\tR\x07\x66smType\x12\x19\n\x08\x66sm_name\x18\x04 \x01(\tR\x07\x66smName\x12\x1f\n\x0b\x66sm_version\x18\x05 \x01(\tR\nfsmVersion\x12!\n\x0c\x66sm_language\x18\x06 \x01(\tR\x0b\x66smLanguage\x12\x1d\n\ninput_json\x18\x07 \x01(\tR\tinputJson\x12\x1f\n\x0binstance_id\x18\x08 \x01(\tR\ninstanceId\x12%\n\x0e\x63orrelation_id\x18\t \x01(\tR\rcorrelationId\x12\x1d\n\ntimeout_ms\x18\n \x01(\rR\ttimeoutMs\"\xa3\x01\n\x0eInvokeResponse\x12\x0e\n\x02ok\x18\x01 \x01(\x08R\x02ok\x12\x1f\n\x0boutput_json\x18\x02 \x01(\tR\noutputJson\x12\x1d\n\nerror_code\x18\x03 \x01(\tR\terrorCode\x12#\n\rerror_message\x18\x04 \x01(\tR\x0c\x65rrorMessage\x12\x1c\n\tretriable\x18\x05 \x01(\x08R\tretriable\"\x1d\n\x1bListRegisteredActorsRequest\"=\n\x1cListRegisteredActorsResponse\x12\x1d\n\nactor_keys\x18\x01 \x03(\tR\tactorKeys2\xfd\x01\n\x16\x41\x63tivityGatewayService\x12[\n\x06Invoke\x12\'.pgfsm.activitygateway.v1.InvokeRequest\x1a(.pgfsm.activitygateway.v1.InvokeResponse\x12\x85\x01\n\x14ListRegisteredActors\x12\x35.pgfsm.activitygateway.v1.ListRegisteredActorsRequest\x1a\x36.pgfsm.activitygateway.v1.ListRegisteredActorsResponseB\x81\x02\n\x1c\x63om.pgfsm.activitygateway.v1B\x14\x41\x63tivityGatewayProtoP\x01ZIgithub.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/activitygateway/v1\xa2\x02\x03PAX\xaa\x02\x18Pgfsm.Activitygateway.V1\xca\x02\x18Pgfsm\\Activitygateway\\V1\xe2\x02$Pgfsm\\Activitygateway\\V1\\GPBMetadata\xea\x02\x1aPgfsm::Activitygateway::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n/pgfsm/activitygateway/v1/activity_gateway.proto\x12\x18pgfsm.activitygateway.v1\"\xc1\x03\n\rInvokeRequest\x12&\n\x0fparent_fsm_name\x18\x01 \x01(\tR\rparentFsmName\x12,\n\x12parent_fsm_version\x18\x02 \x01(\tR\x10parentFsmVersion\x12\x30\n\x14\x61sync_operation_type\x18\x03 \x01(\tR\x12\x61syncOperationType\x12\x30\n\x14\x61sync_operation_name\x18\x04 \x01(\tR\x12\x61syncOperationName\x12\x36\n\x17\x61sync_operation_version\x18\x05 \x01(\tR\x15\x61syncOperationVersion\x12\x38\n\x18\x61sync_operation_language\x18\x06 \x01(\tR\x16\x61syncOperationLanguage\x12\x1d\n\ninput_json\x18\x07 \x01(\tR\tinputJson\x12\x1f\n\x0binstance_id\x18\x08 \x01(\tR\ninstanceId\x12%\n\x0e\x63orrelation_id\x18\t \x01(\tR\rcorrelationId\x12\x1d\n\ntimeout_ms\x18\n \x01(\rR\ttimeoutMs\"\xa3\x01\n\x0eInvokeResponse\x12\x0e\n\x02ok\x18\x01 \x01(\x08R\x02ok\x12\x1f\n\x0boutput_json\x18\x02 \x01(\tR\noutputJson\x12\x1d\n\nerror_code\x18\x03 \x01(\tR\terrorCode\x12#\n\rerror_message\x18\x04 \x01(\tR\x0c\x65rrorMessage\x12\x1c\n\tretriable\x18\x05 \x01(\x08R\tretriable\"\x1d\n\x1bListRegisteredActorsRequest\"=\n\x1cListRegisteredActorsResponse\x12\x1d\n\nactor_keys\x18\x01 \x03(\tR\tactorKeys2\xfd\x01\n\x16\x41\x63tivityGatewayService\x12[\n\x06Invoke\x12\'.pgfsm.activitygateway.v1.InvokeRequest\x1a(.pgfsm.activitygateway.v1.InvokeResponse\x12\x85\x01\n\x14ListRegisteredActors\x12\x35.pgfsm.activitygateway.v1.ListRegisteredActorsRequest\x1a\x36.pgfsm.activitygateway.v1.ListRegisteredActorsResponseB\x81\x02\n\x1c\x63om.pgfsm.activitygateway.v1B\x14\x41\x63tivityGatewayProtoP\x01ZIgithub.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/activitygateway/v1\xa2\x02\x03PAX\xaa\x02\x18Pgfsm.Activitygateway.V1\xca\x02\x18Pgfsm\\Activitygateway\\V1\xe2\x02$Pgfsm\\Activitygateway\\V1\\GPBMetadata\xea\x02\x1aPgfsm::Activitygateway::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,13 +33,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\034com.pgfsm.activitygateway.v1B\024ActivityGatewayProtoP\001ZIgithub.com/pgfsm/fsm/packages/fsm-proto-codegen/gen/go/activitygateway/v1\242\002\003PAX\252\002\030Pgfsm.Activitygateway.V1\312\002\030Pgfsm\\Activitygateway\\V1\342\002$Pgfsm\\Activitygateway\\V1\\GPBMetadata\352\002\032Pgfsm::Activitygateway::V1'
   _globals['_INVOKEREQUEST']._serialized_start=78
-  _globals['_INVOKEREQUEST']._serialized_end=435
-  _globals['_INVOKERESPONSE']._serialized_start=438
-  _globals['_INVOKERESPONSE']._serialized_end=601
-  _globals['_LISTREGISTEREDACTORSREQUEST']._serialized_start=603
-  _globals['_LISTREGISTEREDACTORSREQUEST']._serialized_end=632
-  _globals['_LISTREGISTEREDACTORSRESPONSE']._serialized_start=634
-  _globals['_LISTREGISTEREDACTORSRESPONSE']._serialized_end=695
-  _globals['_ACTIVITYGATEWAYSERVICE']._serialized_start=698
-  _globals['_ACTIVITYGATEWAYSERVICE']._serialized_end=951
+  _globals['_INVOKEREQUEST']._serialized_end=527
+  _globals['_INVOKERESPONSE']._serialized_start=530
+  _globals['_INVOKERESPONSE']._serialized_end=693
+  _globals['_LISTREGISTEREDACTORSREQUEST']._serialized_start=695
+  _globals['_LISTREGISTEREDACTORSREQUEST']._serialized_end=724
+  _globals['_LISTREGISTEREDACTORSRESPONSE']._serialized_start=726
+  _globals['_LISTREGISTEREDACTORSRESPONSE']._serialized_end=787
+  _globals['_ACTIVITYGATEWAYSERVICE']._serialized_start=790
+  _globals['_ACTIVITYGATEWAYSERVICE']._serialized_end=1043
 # @@protoc_insertion_point(module_scope)

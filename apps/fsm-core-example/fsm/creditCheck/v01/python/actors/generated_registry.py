@@ -5,10 +5,10 @@ ACTOR_REGISTRATIONS = [
     {
         "parent_fsm_name": "creditCheck",
         "parent_fsm_version": "v01",
-        "fsm_type": "internalAsyncOperation",
-        "fsm_name": "checkBureau",
-        "fsm_version": "v01",
-        "fsm_language": "python",
+        "async_operation_type": "internalAsyncOperation",
+        "async_operation_name": "checkBureau",
+        "async_operation_version": "v01",
+        "async_operation_language": "python",
         "handler": checkBureau,
     },
 ]

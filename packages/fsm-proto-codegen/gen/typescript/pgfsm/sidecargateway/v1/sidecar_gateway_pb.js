@@ -9,9 +9,9 @@ import { proto3 } from "@bufbuild/protobuf";
  * One actor entrypoint a worker process serves. Mirrors
  * ActorPluginValidationResult's identity fields (see @pgfsm/compiler's
  * util.ts) — actorKey() in the current sidecar/protocol.ts is what the
- * gateway routes on. fsm_language is part of the identity (not just a
- * display field) because the other five fields alone aren't guaranteed
- * unique across languages.
+ * gateway routes on. async_operation_language is part of the identity (not
+ * just a display field) because the other five fields alone aren't
+ * guaranteed unique across languages.
  *
  * @generated from message pgfsm.sidecargateway.v1.RegisteredActor
  */
@@ -20,10 +20,10 @@ export const RegisteredActor = /*@__PURE__*/ proto3.makeMessageType(
   () => [
     { no: 1, name: "parent_fsm_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "parent_fsm_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "fsm_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "fsm_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "fsm_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "fsm_language", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "async_operation_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "async_operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "async_operation_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "async_operation_language", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "timeout_ms", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 8, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ],
@@ -82,10 +82,10 @@ export const Invoke = /*@__PURE__*/ proto3.makeMessageType(
     { no: 1, name: "invoke_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "parent_fsm_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "parent_fsm_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "fsm_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "fsm_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "fsm_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "fsm_language", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "async_operation_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "async_operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "async_operation_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "async_operation_language", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "input_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "correlation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

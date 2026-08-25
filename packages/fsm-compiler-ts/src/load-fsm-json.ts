@@ -23,15 +23,15 @@ async function loadFsmJSONFromFolder(
       await Deno.readTextFile(fsmJson),
     );
 
-    // 1.1 get dependent_children by filtering actors where fsmType is "fsm"
+    // 1.1 get dependent_children by filtering actors where asyncOperationType is "fsm"
     const allActors = extractFsmPluginRefs(fsmData).actors;
 
     const dependentChildren = allActors.filter((actor) =>
-      actor.fsmType === "fsm"
+      actor.asyncOperationType === "fsm"
     ).map((actor) => ({
       fsm_name: actor.src,
-      fsm_version: actor.fsmVersion,
-      fsm_type: actor.fsmType,
+      fsm_version: actor.asyncOperationVersion,
+      fsm_type: actor.asyncOperationType,
       src: actor.src,
     }));
 

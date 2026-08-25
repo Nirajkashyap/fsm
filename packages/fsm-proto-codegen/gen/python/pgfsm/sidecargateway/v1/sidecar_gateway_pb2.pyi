@@ -7,24 +7,24 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class RegisteredActor(_message.Message):
-    __slots__ = ("parent_fsm_name", "parent_fsm_version", "fsm_type", "fsm_name", "fsm_version", "fsm_language", "timeout_ms", "description")
+    __slots__ = ("parent_fsm_name", "parent_fsm_version", "async_operation_type", "async_operation_name", "async_operation_version", "async_operation_language", "timeout_ms", "description")
     PARENT_FSM_NAME_FIELD_NUMBER: _ClassVar[int]
     PARENT_FSM_VERSION_FIELD_NUMBER: _ClassVar[int]
-    FSM_TYPE_FIELD_NUMBER: _ClassVar[int]
-    FSM_NAME_FIELD_NUMBER: _ClassVar[int]
-    FSM_VERSION_FIELD_NUMBER: _ClassVar[int]
-    FSM_LANGUAGE_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_NAME_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_VERSION_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_LANGUAGE_FIELD_NUMBER: _ClassVar[int]
     TIMEOUT_MS_FIELD_NUMBER: _ClassVar[int]
     DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
     parent_fsm_name: str
     parent_fsm_version: str
-    fsm_type: str
-    fsm_name: str
-    fsm_version: str
-    fsm_language: str
+    async_operation_type: str
+    async_operation_name: str
+    async_operation_version: str
+    async_operation_language: str
     timeout_ms: int
     description: str
-    def __init__(self, parent_fsm_name: _Optional[str] = ..., parent_fsm_version: _Optional[str] = ..., fsm_type: _Optional[str] = ..., fsm_name: _Optional[str] = ..., fsm_version: _Optional[str] = ..., fsm_language: _Optional[str] = ..., timeout_ms: _Optional[int] = ..., description: _Optional[str] = ...) -> None: ...
+    def __init__(self, parent_fsm_name: _Optional[str] = ..., parent_fsm_version: _Optional[str] = ..., async_operation_type: _Optional[str] = ..., async_operation_name: _Optional[str] = ..., async_operation_version: _Optional[str] = ..., async_operation_language: _Optional[str] = ..., timeout_ms: _Optional[int] = ..., description: _Optional[str] = ...) -> None: ...
 
 class Register(_message.Message):
     __slots__ = ("worker_id", "language", "protocol_version", "actors")
@@ -57,14 +57,14 @@ class Heartbeat(_message.Message):
     def __init__(self, worker_id: _Optional[str] = ...) -> None: ...
 
 class Invoke(_message.Message):
-    __slots__ = ("invoke_id", "parent_fsm_name", "parent_fsm_version", "fsm_type", "fsm_name", "fsm_version", "fsm_language", "input_json", "instance_id", "correlation_id", "timeout_ms", "deadline_unix_ms")
+    __slots__ = ("invoke_id", "parent_fsm_name", "parent_fsm_version", "async_operation_type", "async_operation_name", "async_operation_version", "async_operation_language", "input_json", "instance_id", "correlation_id", "timeout_ms", "deadline_unix_ms")
     INVOKE_ID_FIELD_NUMBER: _ClassVar[int]
     PARENT_FSM_NAME_FIELD_NUMBER: _ClassVar[int]
     PARENT_FSM_VERSION_FIELD_NUMBER: _ClassVar[int]
-    FSM_TYPE_FIELD_NUMBER: _ClassVar[int]
-    FSM_NAME_FIELD_NUMBER: _ClassVar[int]
-    FSM_VERSION_FIELD_NUMBER: _ClassVar[int]
-    FSM_LANGUAGE_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_NAME_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_VERSION_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_LANGUAGE_FIELD_NUMBER: _ClassVar[int]
     INPUT_JSON_FIELD_NUMBER: _ClassVar[int]
     INSTANCE_ID_FIELD_NUMBER: _ClassVar[int]
     CORRELATION_ID_FIELD_NUMBER: _ClassVar[int]
@@ -73,16 +73,16 @@ class Invoke(_message.Message):
     invoke_id: str
     parent_fsm_name: str
     parent_fsm_version: str
-    fsm_type: str
-    fsm_name: str
-    fsm_version: str
-    fsm_language: str
+    async_operation_type: str
+    async_operation_name: str
+    async_operation_version: str
+    async_operation_language: str
     input_json: str
     instance_id: str
     correlation_id: str
     timeout_ms: int
     deadline_unix_ms: int
-    def __init__(self, invoke_id: _Optional[str] = ..., parent_fsm_name: _Optional[str] = ..., parent_fsm_version: _Optional[str] = ..., fsm_type: _Optional[str] = ..., fsm_name: _Optional[str] = ..., fsm_version: _Optional[str] = ..., fsm_language: _Optional[str] = ..., input_json: _Optional[str] = ..., instance_id: _Optional[str] = ..., correlation_id: _Optional[str] = ..., timeout_ms: _Optional[int] = ..., deadline_unix_ms: _Optional[int] = ...) -> None: ...
+    def __init__(self, invoke_id: _Optional[str] = ..., parent_fsm_name: _Optional[str] = ..., parent_fsm_version: _Optional[str] = ..., async_operation_type: _Optional[str] = ..., async_operation_name: _Optional[str] = ..., async_operation_version: _Optional[str] = ..., async_operation_language: _Optional[str] = ..., input_json: _Optional[str] = ..., instance_id: _Optional[str] = ..., correlation_id: _Optional[str] = ..., timeout_ms: _Optional[int] = ..., deadline_unix_ms: _Optional[int] = ...) -> None: ...
 
 class InvokeResult(_message.Message):
     __slots__ = ("invoke_id", "output_json", "duration_ms")

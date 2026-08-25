@@ -64,14 +64,14 @@ pub struct ActorWorkerOptions {
 fn actor_key(
     parent_fsm_name: &str,
     parent_fsm_version: &str,
-    fsm_type: &str,
-    fsm_name: &str,
-    fsm_version: &str,
-    fsm_language: &str,
+    async_operation_type: &str,
+    async_operation_name: &str,
+    async_operation_version: &str,
+    async_operation_language: &str,
 ) -> String {
     format!(
         "{}@{}@{}@{}@{}@{}",
-        parent_fsm_name, parent_fsm_version, fsm_type, fsm_name, fsm_version, fsm_language
+        parent_fsm_name, parent_fsm_version, async_operation_type, async_operation_name, async_operation_version, async_operation_language
     )
 }
 
@@ -91,10 +91,10 @@ impl ActorWorker {
             let key = actor_key(
                 &reg.meta.parent_fsm_name,
                 &reg.meta.parent_fsm_version,
-                &reg.meta.fsm_type,
-                &reg.meta.fsm_name,
-                &reg.meta.fsm_version,
-                &reg.meta.fsm_language,
+                &reg.meta.async_operation_type,
+                &reg.meta.async_operation_name,
+                &reg.meta.async_operation_version,
+                &reg.meta.async_operation_language,
             );
             handlers.insert(key, reg.handler);
             registered.push(reg.meta);
@@ -239,10 +239,10 @@ impl ActorWorker {
         let key = actor_key(
             &body.parent_fsm_name,
             &body.parent_fsm_version,
-            &body.fsm_type,
-            &body.fsm_name,
-            &body.fsm_version,
-            &body.fsm_language,
+            &body.async_operation_type,
+            &body.async_operation_name,
+            &body.async_operation_version,
+            &body.async_operation_language,
         );
 
         let handler = match self.handlers.get(&key) {

@@ -8,10 +8,10 @@ import (
 type ActorRegistration struct {
 	ParentFsmName    string
 	ParentFsmVersion string
-	FsmType          string
-	FsmName          string
-	FsmVersion       string
-	FsmLanguage      string
+	AsyncOperationType          string
+	AsyncOperationName          string
+	AsyncOperationVersion       string
+	AsyncOperationLanguage      string
 	Handler          func(input any) (any, error)
 }
 
@@ -20,10 +20,10 @@ func ActorRegistrations() []ActorRegistration {
 		{
 			ParentFsmName:    "creditCheck",
 			ParentFsmVersion: "v01",
-			FsmType:          "internalAsyncOperation",
-			FsmName:          "CheckReportsTable",
-			FsmVersion:       "v01",
-			FsmLanguage:      "go",
+			AsyncOperationType:          "internalAsyncOperation",
+			AsyncOperationName:          "CheckReportsTable",
+			AsyncOperationVersion:       "v01",
+			AsyncOperationLanguage:      "go",
 			Handler:          creditcheck_v01_checkreportstable.CheckReportsTable,
 		},
 	}

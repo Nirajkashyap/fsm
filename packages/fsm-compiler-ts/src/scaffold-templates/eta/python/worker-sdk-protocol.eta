@@ -47,14 +47,14 @@ def make_envelope(
 def actor_key(
     parent_fsm_name: str,
     parent_fsm_version: str,
-    fsm_type: str,
-    fsm_name: str,
-    fsm_version: str,
-    fsm_language: str,
+    async_operation_type: str,
+    async_operation_name: str,
+    async_operation_version: str,
+    async_operation_language: str,
 ) -> str:
     return (
-        f"{parent_fsm_name}@{parent_fsm_version}@{fsm_type}@{fsm_name}"
-        f"@{fsm_version}@{fsm_language}"
+        f"{parent_fsm_name}@{parent_fsm_version}@{async_operation_type}@{async_operation_name}"
+        f"@{async_operation_version}@{async_operation_language}"
     )
 
 

@@ -71,7 +71,7 @@ def main(argv: list[str]) -> int:
     print(f"{len(registrations)} actor(s) compiled into this registry")
     for reg in registrations:
         print(
-            f"  + {reg['fsm_name']}@{reg['fsm_version']} "
+            f"  + {reg['async_operation_name']}@{reg['async_operation_version']} "
             f"(parent {reg['parent_fsm_name']}@{reg['parent_fsm_version']})"
         )
 

@@ -122,7 +122,7 @@ export const workflow = createMachine(
       DoCarVitalChecks: {
         description: "",
         invoke: {
-          fsmType: "childFSM",
+          asyncOperationType: "childFSM",
           src: "vitalscheck",
           onDone: {
             actions: ({ event }) => {

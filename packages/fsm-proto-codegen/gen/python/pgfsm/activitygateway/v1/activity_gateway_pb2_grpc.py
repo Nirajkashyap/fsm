@@ -5,7 +5,7 @@ import grpc
 from pgfsm.activitygateway.v1 import activity_gateway_pb2 as pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2
 
 
-class ActivityGatewayServiceStub:
+class ActivityGatewayServiceStub(object):
     """Client-facing contract for the Activity Gateway. The orchestrator
     (asyncOperationWorkerlet.ts) is the only intended client — it calls
     Invoke() once per claimed PGMQ message for a compiled-language actor,
@@ -16,10 +16,11 @@ class ActivityGatewayServiceStub:
     the generic {function_name, payload_json} shape is replaced with the
     activity contract from KB-001 §3.2, identifying the actor by its full
     ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
-    fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
-    name/version pair — see sidecar_gateway.proto's RegisteredActor.
-    fsm_language is part of the identity (not just metadata) because the
-    other five fields alone aren't guaranteed unique across languages.
+    async_operation_type, async_operation_name, async_operation_version,
+    async_operation_language) rather than a bare name/version pair — see
+    sidecar_gateway.proto's RegisteredActor. async_operation_language is part
+    of the identity (not just metadata) because the other five fields alone
+    aren't guaranteed unique across languages.
 
     Originally shipped flat as activity-gateway.proto / package
     pgfsm.activitygateway, exempted from several STANDARD buf lint rules as
@@ -40,15 +41,15 @@ class ActivityGatewayServiceStub:
                 '/pgfsm.activitygateway.v1.ActivityGatewayService/Invoke',
                 request_serializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeRequest.SerializeToString,
                 response_deserializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeResponse.FromString,
-                _registered_method=True)
+                )
         self.ListRegisteredActors = channel.unary_unary(
                 '/pgfsm.activitygateway.v1.ActivityGatewayService/ListRegisteredActors',
                 request_serializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsRequest.SerializeToString,
                 response_deserializer=pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsResponse.FromString,
-                _registered_method=True)
+                )
 
 
-class ActivityGatewayServiceServicer:
+class ActivityGatewayServiceServicer(object):
     """Client-facing contract for the Activity Gateway. The orchestrator
     (asyncOperationWorkerlet.ts) is the only intended client — it calls
     Invoke() once per claimed PGMQ message for a compiled-language actor,
@@ -59,10 +60,11 @@ class ActivityGatewayServiceServicer:
     the generic {function_name, payload_json} shape is replaced with the
     activity contract from KB-001 §3.2, identifying the actor by its full
     ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
-    fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
-    name/version pair — see sidecar_gateway.proto's RegisteredActor.
-    fsm_language is part of the identity (not just metadata) because the
-    other five fields alone aren't guaranteed unique across languages.
+    async_operation_type, async_operation_name, async_operation_version,
+    async_operation_language) rather than a bare name/version pair — see
+    sidecar_gateway.proto's RegisteredActor. async_operation_language is part
+    of the identity (not just metadata) because the other five fields alone
+    aren't guaranteed unique across languages.
 
     Originally shipped flat as activity-gateway.proto / package
     pgfsm.activitygateway, exempted from several STANDARD buf lint rules as
@@ -102,11 +104,10 @@ def add_ActivityGatewayServiceServicer_to_server(servicer, server):
     generic_handler = grpc.method_handlers_generic_handler(
             'pgfsm.activitygateway.v1.ActivityGatewayService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('pgfsm.activitygateway.v1.ActivityGatewayService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class ActivityGatewayService:
+class ActivityGatewayService(object):
     """Client-facing contract for the Activity Gateway. The orchestrator
     (asyncOperationWorkerlet.ts) is the only intended client — it calls
     Invoke() once per claimed PGMQ message for a compiled-language actor,
@@ -117,10 +118,11 @@ class ActivityGatewayService:
     the generic {function_name, payload_json} shape is replaced with the
     activity contract from KB-001 §3.2, identifying the actor by its full
     ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
-    fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
-    name/version pair — see sidecar_gateway.proto's RegisteredActor.
-    fsm_language is part of the identity (not just metadata) because the
-    other five fields alone aren't guaranteed unique across languages.
+    async_operation_type, async_operation_name, async_operation_version,
+    async_operation_language) rather than a bare name/version pair — see
+    sidecar_gateway.proto's RegisteredActor. async_operation_language is part
+    of the identity (not just metadata) because the other five fields alone
+    aren't guaranteed unique across languages.
 
     Originally shipped flat as activity-gateway.proto / package
     pgfsm.activitygateway, exempted from several STANDARD buf lint rules as
@@ -142,21 +144,11 @@ class ActivityGatewayService:
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/pgfsm.activitygateway.v1.ActivityGatewayService/Invoke',
+        return grpc.experimental.unary_unary(request, target, '/pgfsm.activitygateway.v1.ActivityGatewayService/Invoke',
             pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeRequest.SerializeToString,
             pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.InvokeResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def ListRegisteredActors(request,
@@ -169,18 +161,8 @@ class ActivityGatewayService:
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/pgfsm.activitygateway.v1.ActivityGatewayService/ListRegisteredActors',
+        return grpc.experimental.unary_unary(request, target, '/pgfsm.activitygateway.v1.ActivityGatewayService/ListRegisteredActors',
             pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsRequest.SerializeToString,
             pgfsm_dot_activitygateway_dot_v1_dot_activity__gateway__pb2.ListRegisteredActorsResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

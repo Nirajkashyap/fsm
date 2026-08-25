@@ -84,10 +84,10 @@ logger.info("{count} actor(s) compiled into this registry", {
 });
 for (const reg of ACTOR_REGISTRATIONS) {
   logger.info(
-    "  + {fsmName}@{fsmVersion} (parent {parentFsmName}@{parentFsmVersion})",
+    "  + {asyncOperationName}@{asyncOperationVersion} (parent {parentFsmName}@{parentFsmVersion})",
     {
-      fsmName: reg.fsmName,
-      fsmVersion: reg.fsmVersion,
+      asyncOperationName: reg.asyncOperationName,
+      asyncOperationVersion: reg.asyncOperationVersion,
       parentFsmName: reg.parentFsmName,
       parentFsmVersion: reg.parentFsmVersion,
     },

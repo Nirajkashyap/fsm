@@ -17,8 +17,9 @@ const pool = new Pool({ connectionString: Deno.env.get("DATABASE_URL") });
     db: pool,
   };
 
-  // vitalsWorkflow is a reusable sub-workflow invoked by carVitals (fsmType
-  // "fsm"). load_fsm_from_json_v2 requires a referenced child FSM to already
+  // vitalsWorkflow is a reusable sub-workflow invoked by carVitals
+  // (asyncOperationType "fsm"). load_fsm_from_json_v2 requires a referenced
+  // child FSM to already
   // exist in fsm_core.fsm_states, so it must be loaded first, in its own
   // pass, before the rest of the folders (which include its invoker).
   await loadFsmJSONFromFolders(

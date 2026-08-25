@@ -1,15 +1,15 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { copy } from "@std/fs/copy";
 import {
-  addMissingFsmTypeToInvokeActors,
+  addMissingAsyncOperationTypeToInvokeActors,
   generateFsmJSONFromFolders,
   normalizeActionsToObjects,
 } from "../src/generate-fsm-json.ts";
 import type { FsmDraftStateNode } from "../src/types/index.ts";
 
-// --- addMissingFsmTypeToInvokeActors unit tests ---
+// --- addMissingAsyncOperationTypeToInvokeActors unit tests ---
 
-Deno.test("addMissingFsmTypeToInvokeActors - adds missing fsmType and fsmVersion", () => {
+Deno.test("addMissingAsyncOperationTypeToInvokeActors - adds missing asyncOperationType and asyncOperationVersion", () => {
   const fsmJSON: FsmDraftStateNode = {
     states: {
       idle: {
@@ -17,54 +17,65 @@ Deno.test("addMissingFsmTypeToInvokeActors - adds missing fsmType and fsmVersion
       },
     },
   };
-  const { fulljson, childActorsInfo } = addMissingFsmTypeToInvokeActors(
-    fsmJSON,
-    "v01",
-  );
+  const { fulljson, childActorsInfo } =
+    addMissingAsyncOperationTypeToInvokeActors(
+      fsmJSON,
+      "v01",
+    );
 
   assertEquals(
-    fulljson.states!.idle.invoke![0].fsmType,
+    fulljson.states!.idle.invoke![0].asyncOperationType,
     "internalAsyncOperation",
   );
-  assertEquals(fulljson.states!.idle.invoke![0].fsmVersion, "v01");
-  assertEquals(fulljson.states!.idle.invoke![0].fsmLanguage, "typescript");
+  assertEquals(fulljson.states!.idle.invoke![0].asyncOperationVersion, "v01");
+  assertEquals(
+    fulljson.states!.idle.invoke![0].asyncOperationLanguage,
+    "typescript",
+  );
   assertEquals(childActorsInfo.length, 1);
   assertEquals(childActorsInfo[0].child_actor_src, "someActor");
   assertEquals(
-    childActorsInfo[0].child_actor_fsmType,
+    childActorsInfo[0].child_actor_asyncOperationType,
     "internalAsyncOperation",
   );
-  assertEquals(childActorsInfo[0].child_actor_fsmVersion, "v01");
-  assertEquals(childActorsInfo[0].child_actor_fsmLanguage, "typescript");
+  assertEquals(childActorsInfo[0].child_actor_asyncOperationVersion, "v01");
+  assertEquals(
+    childActorsInfo[0].child_actor_asyncOperationLanguage,
+    "typescript",
+  );
 });
 
-Deno.test("addMissingFsmTypeToInvokeActors - preserves existing fsmType and fsmVersion", () => {
+Deno.test("addMissingAsyncOperationTypeToInvokeActors - preserves existing asyncOperationType and asyncOperationVersion", () => {
   const fsmJSON: FsmDraftStateNode = {
     states: {
       idle: {
         invoke: [{
           src: "sharedActor",
-          fsmType: "fsm",
-          fsmVersion: "v02",
-          fsmLanguage: "python",
+          asyncOperationType: "fsm",
+          asyncOperationVersion: "v02",
+          asyncOperationLanguage: "python",
         }],
       },
     },
   };
-  const { fulljson, childActorsInfo } = addMissingFsmTypeToInvokeActors(
-    fsmJSON,
-    "v01",
-  );
+  const { fulljson, childActorsInfo } =
+    addMissingAsyncOperationTypeToInvokeActors(
+      fsmJSON,
+      "v01",
+    );
 
-  assertEquals(fulljson.states!.idle.invoke![0].fsmType, "fsm");
-  assertEquals(fulljson.states!.idle.invoke![0].fsmVersion, "v02");
-  assertEquals(fulljson.states!.idle.invoke![0].fsmLanguage, "python");
-  assertEquals(childActorsInfo[0].child_actor_fsmType, "fsm");
-  assertEquals(childActorsInfo[0].child_actor_fsmVersion, "v02");
-  assertEquals(childActorsInfo[0].child_actor_fsmLanguage, "python");
+  assertEquals(fulljson.states!.idle.invoke![0].asyncOperationType, "fsm");
+  assertEquals(fulljson.states!.idle.invoke![0].asyncOperationVersion, "v02");
+  assertEquals(
+    fulljson.states!.idle.invoke![0].asyncOperationLanguage,
+    "python",
+  );
+  assertEquals(childActorsInfo[0].child_actor_asyncOperationType, "fsm");
+  assertEquals(childActorsInfo[0].child_actor_asyncOperationVersion, "v02");
+  assertEquals(childActorsInfo[0].child_actor_asyncOperationLanguage, "python");
 });
 
-Deno.test("addMissingFsmTypeToInvokeActors - handles nested states", () => {
+Deno.test("addMissingAsyncOperationTypeToInvokeActors - handles nested states", () => {
   const fsmJSON: FsmDraftStateNode = {
     states: {
       outer: {
@@ -76,33 +87,42 @@ Deno.test("addMissingFsmTypeToInvokeActors - handles nested states", () => {
       },
     },
   };
-  const { childActorsInfo } = addMissingFsmTypeToInvokeActors(fsmJSON, "v01");
+  const { childActorsInfo } = addMissingAsyncOperationTypeToInvokeActors(
+    fsmJSON,
+    "v01",
+  );
   assertEquals(childActorsInfo.length, 1);
   assertEquals(childActorsInfo[0].child_actor_src, "nestedActor");
 });
 
-Deno.test("addMissingFsmTypeToInvokeActors - handles root-level invoke", () => {
+Deno.test("addMissingAsyncOperationTypeToInvokeActors - handles root-level invoke", () => {
   const fsmJSON: FsmDraftStateNode = {
     invoke: [{ src: "rootActor" }],
     states: {},
   };
-  const { childActorsInfo } = addMissingFsmTypeToInvokeActors(fsmJSON, "v01");
+  const { childActorsInfo } = addMissingAsyncOperationTypeToInvokeActors(
+    fsmJSON,
+    "v01",
+  );
   assertEquals(childActorsInfo.length, 1);
   assertEquals(childActorsInfo[0].child_actor_src, "rootActor");
 });
 
-Deno.test("addMissingFsmTypeToInvokeActors - returns empty childActorsInfo when no invoke", () => {
+Deno.test("addMissingAsyncOperationTypeToInvokeActors - returns empty childActorsInfo when no invoke", () => {
   const fsmJSON: FsmDraftStateNode = { states: { idle: {} } };
-  const { childActorsInfo } = addMissingFsmTypeToInvokeActors(fsmJSON, "v01");
+  const { childActorsInfo } = addMissingAsyncOperationTypeToInvokeActors(
+    fsmJSON,
+    "v01",
+  );
   assertEquals(childActorsInfo.length, 0);
 });
 
-Deno.test("addMissingFsmTypeToInvokeActors - does not mutate original", () => {
+Deno.test("addMissingAsyncOperationTypeToInvokeActors - does not mutate original", () => {
   const fsmJSON: FsmDraftStateNode = {
     states: { idle: { invoke: [{ src: "actor" }] } },
   };
   const original = JSON.stringify(fsmJSON);
-  addMissingFsmTypeToInvokeActors(fsmJSON, "v01");
+  addMissingAsyncOperationTypeToInvokeActors(fsmJSON, "v01");
   assertEquals(JSON.stringify(fsmJSON), original);
 });
 

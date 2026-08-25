@@ -5,10 +5,10 @@ mod creditcheck_v01;
 pub struct ActorRegistration {
     pub parent_fsm_name: &'static str,
     pub parent_fsm_version: &'static str,
-    pub fsm_type: &'static str,
-    pub fsm_name: &'static str,
-    pub fsm_version: &'static str,
-    pub fsm_language: &'static str,
+    pub async_operation_type: &'static str,
+    pub async_operation_name: &'static str,
+    pub async_operation_version: &'static str,
+    pub async_operation_language: &'static str,
     pub handler: fn(serde_json::Value) -> serde_json::Value,
 }
 
@@ -16,10 +16,10 @@ pub fn actor_registrations() -> Vec<ActorRegistration> {
     vec![ActorRegistration {
         parent_fsm_name: "creditCheck",
         parent_fsm_version: "v01",
-        fsm_type: "internalAsyncOperation",
-        fsm_name: "checkBureauRust",
-        fsm_version: "v01",
-        fsm_language: "rust",
+        async_operation_type: "internalAsyncOperation",
+        async_operation_name: "checkBureauRust",
+        async_operation_version: "v01",
+        async_operation_language: "rust",
         handler: creditcheck_v01::checkBureauRust,
     }]
 }

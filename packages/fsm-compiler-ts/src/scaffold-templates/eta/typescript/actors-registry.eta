@@ -6,10 +6,10 @@ import { <%~ a.src %> } from "./<%~ a.fileBaseName %>/<%~ a.fileBaseName %>.ts";
 export type ActorRegistration = {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   handler: (input: unknown) => unknown;
 };
 
@@ -18,10 +18,10 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: <%~ JSON.stringify(a.parentFsmName) %>,
     parentFsmVersion: <%~ JSON.stringify(a.parentFsmVersion) %>,
-    fsmType: <%~ JSON.stringify(a.fsmType) %>,
-    fsmName: <%~ JSON.stringify(a.fsmName) %>,
-    fsmVersion: <%~ JSON.stringify(a.fsmVersion) %>,
-    fsmLanguage: <%~ JSON.stringify(a.fsmLanguage) %>,
+    asyncOperationType: <%~ JSON.stringify(a.asyncOperationType) %>,
+    asyncOperationName: <%~ JSON.stringify(a.asyncOperationName) %>,
+    asyncOperationVersion: <%~ JSON.stringify(a.asyncOperationVersion) %>,
+    asyncOperationLanguage: <%~ JSON.stringify(a.asyncOperationLanguage) %>,
     handler: <%~ a.src %>,
   },
 <% } -%>

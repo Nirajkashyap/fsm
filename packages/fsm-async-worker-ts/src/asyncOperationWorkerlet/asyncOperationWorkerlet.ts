@@ -97,10 +97,10 @@ async function startPromiseWorkerForLang(
   signal?: AbortSignal,
 ): Promise<void> {
   const {
-    fsmLanguage: lang,
+    asyncOperationLanguage: lang,
     method: fnName,
-    fsmType,
-    fsmVersion,
+    asyncOperationType,
+    asyncOperationVersion,
     fsmModulePath,
   } = result;
 
@@ -109,8 +109,8 @@ async function startPromiseWorkerForLang(
       deps,
       queueName,
       fnName,
-      fsmType,
-      fsmVersion,
+      asyncOperationType,
+      asyncOperationVersion,
       result,
       signal,
     );
@@ -123,8 +123,8 @@ async function startPromiseWorkerForLang(
         fnName,
         queueName,
         fnName,
-        fsmType,
-        fsmVersion,
+        asyncOperationType,
+        asyncOperationVersion,
       ],
       env: { ...Deno.env.toObject() },
       stdin: "null",
@@ -199,9 +199,9 @@ export async function startAsyncOperationWorkerlet(
       await loadAsyncOperation(
         deps,
         result.method,
-        result.fsmVersion,
-        result.fsmType,
-        result.fsmLanguage,
+        result.asyncOperationVersion,
+        result.asyncOperationType,
+        result.asyncOperationLanguage,
         result.parentFsmName,
         result.parentFsmVersion,
         workerletId,
@@ -211,7 +211,7 @@ export async function startAsyncOperationWorkerlet(
         {
           workerletId,
           method: result.method,
-          version: result.fsmVersion,
+          version: result.asyncOperationVersion,
           parent: result.parentFsmName,
         },
       );
@@ -227,7 +227,7 @@ export async function startAsyncOperationWorkerlet(
   // Step 3: register in async_operation_workerlet.
   const supportedOps: AsyncOperationSupportedOp[] = verified.map((r) => ({
     async_operation_name: r.method,
-    async_operation_version: r.fsmVersion,
+    async_operation_version: r.asyncOperationVersion,
     parent_fsm_name: r.parentFsmName,
     parent_fsm_version: r.parentFsmVersion,
   }));
@@ -290,10 +290,10 @@ export async function startAsyncOperationWorkerlet(
     const queueName = await computePromiseQueueName(deps, {
       parentFsmName: entry.parent_fsm_name,
       parentFsmVersion: entry.parent_fsm_version,
-      fsmType: result.fsmType,
-      fsmName: entry.async_operation_name,
-      fsmVersion: result.fsmVersion,
-      fsmLanguage: result.fsmLanguage,
+      asyncOperationType: result.asyncOperationType,
+      asyncOperationName: entry.async_operation_name,
+      asyncOperationVersion: result.asyncOperationVersion,
+      asyncOperationLanguage: result.asyncOperationLanguage,
     });
 
     if (activeWorkers.has(queueName)) {
@@ -306,7 +306,7 @@ export async function startAsyncOperationWorkerlet(
     activeWorkers.set(queueName, { controller });
     logger.info(
       "AsyncOperationWorkerlet {workerletId}: starting {lang} worker for queue {queue}",
-      { workerletId, lang: result.fsmLanguage, queue: queueName },
+      { workerletId, lang: result.asyncOperationLanguage, queue: queueName },
     );
 
     startPromiseWorkerForLang(

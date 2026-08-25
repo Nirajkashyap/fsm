@@ -21,24 +21,24 @@ export declare class InvokeRequest extends Message<InvokeRequest> {
   parentFsmVersion: string;
 
   /**
-   * @generated from field: string fsm_type = 3;
+   * @generated from field: string async_operation_type = 3;
    */
-  fsmType: string;
+  asyncOperationType: string;
 
   /**
-   * @generated from field: string fsm_name = 4;
+   * @generated from field: string async_operation_name = 4;
    */
-  fsmName: string;
+  asyncOperationName: string;
 
   /**
-   * @generated from field: string fsm_version = 5;
+   * @generated from field: string async_operation_version = 5;
    */
-  fsmVersion: string;
+  asyncOperationVersion: string;
 
   /**
-   * @generated from field: string fsm_language = 6;
+   * @generated from field: string async_operation_language = 6;
    */
-  fsmLanguage: string;
+  asyncOperationLanguage: string;
 
   /**
    * @generated from field: string input_json = 7;
@@ -143,7 +143,7 @@ export declare class ListRegisteredActorsRequest extends Message<ListRegisteredA
  */
 export declare class ListRegisteredActorsResponse extends Message<ListRegisteredActorsResponse> {
   /**
-   * "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
+   * "parentFsmName@parentFsmVersion@asyncOperationType@asyncOperationName@asyncOperationVersion@asyncOperationLanguage"
    * keys, one per actor currently registered by a live worker process.
    *
    * @generated from field: repeated string actor_keys = 1;

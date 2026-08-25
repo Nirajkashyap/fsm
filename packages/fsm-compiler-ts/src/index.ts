@@ -1,7 +1,7 @@
 export { configureCompilerLogger, type LogLevel } from "./logger.ts";
 export {
   addActionNameFromDelay,
-  addMissingFsmTypeToInvokeActors,
+  addMissingAsyncOperationTypeToInvokeActors,
   generateFsmJSONFromFolders,
   generateFsmJSONFromMachineFile,
   normalizeActionsToObjects,

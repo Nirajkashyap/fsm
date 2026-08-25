@@ -48,8 +48,9 @@ what's written).
 
 - `xstate-fsm.json` — the machine's raw XState-exported JSON
 - `fsm.json` — that JSON normalized (actions coerced to `{ type }` objects,
-  raise/cancel delay names filled in, invoke actors' `fsmType`/`fsmVersion`
-  resolved). This is what every other command below reads.
+  raise/cancel delay names filled in, invoke actors'
+  `asyncOperationType`/`asyncOperationVersion` resolved). This is what every
+  other command below reads.
 
 ```bash
 npx @pgfsm/compiler -c generate -f fsm
@@ -93,7 +94,8 @@ must have already run.
 **Output** — per version folder:
 
 - One file per distinct actor: `<lang>/actors/<name>/<name>.<ext>`, where
-  `<lang>` is that invoke object's own `fsmLanguage` (default `typescript`)
+  `<lang>` is that invoke object's own `asyncOperationLanguage` (default
+  `typescript`)
 - `actors-manifest.json` — every actor across all languages
 - A per-language barrel re-exporting each actor: `typescript/actors/index.ts`,
   `python/actors/__init__.py`, `rust/actors/mod.rs` (Go has no barrel)
@@ -149,9 +151,9 @@ npx @pgfsm/compiler -c delete -f fsm
 
 **Input** — `-f`/`--folder`: plugin-root directory. `-w`/`--workflow-type`:
 required. `-a`/`--available-actors`: path to a JSON file of
-`{ src, fsmType?, fsmVersion?, fsmLanguage? }[]` — actors resolvable from
-elsewhere (e.g. a shared pool) so invoke references pointing at them aren't
-reported as unresolved. `-s`/`--skip-dirs`.
+`{ src, asyncOperationType?, asyncOperationVersion?, asyncOperationLanguage? }[]`
+— actors resolvable from elsewhere (e.g. a shared pool) so invoke references
+pointing at them aren't reported as unresolved. `-s`/`--skip-dirs`.
 
 **Output** — writes nothing; validates that every action/guard/delay in
 `fsm.json` has a matching export in `<lang>/actions|guards|delays/index.*` and
@@ -169,7 +171,7 @@ npx @pgfsm/compiler -c validate-sync-operation -f fsm -w fsm
 
 **Output/side effect** — inserts each FSM's states/transitions into the
 `fsm_core` PostgreSQL schema, resolving `dependent_children` from any invoke
-actors whose `fsmType` is `"fsm"`. No local files are written.
+actors whose `asyncOperationType` is `"fsm"`. No local files are written.
 
 ```bash
 npx @pgfsm/compiler -c load -f fsm -w fsm -d "$DATABASE_URL"

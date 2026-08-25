@@ -31,19 +31,20 @@ export interface WireEnvelope {
 // One actor entrypoint a worker process serves, e.g. a single Rust function
 // behind an FSM promise-actor. Mirrors ActorPluginValidationResult's identity
 // fields (see @pgfsm/compiler's util.ts) — `actorKey()` is what the gateway
-// routes on. `fsmLanguage` is part of the key (not just a display field)
-// because the identity fields alone aren't guaranteed unique across
+// routes on. `asyncOperationLanguage` is part of the key (not just a display
+// field) because the identity fields alone aren't guaranteed unique across
 // languages — two workers of different languages could otherwise register
-// the same parentFsmName/parentFsmVersion/fsmType/fsmName/fsmVersion tuple
-// and silently overwrite each other's route (last register wins, see
+// the same
+// parentFsmName/parentFsmVersion/asyncOperationType/asyncOperationName/asyncOperationVersion
+// tuple and silently overwrite each other's route (last register wins, see
 // gateway.ts's registerWorker).
 export interface RegisteredActor {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   timeout_ms?: number;
   description?: string;
 }
@@ -51,12 +52,12 @@ export interface RegisteredActor {
 export function actorKey(
   parentFsmName: string,
   parentFsmVersion: string,
-  fsmType: string,
-  fsmName: string,
-  fsmVersion: string,
-  fsmLanguage: string,
+  asyncOperationType: string,
+  asyncOperationName: string,
+  asyncOperationVersion: string,
+  asyncOperationLanguage: string,
 ): string {
-  return `${parentFsmName}@${parentFsmVersion}@${fsmType}@${fsmName}@${fsmVersion}@${fsmLanguage}`;
+  return `${parentFsmName}@${parentFsmVersion}@${asyncOperationType}@${asyncOperationName}@${asyncOperationVersion}@${asyncOperationLanguage}`;
 }
 
 export interface RegisterBody {
@@ -77,10 +78,10 @@ export interface InvokeBody {
   invoke_id: string;
   parent_fsm_name: string;
   parent_fsm_version: string;
-  fsm_type: string;
-  fsm_name: string;
-  fsm_version: string;
-  fsm_language: string;
+  async_operation_type: string;
+  async_operation_name: string;
+  async_operation_version: string;
+  async_operation_language: string;
   input: unknown;
   instance_id: string;
   correlation_id: string;

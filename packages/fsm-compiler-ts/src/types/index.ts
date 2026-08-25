@@ -29,31 +29,31 @@ export type {
 } from "../../../database-src/generated/fsm-machine-schema.types.ts";
 
 /**
- * Tied directly to the schema's `invokeObject.fsmType` enum
- * (`InvokeObject["fsmType"]`, imported above) instead of a hand-written
- * literal union, so renaming/adding/removing an `fsmType` value only
- * requires editing `fsm.machine.schema.v3.json` — this type (and every CLI
- * flag/function param typed with it) follows automatically instead of
- * needing a matching hand-edit here.
+ * Tied directly to the schema's `invokeObject.asyncOperationType` enum
+ * (`InvokeObject["asyncOperationType"]`, imported above) instead of a
+ * hand-written literal union, so renaming/adding/removing an
+ * `asyncOperationType` value only requires editing `fsm.machine.schema.v3.json`
+ * — this type (and every CLI flag/function param typed with it) follows
+ * automatically instead of needing a matching hand-edit here.
  */
-export type WorkflowType = InvokeObject["fsmType"];
+export type WorkflowType = InvokeObject["asyncOperationType"];
 
 /**
- * `fsmType`/`fsmLanguage` are tied to `InvokeObject`'s own field types
- * (rather than hand-loosened to plain `string`) since every real construction
- * site already populates them from a parsed `InvokeObject` (or a value drawn
- * from its enum, e.g. `OperationLang`), and callers already do literal
- * comparisons like `actor.fsmType === "fsm"` — the tighter type catches typos
- * there instead of just widening past them. The one path that bypasses this
- * (`cli/index.ts`'s `--available-actors` file, loaded via a raw `JSON.parse`
- * `as ActorReference[]` cast) isn't affected either way, since a type
- * assertion from `any` skips structural checking regardless.
+ * `asyncOperationType`/`asyncOperationLanguage` are tied to `InvokeObject`'s
+ * own field types (rather than hand-loosened to plain `string`) since every
+ * real construction site already populates them from a parsed `InvokeObject`
+ * (or a value drawn from its enum, e.g. `OperationLang`), and callers already
+ * do literal comparisons like `actor.asyncOperationType === "fsm"` — the
+ * tighter type catches typos there instead of just widening past them. The one
+ * path that bypasses this (`cli/index.ts`'s `--available-actors` file, loaded
+ * via a raw `JSON.parse` `as ActorReference[]` cast) isn't affected either way,
+ * since a type assertion from `any` skips structural checking regardless.
  */
 export type ActorReference = {
   src: string;
-  fsmType?: InvokeObject["fsmType"];
-  fsmVersion?: string;
-  fsmLanguage?: InvokeObject["fsmLanguage"];
+  asyncOperationType?: InvokeObject["asyncOperationType"];
+  asyncOperationVersion?: string;
+  asyncOperationLanguage?: InvokeObject["asyncOperationLanguage"];
 };
 
 export type FailedMethod = {
@@ -85,7 +85,7 @@ export type FsmPluginValidationResult = {
 export type ActorPluginValidationResult = {
   src: string;
   method: string;
-  fsmName: string;
+  asyncOperationName: string;
   /**
    * Narrowed to the one value `validateAsyncOperationFromFolders` ever
    * produces, but via `Extract<>` from the schema enum rather than a bare
@@ -93,9 +93,12 @@ export type ActorPluginValidationResult = {
    * the schema, this becomes `never` and every assignment site fails to
    * compile instead of silently drifting.
    */
-  fsmType: Extract<InvokeObject["fsmType"], "internalAsyncOperation">;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: Extract<
+    InvokeObject["asyncOperationType"],
+    "internalAsyncOperation"
+  >;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   isVerified: boolean;
   fsmModulePath: string;
   parentFsmName: string;
@@ -107,20 +110,20 @@ export type ActorPluginValidationResult = {
 
 /**
  * Languages an operation-logic module can be scaffolded in. Tied to the
- * schema's `InvokeObject["fsmLanguage"]` enum minus `"llm"` — every
- * `switch (lang)` over `OperationLang` in this file relies on exhaustiveness
- * (no `default` case) for its declared return type, so `"llm"` must stay
- * excluded until scaffolding actually supports it; widening to the full
- * schema enum would make those switches fail to compile (a real signal, not
- * a false alarm, for whoever adds `"llm"` support later — they'd need to add
- * a case everywhere this type is switched on). `fsmLanguage` is an optional
- * schema field, so the indexed-access type also carries `undefined` —
- * `NonNullable` strips that before `Exclude` removes `"llm"`. Still
- * schema-derived for the other four: renaming one of
+ * schema's `InvokeObject["asyncOperationLanguage"]` enum minus `"llm"` —
+ * every `switch (lang)` over `OperationLang` in this file relies on
+ * exhaustiveness (no `default` case) for its declared return type, so `"llm"`
+ * must stay excluded until scaffolding actually supports it; widening to the
+ * full schema enum would make those switches fail to compile (a real signal,
+ * not a false alarm, for whoever adds `"llm"` support later — they'd need to
+ * add a case everywhere this type is switched on). `asyncOperationLanguage`
+ * is an optional schema field, so the indexed-access type also carries
+ * `undefined` — `NonNullable` strips that before `Exclude` removes `"llm"`.
+ * Still schema-derived for the other four: renaming one of
  * `typescript`/`python`/`rust`/`go` in the schema follows automatically here.
  */
 export type OperationLang = Exclude<
-  NonNullable<InvokeObject["fsmLanguage"]>,
+  NonNullable<InvokeObject["asyncOperationLanguage"]>,
   "llm"
 >;
 
@@ -133,10 +136,10 @@ export type WrittenActor = {
   src: string;
   /** Sanitized filename component — the folder/file name on disk. */
   fileBaseName: string;
-  fsmLanguage: OperationLang;
+  asyncOperationLanguage: OperationLang;
   /** Path relative to the version-folder root, e.g. `typescript/actors/checkBureau/checkBureau.ts`. */
   filePath: string;
-  /** The callable/importable symbol name in `fsmLanguage` — equals `src` except for Go, which capitalizes it for cross-package export. */
+  /** The callable/importable symbol name in `asyncOperationLanguage` — equals `src` except for Go, which capitalizes it for cross-package export. */
   exportedName: string;
 };
 
@@ -149,21 +152,22 @@ export type WrittenActor = {
  * (`operation-logic-scaffold.ts`) need to emit a self-describing
  * registration, not just a name -> callable map. Matches the flattened
  * identity model `fsm-compiler-ts`'s own `validateAsyncOperationFromFolders`
- * already used: `fsmName` is the actor's own `src` (not a separate sub-FSM
- * reference), `fsmVersion` is the parent FSM's version. `fsmType` is
- * `"internalAsyncOperation"` for actors scaffolded from an invoke object (the
- * only kind `toRegisteredActor` builds) or `"sharedAsyncOperation"` for the
- * standalone, non-FSM-scoped pool `create-async-logic.ts` writes into (see
- * that file's `SHARED_ASYNC_OP_FSM_TYPE`) — both are real `InvokeObject`
- * `fsmType` values, tied directly to the schema below rather than
+ * already used: `asyncOperationName` is the actor's own `src` (not a
+ * separate sub-FSM reference), `asyncOperationVersion` is the parent FSM's
+ * version. `asyncOperationType` is `"internalAsyncOperation"` for actors
+ * scaffolded from an invoke object (the only kind `toRegisteredActor` builds)
+ * or `"sharedAsyncOperation"` for the standalone, non-FSM-scoped pool
+ * `create-async-logic.ts` writes into (see that file's
+ * `SHARED_ASYNC_OP_FSM_TYPE`) — both are real `InvokeObject`
+ * `asyncOperationType` values, tied directly to the schema below rather than
  * hand-written, since neither actually needs a value outside that enum.
  */
 export type RegisteredActor = WrittenActor & {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: InvokeObject["fsmType"];
-  fsmName: string;
-  fsmVersion: string;
+  asyncOperationType: InvokeObject["asyncOperationType"];
+  asyncOperationName: string;
+  asyncOperationVersion: string;
 };
 
 /**

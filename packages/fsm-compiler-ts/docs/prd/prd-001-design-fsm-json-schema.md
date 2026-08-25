@@ -77,24 +77,27 @@ schema-only validate command (see [Gaps](#gaps)).
 Each state may declare async operation logic via an `invoke` array. Each entry
 carries:
 
-| Field         | Required | Meaning                                                      |
-| ------------- | -------- | ------------------------------------------------------------ |
-| `type`        | yes      | `xstate.invoke`                                              |
-| `id`          | yes      | Instance id of the invocation                                |
-| `src`         | yes      | Actor name — the exported fn in its `<lang>/actors/` file    |
-| `fsmType`     | yes      | `internalAsyncOperation \| sharedAsyncOperation \| fsm`      |
-| `fsmVersion`  | yes      | Version of the invoked service                               |
-| `fsmLanguage` | no       | `typescript \| python \| rust \| llm` (default `typescript`) |
+| Field                    | Required | Meaning                                                      |
+| ------------------------ | -------- | ------------------------------------------------------------ |
+| `type`                   | yes      | `xstate.invoke`                                              |
+| `id`                     | yes      | Instance id of the invocation                                |
+| `src`                    | yes      | Actor name — the exported fn in its `<lang>/actors/` file    |
+| `asyncOperationType`     | yes      | `internalAsyncOperation \| sharedAsyncOperation \| fsm`      |
+| `asyncOperationVersion`  | yes      | Version of the invoked service                               |
+| `asyncOperationLanguage` | no       | `typescript \| python \| rust \| llm` (default `typescript`) |
 
-`fsmType`/`fsmVersion`/`fsmLanguage` are backfilled when missing by
-`addMissingFsmTypeToInvokeActors` (`src/generate-fsm-json.ts`); `fsmLanguage`
-defaults to `typescript`. `fsmLanguage` selects which language's actor folder
-implements the operation logic — the routing key for the polyglot model.
+`asyncOperationType`/`asyncOperationVersion`/`asyncOperationLanguage` are
+backfilled when missing by `addMissingFsmTypeToInvokeActors`
+(`src/generate-fsm-json.ts`); `asyncOperationLanguage` defaults to `typescript`.
+`asyncOperationLanguage` selects which language's actor folder implements the
+operation logic — the routing key for the polyglot model.
 
-**Status:** ✅ Implemented — `fsmType`/`fsmVersion`/`fsmLanguage` are backfilled
-and `extractFsmPluginRefs` parses `fsmLanguage` onto `ActorReference`. The
-compiler now validates against schema v3. (Language-keyed _scaffolding_ that
-acts on `fsmLanguage` remains a separate PRD-002 gap.)
+**Status:** ✅ Implemented —
+`asyncOperationType`/`asyncOperationVersion`/`asyncOperationLanguage` are
+backfilled and `extractFsmPluginRefs` parses `asyncOperationLanguage` onto
+`ActorReference`. The compiler now validates against schema v3. (Language-keyed
+_scaffolding_ that acts on `asyncOperationLanguage` remains a separate PRD-002
+gap.)
 
 ### R4 — Versioning
 
@@ -109,10 +112,11 @@ Tracked in [TODO.md](../todo/TODO.md):
 
 1. ✅ **Schema version drift (resolved)** — the compiler now validates against
    `fsm.machine.schema.v3.json` in all three call sites.
-2. ✅ **`fsmLanguage` wired (resolved)** — parsed onto `ActorReference`,
-   backfilled with a `typescript` default, and carried into plugin generation.
+2. ✅ **`asyncOperationLanguage` wired (resolved)** — parsed onto
+   `ActorReference`, backfilled with a `typescript` default, and carried into
+   plugin generation.
 3. ✅ **Language-keyed scaffolding (resolved)** — actors are generated per
-   `fsmLanguage` (`generate-async-logic`) and sync logic per `--lang`
+   `asyncOperationLanguage` (`generate-async-logic`) and sync logic per `--lang`
    (`generate-sync-logic`); `typescript`/`python`/`rust`/`go` (PRD-002,
    PRD-003).
 4. **No native schema-validate command** — R2 depends on external `ajv-cli`; a
@@ -124,6 +128,6 @@ Tracked in [TODO.md](../todo/TODO.md):
   `machine.ts` or folder. ✅
 - A hand-authored `fsm.json` validates against `fsm.machine.schema.v3.json`. ✅
   (external tool)
-- Every `invoke` object resolves `type`, `id`, `src`, `fsmType`, `fsmVersion`,
-  and `fsmLanguage` (defaulted). ✅
+- Every `invoke` object resolves `type`, `id`, `src`, `asyncOperationType`,
+  `asyncOperationVersion`, and `asyncOperationLanguage` (defaulted). ✅
 - Compiler validation targets the same schema version the docs reference. ✅

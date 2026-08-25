@@ -3,7 +3,7 @@
  * neither has to be hand-copied out of sync with the schema:
  *
  * 1. ENUM type definitions for the schema's enum-valued fields
- *    (fsm_core.fsm_type/fsm_language/etc.).
+ *    (fsm_core.async_operation_type/async_operation_language/etc.).
  * 2. fsm_core.fsm_json_schema() — a SQL function returning the entire schema
  *    as JSON, with the file's contents embedded as the literal. Previously
  *    hand-copied directly into
@@ -27,7 +27,7 @@
  *   field's actual value domain.
  */
 type EnumTarget = {
-  /** JSON-pointer-style path into the schema, e.g. ["$defs", "invokeObject", "properties", "fsmType"]. */
+  /** JSON-pointer-style path into the schema, e.g. ["$defs", "invokeObject", "properties", "asyncOperationType"]. */
   path: string[];
   /** Resulting type name, created as fsm_core.<typeName>. */
   typeName: string;
@@ -35,12 +35,12 @@ type EnumTarget = {
 
 const ENUM_TARGETS: EnumTarget[] = [
   {
-    path: ["$defs", "invokeObject", "properties", "fsmType"],
-    typeName: "fsm_type",
+    path: ["$defs", "invokeObject", "properties", "asyncOperationType"],
+    typeName: "async_operation_type",
   },
   {
-    path: ["$defs", "invokeObject", "properties", "fsmLanguage"],
-    typeName: "fsm_language",
+    path: ["$defs", "invokeObject", "properties", "asyncOperationLanguage"],
+    typeName: "async_operation_language",
   },
   {
     path: ["$defs", "historyStateNode", "allOf", "1", "properties", "history"],

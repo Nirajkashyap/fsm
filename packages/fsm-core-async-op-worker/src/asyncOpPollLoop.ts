@@ -45,10 +45,10 @@ const DEFAULT_INVOKE_TIMEOUT_MS = 10_000;
 interface ClaimedPromiseEvent {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   input: unknown;
   instanceId: string;
   correlationId: string;
@@ -66,10 +66,10 @@ interface ClaimedPromiseEvent {
 const REQUIRED_CLAIMED_EVENT_KEYS: (keyof ClaimedPromiseEvent)[] = [
   "parentFsmName",
   "parentFsmVersion",
-  "fsmType",
-  "fsmName",
-  "fsmVersion",
-  "fsmLanguage",
+  "asyncOperationType",
+  "asyncOperationName",
+  "asyncOperationVersion",
+  "asyncOperationLanguage",
   "instanceId",
   "correlationId",
   "promiseQueueName",
@@ -102,19 +102,19 @@ function actorKeyOf(
     ClaimedPromiseEvent,
     | "parentFsmName"
     | "parentFsmVersion"
-    | "fsmType"
-    | "fsmName"
-    | "fsmVersion"
-    | "fsmLanguage"
+    | "asyncOperationType"
+    | "asyncOperationName"
+    | "asyncOperationVersion"
+    | "asyncOperationLanguage"
   >,
 ): string {
   return [
     event.parentFsmName,
     event.parentFsmVersion,
-    event.fsmType,
-    event.fsmName,
-    event.fsmVersion,
-    event.fsmLanguage,
+    event.asyncOperationType,
+    event.asyncOperationName,
+    event.asyncOperationVersion,
+    event.asyncOperationLanguage,
   ].join("@");
 }
 
@@ -140,10 +140,10 @@ export async function dispatchAndArchive(
       {
         parentFsmName: event.parentFsmName,
         parentFsmVersion: event.parentFsmVersion,
-        fsmType: event.fsmType,
-        fsmName: event.fsmName,
-        fsmVersion: event.fsmVersion,
-        fsmLanguage: event.fsmLanguage,
+        asyncOperationType: event.asyncOperationType,
+        asyncOperationName: event.asyncOperationName,
+        asyncOperationVersion: event.asyncOperationVersion,
+        asyncOperationLanguage: event.asyncOperationLanguage,
         input: event.input,
         instanceId: event.instanceId,
         correlationId: event.correlationId,

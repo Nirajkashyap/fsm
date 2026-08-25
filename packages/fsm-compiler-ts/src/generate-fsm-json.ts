@@ -219,15 +219,16 @@ export function addActionNameFromDelay(
 }
 
 /**
- * Pure function — returns a new FSM JSON with missing fsmType/fsmVersion/fsmLanguage
- * added to every invoke entry, plus a flat list of all child actor metadata.
- * fsmLanguage defaults to "typescript" when absent.
+ * Pure function — returns a new FSM JSON with missing
+ * asyncOperationType/asyncOperationVersion/asyncOperationLanguage added to
+ * every invoke entry, plus a flat list of all child actor metadata.
+ * asyncOperationLanguage defaults to "typescript" when absent.
  * Does not mutate the input.
  * @param fsmJSON The FSM JSON object
- * @param parentFsmVersion Fallback fsmVersion applied when invoke entry has none
+ * @param parentFsmVersion Fallback asyncOperationVersion applied when invoke entry has none
  * @returns { fulljson, childActorsInfo }
  */
-export function addMissingFsmTypeToInvokeActors(
+export function addMissingAsyncOperationTypeToInvokeActors(
   fsmJSON: FsmDraftStateNode,
   parentFsmVersion: string,
 ): {
@@ -235,9 +236,9 @@ export function addMissingFsmTypeToInvokeActors(
   childActorsInfo: Array<
     {
       child_actor_src: string;
-      child_actor_fsmType: string;
-      child_actor_fsmVersion: string;
-      child_actor_fsmLanguage: string;
+      child_actor_asyncOperationType: string;
+      child_actor_asyncOperationVersion: string;
+      child_actor_asyncOperationLanguage: string;
     }
   >;
 } {
@@ -245,28 +246,31 @@ export function addMissingFsmTypeToInvokeActors(
   const childActorsInfo: Array<
     {
       child_actor_src: string;
-      child_actor_fsmType: string;
-      child_actor_fsmVersion: string;
-      child_actor_fsmLanguage: string;
+      child_actor_asyncOperationType: string;
+      child_actor_asyncOperationVersion: string;
+      child_actor_asyncOperationLanguage: string;
     }
   > = [];
 
   function fillInvokeDefaults(invokeObj: FsmDraftInvoke) {
-    if (!("fsmType" in invokeObj)) {
-      invokeObj.fsmType = "internalAsyncOperation";
+    if (!("asyncOperationType" in invokeObj)) {
+      invokeObj.asyncOperationType = "internalAsyncOperation";
     }
-    if (!("fsmVersion" in invokeObj)) {
-      invokeObj.fsmVersion = parentFsmVersion;
+    if (!("asyncOperationVersion" in invokeObj)) {
+      invokeObj.asyncOperationVersion = parentFsmVersion;
     }
-    if (!("fsmLanguage" in invokeObj)) {
-      invokeObj.fsmLanguage = "typescript";
+    if (!("asyncOperationLanguage" in invokeObj)) {
+      invokeObj.asyncOperationLanguage = "typescript";
     }
     if (invokeObj.src) {
       childActorsInfo.push({
         child_actor_src: invokeObj.src,
-        child_actor_fsmType: invokeObj.fsmType ?? "internalAsyncOperation",
-        child_actor_fsmVersion: invokeObj.fsmVersion ?? parentFsmVersion,
-        child_actor_fsmLanguage: invokeObj.fsmLanguage ?? "typescript",
+        child_actor_asyncOperationType: invokeObj.asyncOperationType ??
+          "internalAsyncOperation",
+        child_actor_asyncOperationVersion: invokeObj.asyncOperationVersion ??
+          parentFsmVersion,
+        child_actor_asyncOperationLanguage: invokeObj.asyncOperationLanguage ??
+          "typescript",
       });
     }
   }
@@ -306,7 +310,7 @@ export function addMissingFsmTypeToInvokeActors(
  * Reads machine.ts from absFolderPath, runs the full FSM compilation pipeline,
  * and writes fsm.json + xstate-fsm.json alongside it.
  * @param absFolderPath Absolute path to the versioned FSM directory (e.g. /…/creditCheck/v01)
- * @param version Version string (e.g. "v01") used when filling in missing fsmVersion on invoke actors
+ * @param version Version string (e.g. "v01") used when filling in missing asyncOperationVersion on invoke actors
  * @param showRecommendation When true, validates fsm.json against the machine schema and logs issues
  */
 export async function generateFsmJSONFromMachineFile(
@@ -344,8 +348,8 @@ export async function generateFsmJSONFromMachineFile(
       // step 4 — addActionNameFromDelay (pure): set actionName from delay on xstate.raise/xstate.cancel actions
       const enrichedJSON = addActionNameFromDelay(normalizedJSON);
 
-      // step 5 — addMissingFsmTypeToInvokeActors (pure): fill in fsmType/fsmVersion on invoke entries
-      const { fulljson: fsmJSON } = addMissingFsmTypeToInvokeActors(
+      // step 5 — addMissingAsyncOperationTypeToInvokeActors (pure): fill in asyncOperationType/asyncOperationVersion on invoke entries
+      const { fulljson: fsmJSON } = addMissingAsyncOperationTypeToInvokeActors(
         enrichedJSON,
         version,
       );

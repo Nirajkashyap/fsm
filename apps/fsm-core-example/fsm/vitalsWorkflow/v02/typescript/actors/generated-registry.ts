@@ -7,10 +7,10 @@ import { checkBattery } from "./checkBattery/checkBattery.ts";
 export type ActorRegistration = {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   handler: (input: unknown) => unknown;
 };
 
@@ -18,37 +18,37 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "vitalsWorkflow",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "checkTirePressure",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "checkTirePressure",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: checkTirePressure,
   },
   {
     parentFsmName: "vitalsWorkflow",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "checkOilPressure",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "checkOilPressure",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: checkOilPressure,
   },
   {
     parentFsmName: "vitalsWorkflow",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "checkCoolantLevel",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "checkCoolantLevel",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: checkCoolantLevel,
   },
   {
     parentFsmName: "vitalsWorkflow",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "checkBattery",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "checkBattery",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: checkBattery,
   },
 ];

@@ -68,8 +68,8 @@ type FsmStateOrMachine =
 
 /**
  * Recursively traverses FSM JSON and collects all action, guard, delay, and actor names.
- * Actors are returned as objects preserving fsmType, fsmVersion, and fsmLanguage
- * (fsmLanguage defaults to "typescript" when absent on the invoke object).
+ * Actors are returned as objects preserving asyncOperationType, asyncOperationVersion, and asyncOperationLanguage
+ * (asyncOperationLanguage defaults to "typescript" when absent on the invoke object).
  */
 export function extractFsmPluginRefs(fsmData: FsmMachineJson): {
   actions: string[];
@@ -126,9 +126,9 @@ export function extractFsmPluginRefs(fsmData: FsmMachineJson): {
       for (const inv of state.invoke) {
         actorsArr.push({
           src: inv.src,
-          fsmType: inv.fsmType,
-          fsmVersion: inv.fsmVersion,
-          fsmLanguage: inv.fsmLanguage ?? "typescript",
+          asyncOperationType: inv.asyncOperationType,
+          asyncOperationVersion: inv.asyncOperationVersion,
+          asyncOperationLanguage: inv.asyncOperationLanguage ?? "typescript",
         });
       }
     }

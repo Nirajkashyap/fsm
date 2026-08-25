@@ -1,7 +1,8 @@
 -- fsm-core-async-op-worker's 30-second poll loop calls this with its
 -- currently-registered worker identities:
---   [{parent_fsm_name, parent_fsm_version, fsm_type, fsm_name, fsm_version,
---     fsm_language}, ...]
+--   [{parent_fsm_name, parent_fsm_version, async_operation_type,
+--     async_operation_name, async_operation_version,
+--     async_operation_language}, ...]
 -- (no "handler" -- that's an in-process function reference, not
 -- serializable to Postgres).
 --
@@ -53,8 +54,8 @@ BEGIN
     LOOP
         computed_queue_name := fsm_core.compute_promise_queue_name_v2(
             worker->>'parent_fsm_name', worker->>'parent_fsm_version',
-            worker->>'fsm_type', worker->>'fsm_name',
-            worker->>'fsm_version', worker->>'fsm_language'
+            worker->>'async_operation_type', worker->>'async_operation_name',
+            worker->>'async_operation_version', worker->>'async_operation_language'
         );
 
         SELECT EXISTS (
@@ -71,16 +72,16 @@ BEGIN
             RETURN NEXT jsonb_build_object(
                 'parentFsmName', worker->>'parent_fsm_name',
                 'parentFsmVersion', worker->>'parent_fsm_version',
-                'fsmType', worker->>'fsm_type',
-                'fsmName', worker->>'fsm_name',
-                'fsmVersion', worker->>'fsm_version',
-                'fsmLanguage', worker->>'fsm_language',
+                'asyncOperationType', worker->>'async_operation_type',
+                'asyncOperationName', worker->>'async_operation_name',
+                'asyncOperationVersion', worker->>'async_operation_version',
+                'asyncOperationLanguage', worker->>'async_operation_language',
                 'input', msg.message->'eventData'->'eventPayload',
                 'instanceId', msg.message->>'sendToParentQueueId',
                 'correlationId', msg.msg_id::text,
                 'promiseQueueName', computed_queue_name,
-                'promiseQueueType', worker->>'fsm_type',
-                'promiseQueueVersion', worker->>'fsm_version',
+                'promiseQueueType', worker->>'async_operation_type',
+                'promiseQueueVersion', worker->>'async_operation_version',
                 'msgId', msg.msg_id,
                 'eventName', msg.message->>'sendToParentQueueIdEventName',
                 'eventActionType', msg.message->'eventData'->>'actionType',

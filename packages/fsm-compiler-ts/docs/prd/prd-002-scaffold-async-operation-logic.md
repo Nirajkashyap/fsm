@@ -27,13 +27,14 @@ Actors are split conceptually into:
 - **External actors** — implemented and run by another service/fleet.
 
 Stubs are written into `<lang>/actors/` — the language is chosen per actor from
-its invoke object's `fsmLanguage` (`typescript`, `python`, `rust`, `go`).
+its invoke object's `asyncOperationLanguage` (`typescript`, `python`, `rust`,
+`go`).
 
 ## Goals
 
 - Generate one file per invoke object at `<lang>/actors/<src>/<src>.<ext>`.
 - Emit stubs whose signature matches how the worker actually invokes an actor.
-- Route each actor to its `fsmLanguage` folder
+- Route each actor to its `asyncOperationLanguage` folder
   (`typescript`/`python`/`rust`/`go`).
 
 ## Non-goals
@@ -57,12 +58,13 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
 - Walks every versioned folder, reads `fsm.json`, extracts actor references via
   `extractFsmPluginRefs`, and writes **one file per invoke** at
   `<lang>/actors/<src>/<src>.<ext>` (a subfolder named after the actor `src`, in
-  the actor's `fsmLanguage` folder). Each file exports one function named after
-  the actor `src`.
+  the actor's `asyncOperationLanguage` folder). Each file exports one function
+  named after the actor `src`.
 - Deduplicates by language + sanitized `src` (`${lang}/${src}`) — actors
   differing in `src` get their own files. Note: this means two invokes that
-  share a `src` but differ in `fsmType`/`fsmVersion` currently collapse into the
-  same file (see [TODO.md](../todo/TODO.md), PRD-002 dedup-key gap).
+  share a `src` but differ in `asyncOperationType`/`asyncOperationVersion`
+  currently collapse into the same file (see [TODO.md](../todo/TODO.md), PRD-002
+  dedup-key gap).
 
 **Status:** ✅ Implemented — `generateAsyncOperationLogicFromFolders`
 (`src/generate-async-operation-logic.ts`) using shared templates in
@@ -100,18 +102,20 @@ internal (stub generated here) or external (owned by another fleet — reference
 only, not a local stub).
 
 **Status:** ❌ Not implemented — `extractFsmPluginRefs` now collects
-`{ src, fsmType?, fsmVersion?, fsmLanguage? }` but carries no ownership signal,
-so the generator emits a local stub for every `src` regardless of ownership. See
-[Gaps](#gaps) #2.
+`{ src, asyncOperationType?, asyncOperationVersion?, asyncOperationLanguage? }`
+but carries no ownership signal, so the generator emits a local stub for every
+`src` regardless of ownership. See [Gaps](#gaps) #2.
 
 ### R4 — Language-keyed scaffolding
 
-Each `invoke` object's `fsmLanguage` (`typescript | python | rust | go`) selects
-the target folder so a single machine can spread actors across runtimes.
+Each `invoke` object's `asyncOperationLanguage`
+(`typescript | python | rust | go`) selects the target folder so a single
+machine can spread actors across runtimes.
 
 **Status:** ✅ Implemented — `generate-async-logic` writes one file per invoke
-into the actor's `fsmLanguage` folder (`typescript`, `python`, `rust`, `go`).
-Actors with an unsupported `fsmLanguage` are skipped with a warning.
+into the actor's `asyncOperationLanguage` folder (`typescript`, `python`,
+`rust`, `go`). Actors with an unsupported `asyncOperationLanguage` are skipped
+with a warning.
 
 ## Gaps
 
@@ -122,11 +126,11 @@ Tracked in [TODO.md](../todo/TODO.md):
    `processFSMPromiseQueueMessage`). Emit an async single-`input` stub returning
    `Promise`.
 2. **No internal/external actor distinction** — actor refs now carry
-   `fsmLanguage` but no ownership signal, so external actors still get local
-   stubs they should not. Carry an ownership signal on the invoke object and
-   skip local stub generation for external actors.
+   `asyncOperationLanguage` but no ownership signal, so external actors still
+   get local stubs they should not. Carry an ownership signal on the invoke
+   object and skip local stub generation for external actors.
 3. ✅ **Language-keyed scaffolding (resolved)** — `generate-async-logic` writes
-   one file per invoke, routed by `fsmLanguage`
+   one file per invoke, routed by `asyncOperationLanguage`
    (`typescript`/`python`/`rust`/`go`).
 4. **Regeneration overwrites implementations** — `writeActorFile`
    (`src/operation-logic-scaffold.ts`) writes each actor file with
@@ -139,6 +143,7 @@ Tracked in [TODO.md](../todo/TODO.md):
 - Generated actor stubs are async, take a single `input`, and return a `Promise`
   — matching the worker's calling convention. ❌ pending gap 1.
 - External actors are not given local stubs. ❌ pending gap 2.
-- The target language(s) are chosen from each invoke object's `fsmLanguage`. ✅
+- The target language(s) are chosen from each invoke object's
+  `asyncOperationLanguage`. ✅
 - Re-running `generate-async-logic` does not clobber implemented actor bodies.
   ❌ pending gap 4.

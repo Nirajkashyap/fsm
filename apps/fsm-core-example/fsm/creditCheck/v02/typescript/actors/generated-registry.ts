@@ -10,10 +10,10 @@ import { generateInterestRates } from "./generateInterestRates/generateInterestR
 export type ActorRegistration = {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   handler: (input: unknown) => unknown;
 };
 
@@ -21,64 +21,64 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "fetchInterestRateOptions",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "fetchInterestRateOptions",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: fetchInterestRateOptions,
   },
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "verifyCredentials",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "verifyCredentials",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: verifyCredentials,
   },
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "CheckingCreditScores3parallel",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "CheckingCreditScores3parallel",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: CheckingCreditScores3parallel,
   },
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "checkReportsTable",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "checkReportsTable",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: checkReportsTable,
   },
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "checkBureau",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "checkBureau",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: checkBureau,
   },
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "determineMiddleScore",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "determineMiddleScore",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: determineMiddleScore,
   },
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "internalAsyncOperation",
-    fsmName: "generateInterestRates",
-    fsmVersion: "v02",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "generateInterestRates",
+    asyncOperationVersion: "v02",
+    asyncOperationLanguage: "typescript",
     handler: generateInterestRates,
   },
 ];

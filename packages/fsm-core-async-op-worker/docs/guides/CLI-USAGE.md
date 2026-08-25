@@ -127,20 +127,21 @@ deno task gateway \
 For every actor a worker registers, calls `ensurePromiseQueueForWorker`
 (`fsm_core.ensure_promise_queue_for_worker_v2` under the hood), which ensures a
 PGMQ queue exists — idempotent, safe on every re-registration, not just the
-first. `fsmType` is always shortened to its first character; when `fsmType` is
-exactly `"internalAsyncOperation"`, `fsmVersion` is dropped entirely and
-`fsmLanguage` is also shortened to its first character:
+first. `asyncOperationType` is always shortened to its first character; when
+`asyncOperationType` is exactly `"internalAsyncOperation"`,
+`asyncOperationVersion` is dropped entirely and `asyncOperationLanguage` is also
+shortened to its first character:
 
 ```
-fsmType "internalAsyncOperation":  <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
-otherwise:                         <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
+asyncOperationType "internalAsyncOperation":  <parentFsmName>_<parentFsmVersion>_<asyncOperationType[0]>_<asyncOperationName>_<asyncOperationLanguage[0]>
+otherwise:                         <parentFsmName>_<parentFsmVersion>_<asyncOperationType[0]>_<asyncOperationName>_<asyncOperationVersion>_<asyncOperationLanguage>
 ```
 
-Unlike the older `sharedPromise_<fsmName>_<fsmVersion>` convention, this one is
-still unique per actor identity _including language_ in the
-`"internalAsyncOperation"` case — two workers of different languages never share
-a queue, since no two of `typescript`/`python`/`rust`/`go` share a first letter
-(`t`/`p`/`r`/`g`) today.
+Unlike the older `sharedPromise_<asyncOperationName>_<asyncOperationVersion>`
+convention, this one is still unique per actor identity _including language_ in
+the `"internalAsyncOperation"` case — two workers of different languages never
+share a queue, since no two of `typescript`/`python`/`rust`/`go` share a first
+letter (`t`/`p`/`r`/`g`) today.
 
 > **PGMQ enforces a hard 48-character queue name limit.** The
 > `"internalAsyncOperation"` shortening is enough for typical identities —
@@ -148,10 +149,11 @@ a queue, since no two of `typescript`/`python`/`rust`/`go` share a first letter
 > the limit, for a real long-name example that _didn't_ fit before this change
 > (`creditCheck_v01_i_checkReportsTable_v01_typescript` was 50 characters). The
 > non-`"internalAsyncOperation"` path (`sharedAsyncOperation` etc.) still
-> carries the full `fsmVersion` + `fsmLanguage` and remains more exposed to the
-> limit — long `parentFsmName`/`fsmName` values can still exceed it either way.
-> The queue-ensure call throws in that case (logged as an error), but
-> registration itself still succeeds; the actor just won't have a queue.
+> carries the full `asyncOperationVersion` + `asyncOperationLanguage` and
+> remains more exposed to the limit — long `parentFsmName`/`asyncOperationName`
+> values can still exceed it either way. The queue-ensure call throws in that
+> case (logged as an error), but registration itself still succeeds; the actor
+> just won't have a queue.
 
 ### Poll loop behavior (when enabled)
 
@@ -196,8 +198,9 @@ actor's queue — same shape
 ```
 
 Field mapping — only these fields feed the claimed row (identity fields
-`parentFsmName`/`parentFsmVersion`/`fsmType`/`fsmName`/`fsmVersion`/
-`fsmLanguage` come from the _worker_ being iterated, not the message):
+`parentFsmName`/`parentFsmVersion`/`asyncOperationType`/`asyncOperationName`/`asyncOperationVersion`/
+`asyncOperationLanguage` come from the _worker_ being iterated, not the
+message):
 
 | Message field                  | Claimed row field                              | Notes                                                                                       |
 | ------------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -326,20 +329,20 @@ deno task gateway-ctl <list|invoke> [options]
 
 ### Options
 
-| Flag                         | Required for | Default                                 | Description                                                   |
-| ---------------------------- | ------------ | --------------------------------------- | ------------------------------------------------------------- |
-| `--target <target>`          | no           | `unix:/tmp/pgfsm-activity-gateway.sock` | gRPC target to connect to — must match the gateway's `--bind` |
-| `--parent-fsm-name <name>`   | `invoke`     | —                                       | Parent FSM name                                               |
-| `--parent-fsm-version <ver>` | `invoke`     | —                                       | Parent FSM version                                            |
-| `--fsm-type <type>`          | `invoke`     | —                                       | e.g. `internalAsyncOperation`                                 |
-| `--fsm-name <name>`          | `invoke`     | —                                       | Actor name                                                    |
-| `--fsm-version <ver>`        | `invoke`     | —                                       | Actor version                                                 |
-| `--fsm-language <lang>`      | `invoke`     | —                                       | `typescript` \| `python` \| `rust` \| `go`                    |
-| `--input <json>`             | no           | `null`                                  | JSON-encoded input payload                                    |
-| `--instance-id <id>`         | no           | random UUID                             | Correlates the invocation to an FSM instance                  |
-| `--correlation-id <id>`      | no           | random UUID                             | Free-form correlation id                                      |
-| `--timeout-ms <ms>`          | no           | `5000`                                  | Client-side timeout for this one call                         |
-| `--help`                     | —            | —                                       | Print help and exit                                           |
+| Flag                                | Required for | Default                                 | Description                                                   |
+| ----------------------------------- | ------------ | --------------------------------------- | ------------------------------------------------------------- |
+| `--target <target>`                 | no           | `unix:/tmp/pgfsm-activity-gateway.sock` | gRPC target to connect to — must match the gateway's `--bind` |
+| `--parent-fsm-name <name>`          | `invoke`     | —                                       | Parent FSM name                                               |
+| `--parent-fsm-version <ver>`        | `invoke`     | —                                       | Parent FSM version                                            |
+| `--async-operation-type <type>`     | `invoke`     | —                                       | e.g. `internalAsyncOperation`                                 |
+| `--async-operation-name <name>`     | `invoke`     | —                                       | Actor name                                                    |
+| `--async-operation-version <ver>`   | `invoke`     | —                                       | Actor version                                                 |
+| `--async-operation-language <lang>` | `invoke`     | —                                       | `typescript` \| `python` \| `rust` \| `go`                    |
+| `--input <json>`                    | no           | `null`                                  | JSON-encoded input payload                                    |
+| `--instance-id <id>`                | no           | random UUID                             | Correlates the invocation to an FSM instance                  |
+| `--correlation-id <id>`             | no           | random UUID                             | Free-form correlation id                                      |
+| `--timeout-ms <ms>`                 | no           | `5000`                                  | Client-side timeout for this one call                         |
+| `--help`                            | —            | —                                       | Print help and exit                                           |
 
 Identity flags match `sidecar/protocol.ts`'s `actorKey()` shape — the exact six
 fields `list`'s output concatenates with `@`.
@@ -353,8 +356,8 @@ deno task gateway-ctl list
 # Invoke a specific actor
 deno task gateway-ctl invoke \
   --parent-fsm-name creditCheck --parent-fsm-version v01 \
-  --fsm-type internalAsyncOperation --fsm-name checkBureau --fsm-version v01 \
-  --fsm-language typescript \
+  --async-operation-type internalAsyncOperation --async-operation-name checkBureau --async-operation-version v01 \
+  --async-operation-language typescript \
   --input '{"ssn":"123"}'
 
 # Against a non-default gateway target

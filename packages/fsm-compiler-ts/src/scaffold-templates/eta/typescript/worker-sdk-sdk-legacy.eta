@@ -40,10 +40,10 @@ export type ActorHandler = (input: unknown) => unknown | Promise<unknown>;
 export type ActorRegistration = {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   handler: ActorHandler;
 };
 
@@ -80,20 +80,20 @@ export class ActorWorker {
         actorKey(
           reg.parentFsmName,
           reg.parentFsmVersion,
-          reg.fsmType,
-          reg.fsmName,
-          reg.fsmVersion,
-          reg.fsmLanguage,
+          reg.asyncOperationType,
+          reg.asyncOperationName,
+          reg.asyncOperationVersion,
+          reg.asyncOperationLanguage,
         ),
         reg.handler,
       );
       registeredActors.push({
         parentFsmName: reg.parentFsmName,
         parentFsmVersion: reg.parentFsmVersion,
-        fsmType: reg.fsmType,
-        fsmName: reg.fsmName,
-        fsmVersion: reg.fsmVersion,
-        fsmLanguage: reg.fsmLanguage,
+        asyncOperationType: reg.asyncOperationType,
+        asyncOperationName: reg.asyncOperationName,
+        asyncOperationVersion: reg.asyncOperationVersion,
+        asyncOperationLanguage: reg.asyncOperationLanguage,
       });
     }
 
@@ -202,10 +202,10 @@ export class ActorWorker {
     const key = actorKey(
       body.parent_fsm_name,
       body.parent_fsm_version,
-      body.fsm_type,
-      body.fsm_name,
-      body.fsm_version,
-      body.fsm_language,
+      body.async_operation_type,
+      body.async_operation_name,
+      body.async_operation_version,
+      body.async_operation_language,
     );
     const handler = this.handlers.get(key);
     const started = performance.now();

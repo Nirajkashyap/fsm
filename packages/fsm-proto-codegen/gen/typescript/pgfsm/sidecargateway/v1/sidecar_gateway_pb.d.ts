@@ -10,9 +10,9 @@ import { Message, proto3 } from "@bufbuild/protobuf";
  * One actor entrypoint a worker process serves. Mirrors
  * ActorPluginValidationResult's identity fields (see @pgfsm/compiler's
  * util.ts) — actorKey() in the current sidecar/protocol.ts is what the
- * gateway routes on. fsm_language is part of the identity (not just a
- * display field) because the other five fields alone aren't guaranteed
- * unique across languages.
+ * gateway routes on. async_operation_language is part of the identity (not
+ * just a display field) because the other five fields alone aren't
+ * guaranteed unique across languages.
  *
  * @generated from message pgfsm.sidecargateway.v1.RegisteredActor
  */
@@ -28,24 +28,24 @@ export declare class RegisteredActor extends Message<RegisteredActor> {
   parentFsmVersion: string;
 
   /**
-   * @generated from field: string fsm_type = 3;
+   * @generated from field: string async_operation_type = 3;
    */
-  fsmType: string;
+  asyncOperationType: string;
 
   /**
-   * @generated from field: string fsm_name = 4;
+   * @generated from field: string async_operation_name = 4;
    */
-  fsmName: string;
+  asyncOperationName: string;
 
   /**
-   * @generated from field: string fsm_version = 5;
+   * @generated from field: string async_operation_version = 5;
    */
-  fsmVersion: string;
+  asyncOperationVersion: string;
 
   /**
-   * @generated from field: string fsm_language = 6;
+   * @generated from field: string async_operation_language = 6;
    */
-  fsmLanguage: string;
+  asyncOperationLanguage: string;
 
   /**
    * @generated from field: uint32 timeout_ms = 7;
@@ -130,7 +130,7 @@ export declare class RegisterAck extends Message<RegisterAck> {
   gatewayProtocolVersion: string;
 
   /**
-   * "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
+   * "parentFsmName@parentFsmVersion@asyncOperationType@asyncOperationName@asyncOperationVersion@asyncOperationLanguage"
    * keys, mirroring sidecar/protocol.ts's actorKey().
    *
    * @generated from field: repeated string registered_actors = 3;
@@ -205,24 +205,24 @@ export declare class Invoke extends Message<Invoke> {
   parentFsmVersion: string;
 
   /**
-   * @generated from field: string fsm_type = 4;
+   * @generated from field: string async_operation_type = 4;
    */
-  fsmType: string;
+  asyncOperationType: string;
 
   /**
-   * @generated from field: string fsm_name = 5;
+   * @generated from field: string async_operation_name = 5;
    */
-  fsmName: string;
+  asyncOperationName: string;
 
   /**
-   * @generated from field: string fsm_version = 6;
+   * @generated from field: string async_operation_version = 6;
    */
-  fsmVersion: string;
+  asyncOperationVersion: string;
 
   /**
-   * @generated from field: string fsm_language = 7;
+   * @generated from field: string async_operation_language = 7;
    */
-  fsmLanguage: string;
+  asyncOperationLanguage: string;
 
   /**
    * JSON-encoded activity input — kept as an opaque string (not a typed

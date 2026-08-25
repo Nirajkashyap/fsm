@@ -346,16 +346,16 @@ export async function validateAsyncOperationFromFolders(
                     allFolderResults.push({
                       src: fnName,
                       method: fnName,
-                      fsmName: fnName,
-                      fsmType: "internalAsyncOperation",
-                      fsmVersion: subEntry.name,
-                      fsmLanguage: lang,
+                      asyncOperationName: fnName,
+                      asyncOperationType: "internalAsyncOperation",
+                      asyncOperationVersion: subEntry.name,
+                      asyncOperationLanguage: lang,
                       isVerified,
                       fsmModulePath: modulePath,
                       parentFsmName: dirEntry.name,
                       parentFsmVersion: subEntry.name,
                       comment:
-                        "for fsmType internalAsyncOperation fsmVersion will be its parentFsmVersion value",
+                        "for asyncOperationType internalAsyncOperation asyncOperationVersion will be its parentFsmVersion value",
                       parentFsmPath: fsmDirPath,
                       errorMessage,
                     });

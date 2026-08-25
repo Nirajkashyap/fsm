@@ -27,16 +27,16 @@ OPTIONS
   -h, --help                     Show this help message
 
 INVOKE OPTIONS
-  --parent-fsm-name <name>       required
-  --parent-fsm-version <ver>     required
-  --fsm-type <type>              required, e.g. internalAsyncOperation
-  --fsm-name <name>              required
-  --fsm-version <ver>            required
-  --fsm-language <lang>          required, e.g. typescript, python, rust, go
-  --input <json>                 JSON-encoded input payload (default: null)
-  --instance-id <id>             default: random UUID
-  --correlation-id <id>          default: random UUID
-  --timeout-ms <ms>              default: ${DEFAULT_TIMEOUT_MS}
+  --parent-fsm-name <name>            required
+  --parent-fsm-version <ver>          required
+  --async-operation-type <type>       required, e.g. internalAsyncOperation
+  --async-operation-name <name>       required
+  --async-operation-version <ver>     required
+  --async-operation-language <lang>   required, e.g. typescript, python, rust, go
+  --input <json>                      JSON-encoded input payload (default: null)
+  --instance-id <id>                  default: random UUID
+  --correlation-id <id>               default: random UUID
+  --timeout-ms <ms>                   default: ${DEFAULT_TIMEOUT_MS}
 
 COMMANDS
   list      Calls ListRegisteredActors and prints the actor keys currently registered.
@@ -48,15 +48,15 @@ DESCRIPTION
   — connects, calls one RPC, prints the result, and exits. Actor identity
   matches ActorPluginValidationResult /
   sidecar/protocol.ts's actorKey():
-  parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage.
+  parentFsmName@parentFsmVersion@asyncOperationType@asyncOperationName@asyncOperationVersion@asyncOperationLanguage.
 
 EXAMPLE
   deno run --allow-all cli/async-operation-worker-gateway-ctl.ts list
 
   deno run --allow-all cli/async-operation-worker-gateway-ctl.ts invoke \\
     --parent-fsm-name creditCheck --parent-fsm-version v01 \\
-    --fsm-type internalAsyncOperation --fsm-name checkBureau --fsm-version v01 \\
-    --fsm-language rust --input '{{"ssn":"123"}}'
+    --async-operation-type internalAsyncOperation --async-operation-name checkBureau --async-operation-version v01 \\
+    --async-operation-language rust --input '{{"ssn":"123"}}'
 `);
 }
 
@@ -65,10 +65,10 @@ const args = parseArgs(Deno.args, {
     "target",
     "parent-fsm-name",
     "parent-fsm-version",
-    "fsm-type",
-    "fsm-name",
-    "fsm-version",
-    "fsm-language",
+    "async-operation-type",
+    "async-operation-name",
+    "async-operation-version",
+    "async-operation-language",
     "input",
     "instance-id",
     "correlation-id",
@@ -110,10 +110,10 @@ try {
     const requiredFlags = [
       "parent-fsm-name",
       "parent-fsm-version",
-      "fsm-type",
-      "fsm-name",
-      "fsm-version",
-      "fsm-language",
+      "async-operation-type",
+      "async-operation-name",
+      "async-operation-version",
+      "async-operation-language",
     ] as const;
     const missing = requiredFlags.filter((key) => !args[key]);
     if (missing.length > 0) {
@@ -139,10 +139,10 @@ try {
     const result = await client.invokeActor({
       parentFsmName: args["parent-fsm-name"]!,
       parentFsmVersion: args["parent-fsm-version"]!,
-      fsmType: args["fsm-type"]!,
-      fsmName: args["fsm-name"]!,
-      fsmVersion: args["fsm-version"]!,
-      fsmLanguage: args["fsm-language"]!,
+      asyncOperationType: args["async-operation-type"]!,
+      asyncOperationName: args["async-operation-name"]!,
+      asyncOperationVersion: args["async-operation-version"]!,
+      asyncOperationLanguage: args["async-operation-language"]!,
       input,
       instanceId: args["instance-id"] ?? crypto.randomUUID(),
       correlationId: args["correlation-id"] ?? crypto.randomUUID(),

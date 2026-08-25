@@ -5,15 +5,15 @@
 -- out so the two functions can't drift out of sync on the naming rule,
 -- which has already changed twice.
 --
--- fsm_type is shortened to its first character (e.g. "internalAsyncOperation"
--- -> "i") in all cases, and fsm_version is dropped entirely in all cases too
+-- async_operation_type is shortened to its first character (e.g. "internalAsyncOperation"
+-- -> "i") in all cases, and async_operation_version is dropped entirely in all cases too
 -- -- for 'internalAsyncOperation' it's the child actor's own version, which
 -- has no bearing on queue identity; for 'sharedAsyncOperation',
 -- create-async-logic.ts's toSharedAsyncOpRegisteredActor always sets
--- fsm_version equal to parent_fsm_version (same `version` folder value
+-- async_operation_version equal to parent_fsm_version (same `version` folder value
 -- passed for both), so dropping it loses nothing -- parent_fsm_version is
--- still in the name. Beyond that, each fsm_type has one further
--- length-driven reduction: 'internalAsyncOperation' shortens fsm_language to
+-- still in the name. Beyond that, each async_operation_type has one further
+-- length-driven reduction: 'internalAsyncOperation' shortens async_operation_language to
 -- its first character; 'sharedAsyncOperation' shortens parent_fsm_name to
 -- its first character instead -- lossless there too, since
 -- toSharedAsyncOpRegisteredActor always sets parent_fsm_name to the fixed
@@ -24,54 +24,54 @@
 -- toRegisteredActor, "the only kind" that builds it), so the full constant
 -- string carried no identity information to begin with.
 --
---   fsm_type = 'internalAsyncOperation':
---     <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
---   fsm_type = 'sharedAsyncOperation':
---     <parentFsmName[0]>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage>
+--   async_operation_type = 'internalAsyncOperation':
+--     <parentFsmName>_<parentFsmVersion>_<asyncOperationType[0]>_<asyncOperationName>_<asyncOperationLanguage[0]>
+--   async_operation_type = 'sharedAsyncOperation':
+--     <parentFsmName[0]>_<parentFsmVersion>_<asyncOperationType[0]>_<asyncOperationName>_<asyncOperationLanguage>
 --
--- Any other fsm_type raises -- this function only names queues for the two
+-- Any other async_operation_type raises -- this function only names queues for the two
 -- promise-actor identities ('internalAsyncOperation'/'sharedAsyncOperation'),
 -- never 'fsm'/'sharedFsm'. Previously the "otherwise" branch silently applied
--- the sharedAsyncOperation naming to any unrecognized fsm_type, which
+-- the sharedAsyncOperation naming to any unrecognized async_operation_type, which
 -- archive_from_fsm_instance_worker_v2.sql's caller worked around by
--- validating fsmType itself before calling in -- that workaround is now
+-- validating asyncOperationType itself before calling in -- that workaround is now
 -- redundant (this function raises first) but left in place there.
 --
--- unlike the existing 'sharedPromise_<fsmName>_<fsmVersion>' convention (see
+-- unlike the existing 'sharedPromise_<asyncOperationName>_<asyncOperationVersion>' convention (see
 -- archive_from_fsm_instance_worker_v2.sql), this one is unique per actor
 -- identity including language, matching sidecar/protocol.ts's actorKey() --
 -- two workers of different languages serving the "same" actor never share a
--- queue (in the fsm_type = 'internalAsyncOperation' case, this still holds
--- since fsm_language is shortened, not dropped -- two languages sharing the
+-- queue (in the async_operation_type = 'internalAsyncOperation' case, this still holds
+-- since async_operation_language is shortened, not dropped -- two languages sharing the
 -- same first letter would collide, but none do among
 -- typescript/python/rust/go today: t/p/r/g; in the 'sharedAsyncOperation'
 -- case, shortening parent_fsm_name instead loses no identity either, per the
 -- constant-value reasoning above).
 --
 -- PGMQ caps queue names at 48 characters -- see CLI-USAGE.md's note on this
--- limit. Still not guaranteed to fit for long parentFsmName/fsmName
+-- limit. Still not guaranteed to fit for long parentFsmName/asyncOperationName
 -- combinations even with these reductions.
 CREATE OR REPLACE FUNCTION fsm_core.compute_promise_queue_name_v2(
     input_parent_fsm_name text,
     input_parent_fsm_version text,
-    input_fsm_type text,
-    input_fsm_name text,
-    input_fsm_version text,
-    input_fsm_language text
+    input_async_operation_type text,
+    input_async_operation_name text,
+    input_async_operation_version text,
+    input_async_operation_language text
 )
 RETURNS text
 AS $$
 BEGIN
-    IF input_fsm_type = 'internalAsyncOperation' THEN
+    IF input_async_operation_type = 'internalAsyncOperation' THEN
         RETURN input_parent_fsm_name || '_' || input_parent_fsm_version
-            || '_' || LEFT(input_fsm_type, 1) || '_' || input_fsm_name || '_'
-            || LEFT(input_fsm_language, 1);
-    ELSIF input_fsm_type = 'sharedAsyncOperation' THEN
+            || '_' || LEFT(input_async_operation_type, 1) || '_' || input_async_operation_name || '_'
+            || LEFT(input_async_operation_language, 1);
+    ELSIF input_async_operation_type = 'sharedAsyncOperation' THEN
         RETURN LEFT(input_parent_fsm_name, 1) || '_' || input_parent_fsm_version
-            || '_' || LEFT(input_fsm_type, 1) || '_' || input_fsm_name || '_'
-            || input_fsm_language;
+            || '_' || LEFT(input_async_operation_type, 1) || '_' || input_async_operation_name || '_'
+            || input_async_operation_language;
     ELSE
-        RAISE EXCEPTION 'compute_promise_queue_name_v2: unsupported input_fsm_type: %', input_fsm_type;
+        RAISE EXCEPTION 'compute_promise_queue_name_v2: unsupported input_async_operation_type: %', input_async_operation_type;
     END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -89,10 +89,10 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 CREATE OR REPLACE FUNCTION fsm_core.ensure_promise_queue_for_worker_v2(
     input_parent_fsm_name text,
     input_parent_fsm_version text,
-    input_fsm_type text,
-    input_fsm_name text,
-    input_fsm_version text,
-    input_fsm_language text
+    input_async_operation_type text,
+    input_async_operation_name text,
+    input_async_operation_version text,
+    input_async_operation_language text
 )
 RETURNS jsonb
 AS $$
@@ -101,8 +101,8 @@ DECLARE
     already_existed boolean;
 BEGIN
     computed_queue_name := fsm_core.compute_promise_queue_name_v2(
-        input_parent_fsm_name, input_parent_fsm_version, input_fsm_type,
-        input_fsm_name, input_fsm_version, input_fsm_language
+        input_parent_fsm_name, input_parent_fsm_version, input_async_operation_type,
+        input_async_operation_name, input_async_operation_version, input_async_operation_language
     );
 
     SELECT EXISTS (

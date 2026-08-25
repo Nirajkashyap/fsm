@@ -11,7 +11,7 @@ its actions, guards, delays, and actors.
 | `creditCheck`       | `fsm/creditCheck/`       | Credit verification flow — parallel credit agency checks, actor invocations |
 | `carVitals`         | `fsm/carVitals/`         | Vehicle diagnostics state machine                                           |
 | `taskMachineConfig` | `fsm/taskMachineConfig/` | Generic task workflow                                                       |
-| `vitalsWorkflow`    | `fsm/vitalsWorkflow/`    | Reusable sub-workflow (fsmType `fsm`) invoked by other FSMs                 |
+| `vitalsWorkflow`    | `fsm/vitalsWorkflow/`    | Reusable sub-workflow (asyncOperationType `fsm`) invoked by other FSMs      |
 
 Shared actors live in `actors/`, `actions/`, `guards/`, `delays/` at the root of
 this app; shared, reusable FSMs (like `vitalsWorkflow`) live alongside the
@@ -22,7 +22,7 @@ top-level FSMs under `fsm/`.
 Each FSM follows this layout:
 
 ```
-fsm/<fsmName>/
+fsm/<asyncOperationName>/
   v01/
     fsm.json              ← FSM definition (input to compiler)
     xstate-fsm.json       ← XState 5-compatible rendering
@@ -67,7 +67,7 @@ from DB calls and fail on unrelated-looking assertions.
 
 ## Adding a new FSM
 
-1. Create `fsm/<yourFsmName>/v01/fsm.json` (see
+1. Create `fsm/<yourAsyncOperationName>/v01/fsm.json` (see
    [FSM definition format](../../packages/fsm-compiler-ts/docs/fsm-definition-format.md))
 2. Run the compiler to generate the TypeScript scaffold:
    ```bash

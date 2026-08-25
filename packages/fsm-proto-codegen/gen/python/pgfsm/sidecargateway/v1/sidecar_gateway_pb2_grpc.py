@@ -5,7 +5,7 @@ import grpc
 from pgfsm.sidecargateway.v1 import sidecar_gateway_pb2 as pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2
 
 
-class SidecarGatewayServiceStub:
+class SidecarGatewayServiceStub(object):
     """Worker-facing contract for the Activity Gateway's sidecar leg — the
     register/invoke/heartbeat channel between the gateway and each language's
     worker SDK, previously a hand-rolled length-prefixed-JSON envelope
@@ -46,10 +46,10 @@ class SidecarGatewayServiceStub:
                 '/pgfsm.sidecargateway.v1.SidecarGatewayService/Session',
                 request_serializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionRequest.SerializeToString,
                 response_deserializer=pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionResponse.FromString,
-                _registered_method=True)
+                )
 
 
-class SidecarGatewayServiceServicer:
+class SidecarGatewayServiceServicer(object):
     """Worker-facing contract for the Activity Gateway's sidecar leg — the
     register/invoke/heartbeat channel between the gateway and each language's
     worker SDK, previously a hand-rolled length-prefixed-JSON envelope
@@ -98,11 +98,10 @@ def add_SidecarGatewayServiceServicer_to_server(servicer, server):
     generic_handler = grpc.method_handlers_generic_handler(
             'pgfsm.sidecargateway.v1.SidecarGatewayService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('pgfsm.sidecargateway.v1.SidecarGatewayService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class SidecarGatewayService:
+class SidecarGatewayService(object):
     """Worker-facing contract for the Activity Gateway's sidecar leg — the
     register/invoke/heartbeat channel between the gateway and each language's
     worker SDK, previously a hand-rolled length-prefixed-JSON envelope
@@ -144,18 +143,8 @@ class SidecarGatewayService:
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.stream_stream(
-            request_iterator,
-            target,
-            '/pgfsm.sidecargateway.v1.SidecarGatewayService/Session',
+        return grpc.experimental.stream_stream(request_iterator, target, '/pgfsm.sidecargateway.v1.SidecarGatewayService/Session',
             pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionRequest.SerializeToString,
             pgfsm_dot_sidecargateway_dot_v1_dot_sidecar__gateway__pb2.SessionResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -160,9 +160,9 @@
               "src": "verifyCredentials",
               "type": "xstate.invoke",
               "id": "0.(machine).creditCheck.Verifying Credentials",
-              "fsmType": "internalAsyncOperation",
-              "fsmVersion": "v01",
-              "fsmLanguage": "typescript"
+              "asyncOperationType": "internalAsyncOperation",
+              "asyncOperationVersion": "v01",
+              "asyncOperationLanguage": "typescript"
             }
           ],
           "tags": []
@@ -285,9 +285,9 @@
                       "src": "checkReportsTable",
                       "id": "equiGavinDBActor",
                       "type": "xstate.invoke",
-                      "fsmType": "internalAsyncOperation",
-                      "fsmVersion": "v01",
-                      "fsmLanguage": "typescript"
+                      "asyncOperationType": "internalAsyncOperation",
+                      "asyncOperationVersion": "v01",
+                      "asyncOperationLanguage": "typescript"
                     }
                   ],
                   "tags": []
@@ -388,9 +388,9 @@
                       "src": "checkBureauRust",
                       "id": "equiGavinFetchActor",
                       "type": "xstate.invoke",
-                      "fsmType": "internalAsyncOperation",
-                      "fsmVersion": "v01",
-                      "fsmLanguage": "rust"
+                      "asyncOperationType": "internalAsyncOperation",
+                      "asyncOperationVersion": "v01",
+                      "asyncOperationLanguage": "rust"
                     }
                   ],
                   "tags": []
@@ -530,9 +530,9 @@
                       "src": "CheckReportsTable",
                       "id": "gavUnionDBActor",
                       "type": "xstate.invoke",
-                      "fsmType": "internalAsyncOperation",
-                      "fsmVersion": "v01",
-                      "fsmLanguage": "go"
+                      "asyncOperationType": "internalAsyncOperation",
+                      "asyncOperationVersion": "v01",
+                      "asyncOperationLanguage": "go"
                     }
                   ],
                   "tags": []
@@ -633,9 +633,9 @@
                       "src": "checkBureau",
                       "id": "gavUnionFetchActor",
                       "type": "xstate.invoke",
-                      "fsmType": "internalAsyncOperation",
-                      "fsmVersion": "v01",
-                      "fsmLanguage": "python"
+                      "asyncOperationType": "internalAsyncOperation",
+                      "asyncOperationVersion": "v01",
+                      "asyncOperationLanguage": "python"
                     }
                   ],
                   "tags": []
@@ -775,9 +775,9 @@
                       "src": "checkReportsTable",
                       "id": "gavperianCheckActor",
                       "type": "xstate.invoke",
-                      "fsmType": "internalAsyncOperation",
-                      "fsmVersion": "v01",
-                      "fsmLanguage": "typescript"
+                      "asyncOperationType": "internalAsyncOperation",
+                      "asyncOperationVersion": "v01",
+                      "asyncOperationLanguage": "typescript"
                     }
                   ],
                   "tags": []
@@ -878,9 +878,9 @@
                       "src": "checkBureau",
                       "id": "checkGavPerianActor",
                       "type": "xstate.invoke",
-                      "fsmType": "internalAsyncOperation",
-                      "fsmVersion": "v01",
-                      "fsmLanguage": "typescript"
+                      "asyncOperationType": "internalAsyncOperation",
+                      "asyncOperationVersion": "v01",
+                      "asyncOperationLanguage": "typescript"
                     }
                   ],
                   "tags": []
@@ -1046,9 +1046,9 @@
                   "src": "determineMiddleScore",
                   "id": "scoreDeterminationActor",
                   "type": "xstate.invoke",
-                  "fsmType": "internalAsyncOperation",
-                  "fsmVersion": "v01",
-                  "fsmLanguage": "typescript"
+                  "asyncOperationType": "internalAsyncOperation",
+                  "asyncOperationVersion": "v01",
+                  "asyncOperationLanguage": "typescript"
                 }
               ],
               "tags": []
@@ -1105,9 +1105,9 @@
                   "src": "generateInterestRates",
                   "type": "xstate.invoke",
                   "id": "0.(machine).creditCheck.DeterminingInterestRateOptions.FetchingRates",
-                  "fsmType": "internalAsyncOperation",
-                  "fsmVersion": "v01",
-                  "fsmLanguage": "typescript"
+                  "asyncOperationType": "internalAsyncOperation",
+                  "asyncOperationVersion": "v01",
+                  "asyncOperationLanguage": "typescript"
                 }
               ],
               "tags": []

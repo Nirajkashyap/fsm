@@ -17,7 +17,7 @@ version folder (`v01/`, `v02/`) contains:
   `rust/actors/`, `go/actors/` — the concrete example of the polyglot actor
   model described in the root `CLAUDE.md`
 
-`vitalsWorkflow/` is a reusable sub-workflow (fsmType `fsm`) invoked by other
-FSMs, rather than a standalone top-level FSM — otherwise it follows the same
-layout. Definitions target **XState 5** semantics and are consumed by
+`vitalsWorkflow/` is a reusable sub-workflow (asyncOperationType `fsm`) invoked
+by other FSMs, rather than a standalone top-level FSM — otherwise it follows the
+same layout. Definitions target **XState 5** semantics and are consumed by
 `packages/fsm-compiler-ts/`.

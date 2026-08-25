@@ -282,7 +282,7 @@ Deno.test("toWrittenActor - builds record matching writeActorFile's path convent
   assertEquals(toWrittenActor("typescript", actor), {
     src: "checkBureau",
     fileBaseName: "checkBureau",
-    fsmLanguage: "typescript",
+    asyncOperationLanguage: "typescript",
     filePath: "typescript/actors/checkBureau/checkBureau.ts",
     exportedName: "checkBureau",
   });
@@ -293,7 +293,7 @@ Deno.test("toWrittenActor - go capitalizes exportedName for cross-package export
   assertEquals(toWrittenActor("go", actor), {
     src: "checkBureau",
     fileBaseName: "checkBureau",
-    fsmLanguage: "go",
+    asyncOperationLanguage: "go",
     filePath: "go/actors/checkBureau/checkBureau.go",
     exportedName: "CheckBureau",
   });
@@ -314,19 +314,19 @@ Deno.test("writeActorsManifest - writes all actors across all languages", async 
       actors: [
         {
           src: "checkBureau",
-          fsmLanguage: "typescript",
+          asyncOperationLanguage: "typescript",
           filePath: "typescript/actors/checkBureau/checkBureau.ts",
           exportedName: "checkBureau",
         },
         {
           src: "checkBureauPython",
-          fsmLanguage: "python",
+          asyncOperationLanguage: "python",
           filePath: "python/actors/checkBureauPython/checkBureauPython.py",
           exportedName: "checkBureauPython",
         },
         {
           src: "checkBureauGo",
-          fsmLanguage: "go",
+          asyncOperationLanguage: "go",
           filePath: "go/actors/checkBureauGo/checkBureauGo.go",
           exportedName: "CheckBureauGo",
         },
@@ -348,7 +348,7 @@ Deno.test("writeActorsManifest - writes an empty manifest when there are no acto
   }
 });
 
-// A version-folder path matching the `<pluginRoot>/<fsmName>/<version>`
+// A version-folder path matching the `<pluginRoot>/<asyncOperationName>/<version>`
 // convention, so toRegisteredActor can derive parentFsmName/parentFsmVersion.
 const CREDIT_CHECK_V01 = "/repo/apps/fsm-core-example/fsm/creditCheck/v01";
 
@@ -453,10 +453,10 @@ Deno.test("writeActorsRegistry - typescript carries the full activity-registrati
         "export type ActorRegistration = {\n" +
         "  parentFsmName: string;\n" +
         "  parentFsmVersion: string;\n" +
-        "  fsmType: string;\n" +
-        "  fsmName: string;\n" +
-        "  fsmVersion: string;\n" +
-        "  fsmLanguage: string;\n" +
+        "  asyncOperationType: string;\n" +
+        "  asyncOperationName: string;\n" +
+        "  asyncOperationVersion: string;\n" +
+        "  asyncOperationLanguage: string;\n" +
         "  handler: (input: unknown) => unknown;\n" +
         "};\n" +
         "\n" +
@@ -464,19 +464,19 @@ Deno.test("writeActorsRegistry - typescript carries the full activity-registrati
         "  {\n" +
         '    parentFsmName: "creditCheck",\n' +
         '    parentFsmVersion: "v01",\n' +
-        '    fsmType: "internalAsyncOperation",\n' +
-        '    fsmName: "checkBureau",\n' +
-        '    fsmVersion: "v01",\n' +
-        '    fsmLanguage: "typescript",\n' +
+        '    asyncOperationType: "internalAsyncOperation",\n' +
+        '    asyncOperationName: "checkBureau",\n' +
+        '    asyncOperationVersion: "v01",\n' +
+        '    asyncOperationLanguage: "typescript",\n' +
         "    handler: checkBureau,\n" +
         "  },\n" +
         "  {\n" +
         '    parentFsmName: "creditCheck",\n' +
         '    parentFsmVersion: "v01",\n' +
-        '    fsmType: "internalAsyncOperation",\n' +
-        '    fsmName: "determineMiddleScore",\n' +
-        '    fsmVersion: "v01",\n' +
-        '    fsmLanguage: "typescript",\n' +
+        '    asyncOperationType: "internalAsyncOperation",\n' +
+        '    asyncOperationName: "determineMiddleScore",\n' +
+        '    asyncOperationVersion: "v01",\n' +
+        '    asyncOperationLanguage: "typescript",\n' +
         "    handler: determineMiddleScore,\n" +
         "  },\n" +
         "];\n",
@@ -505,10 +505,10 @@ Deno.test("writeActorsRegistry - python carries the full activity-registration i
         "    {\n" +
         '        "parent_fsm_name": "creditCheck",\n' +
         '        "parent_fsm_version": "v01",\n' +
-        '        "fsm_type": "internalAsyncOperation",\n' +
-        '        "fsm_name": "checkBureauPython",\n' +
-        '        "fsm_version": "v01",\n' +
-        '        "fsm_language": "python",\n' +
+        '        "async_operation_type": "internalAsyncOperation",\n' +
+        '        "async_operation_name": "checkBureauPython",\n' +
+        '        "async_operation_version": "v01",\n' +
+        '        "async_operation_language": "python",\n' +
         '        "handler": checkBureauPython,\n' +
         "    },\n" +
         "]\n",
@@ -533,10 +533,10 @@ Deno.test("writeActorsRegistry - rust reuses the barrel's #[path] module instead
         "pub struct ActorRegistration {\n" +
         "    pub parent_fsm_name: &'static str,\n" +
         "    pub parent_fsm_version: &'static str,\n" +
-        "    pub fsm_type: &'static str,\n" +
-        "    pub fsm_name: &'static str,\n" +
-        "    pub fsm_version: &'static str,\n" +
-        "    pub fsm_language: &'static str,\n" +
+        "    pub async_operation_type: &'static str,\n" +
+        "    pub async_operation_name: &'static str,\n" +
+        "    pub async_operation_version: &'static str,\n" +
+        "    pub async_operation_language: &'static str,\n" +
         "    pub handler: fn(serde_json::Value) -> serde_json::Value,\n" +
         "}\n" +
         "\n" +
@@ -545,10 +545,10 @@ Deno.test("writeActorsRegistry - rust reuses the barrel's #[path] module instead
         "        ActorRegistration {\n" +
         '            parent_fsm_name: "creditCheck",\n' +
         '            parent_fsm_version: "v01",\n' +
-        '            fsm_type: "internalAsyncOperation",\n' +
-        '            fsm_name: "checkBureau",\n' +
-        '            fsm_version: "v01",\n' +
-        '            fsm_language: "rust",\n' +
+        '            async_operation_type: "internalAsyncOperation",\n' +
+        '            async_operation_name: "checkBureau",\n' +
+        '            async_operation_version: "v01",\n' +
+        '            async_operation_language: "rust",\n' +
         "            handler: actors::checkBureau,\n" +
         "        },\n" +
         "    ]\n" +
@@ -693,10 +693,10 @@ Deno.test("writeAggregateActorsRegistry - rust #[path]-includes each FSM-version
         "pub struct ActorRegistration {\n" +
         "    pub parent_fsm_name: &'static str,\n" +
         "    pub parent_fsm_version: &'static str,\n" +
-        "    pub fsm_type: &'static str,\n" +
-        "    pub fsm_name: &'static str,\n" +
-        "    pub fsm_version: &'static str,\n" +
-        "    pub fsm_language: &'static str,\n" +
+        "    pub async_operation_type: &'static str,\n" +
+        "    pub async_operation_name: &'static str,\n" +
+        "    pub async_operation_version: &'static str,\n" +
+        "    pub async_operation_language: &'static str,\n" +
         "    pub handler: fn(serde_json::Value) -> serde_json::Value,\n" +
         "}\n" +
         "\n" +
@@ -705,19 +705,19 @@ Deno.test("writeAggregateActorsRegistry - rust #[path]-includes each FSM-version
         "        ActorRegistration {\n" +
         '            parent_fsm_name: "creditCheck",\n' +
         '            parent_fsm_version: "v01",\n' +
-        '            fsm_type: "internalAsyncOperation",\n' +
-        '            fsm_name: "checkBureau",\n' +
-        '            fsm_version: "v01",\n' +
-        '            fsm_language: "rust",\n' +
+        '            async_operation_type: "internalAsyncOperation",\n' +
+        '            async_operation_name: "checkBureau",\n' +
+        '            async_operation_version: "v01",\n' +
+        '            async_operation_language: "rust",\n' +
         "            handler: creditcheck_v01::checkBureau,\n" +
         "        },\n" +
         "        ActorRegistration {\n" +
         '            parent_fsm_name: "otherFsm",\n' +
         '            parent_fsm_version: "v02",\n' +
-        '            fsm_type: "internalAsyncOperation",\n' +
-        '            fsm_name: "someActorRs",\n' +
-        '            fsm_version: "v02",\n' +
-        '            fsm_language: "rust",\n' +
+        '            async_operation_type: "internalAsyncOperation",\n' +
+        '            async_operation_name: "someActorRs",\n' +
+        '            async_operation_version: "v02",\n' +
+        '            async_operation_language: "rust",\n' +
         "            handler: otherfsm_v02::someActorRs,\n" +
         "        },\n" +
         "    ]\n" +
@@ -780,10 +780,10 @@ Deno.test("writeAggregateGoRegistry - writes a standalone Go module with one req
         "type ActorRegistration struct {\n" +
         "\tParentFsmName    string\n" +
         "\tParentFsmVersion string\n" +
-        "\tFsmType          string\n" +
-        "\tFsmName          string\n" +
-        "\tFsmVersion       string\n" +
-        "\tFsmLanguage      string\n" +
+        "\tAsyncOperationType          string\n" +
+        "\tAsyncOperationName          string\n" +
+        "\tAsyncOperationVersion       string\n" +
+        "\tAsyncOperationLanguage      string\n" +
         "\tHandler          func(input any) (any, error)\n" +
         "}\n" +
         "\n" +
@@ -792,19 +792,19 @@ Deno.test("writeAggregateGoRegistry - writes a standalone Go module with one req
         "\t\t{\n" +
         '\t\t\tParentFsmName:    "creditCheck",\n' +
         '\t\t\tParentFsmVersion: "v01",\n' +
-        '\t\t\tFsmType:          "internalAsyncOperation",\n' +
-        '\t\t\tFsmName:          "checkBureau",\n' +
-        '\t\t\tFsmVersion:       "v01",\n' +
-        '\t\t\tFsmLanguage:      "go",\n' +
+        '\t\t\tAsyncOperationType:          "internalAsyncOperation",\n' +
+        '\t\t\tAsyncOperationName:          "checkBureau",\n' +
+        '\t\t\tAsyncOperationVersion:       "v01",\n' +
+        '\t\t\tAsyncOperationLanguage:      "go",\n' +
         "\t\t\tHandler:          creditcheck_v01_checkbureau.CheckBureau,\n" +
         "\t\t},\n" +
         "\t\t{\n" +
         '\t\t\tParentFsmName:    "otherFsm",\n' +
         '\t\t\tParentFsmVersion: "v02",\n' +
-        '\t\t\tFsmType:          "internalAsyncOperation",\n' +
-        '\t\t\tFsmName:          "someActor",\n' +
-        '\t\t\tFsmVersion:       "v02",\n' +
-        '\t\t\tFsmLanguage:      "go",\n' +
+        '\t\t\tAsyncOperationType:          "internalAsyncOperation",\n' +
+        '\t\t\tAsyncOperationName:          "someActor",\n' +
+        '\t\t\tAsyncOperationVersion:       "v02",\n' +
+        '\t\t\tAsyncOperationLanguage:      "go",\n' +
         "\t\t\tHandler:          otherfsm_v02_someactor.SomeActor,\n" +
         "\t\t},\n" +
         "\t}\n" +

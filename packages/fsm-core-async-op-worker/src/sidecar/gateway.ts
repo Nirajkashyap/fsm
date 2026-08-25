@@ -14,7 +14,7 @@
 // connection/registration/pending-invoke bookkeeping is otherwise unchanged
 // from the protocol.ts-based version, which was itself ported from the
 // polygot-lang-ipc-worker prototype's server/src/sidecar/gateway.ts; routing
-// keys are `parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage`
+// keys are `parentFsmName@parentFsmVersion@asyncOperationType@asyncOperationName@asyncOperationVersion@asyncOperationLanguage`
 // (see this file's own `actorKey()`).
 //
 // This class never opens a database connection — it only relays messages
@@ -72,10 +72,10 @@ type SessionResponseMessage = InstanceType<typeof SessionResponse>;
 export interface RegisteredActor {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   timeoutMs: number;
   description: string;
 }
@@ -83,12 +83,12 @@ export interface RegisteredActor {
 export function actorKey(
   parentFsmName: string,
   parentFsmVersion: string,
-  fsmType: string,
-  fsmName: string,
-  fsmVersion: string,
-  fsmLanguage: string,
+  asyncOperationType: string,
+  asyncOperationName: string,
+  asyncOperationVersion: string,
+  asyncOperationLanguage: string,
 ): string {
-  return `${parentFsmName}@${parentFsmVersion}@${fsmType}@${fsmName}@${fsmVersion}@${fsmLanguage}`;
+  return `${parentFsmName}@${parentFsmVersion}@${asyncOperationType}@${asyncOperationName}@${asyncOperationVersion}@${asyncOperationLanguage}`;
 }
 
 function toInputJson(input: unknown): string {
@@ -105,10 +105,10 @@ function parseOutputJson(json: string): unknown {
 export interface ActivityInvokeInput {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   input: unknown;
   instanceId: string;
   correlationId: string;
@@ -301,10 +301,10 @@ export class SidecarGateway {
     const key = actorKey(
       request.parentFsmName,
       request.parentFsmVersion,
-      request.fsmType,
-      request.fsmName,
-      request.fsmVersion,
-      request.fsmLanguage,
+      request.asyncOperationType,
+      request.asyncOperationName,
+      request.asyncOperationVersion,
+      request.asyncOperationLanguage,
     );
     const route = this.actorRoutes.get(key);
     if (!route) {
@@ -352,10 +352,10 @@ export class SidecarGateway {
               invokeId,
               parentFsmName: request.parentFsmName,
               parentFsmVersion: request.parentFsmVersion,
-              fsmType: request.fsmType,
-              fsmName: request.fsmName,
-              fsmVersion: request.fsmVersion,
-              fsmLanguage: request.fsmLanguage,
+              asyncOperationType: request.asyncOperationType,
+              asyncOperationName: request.asyncOperationName,
+              asyncOperationVersion: request.asyncOperationVersion,
+              asyncOperationLanguage: request.asyncOperationLanguage,
               inputJson: toInputJson(request.input),
               instanceId: request.instanceId,
               correlationId: request.correlationId,
@@ -436,10 +436,10 @@ export class SidecarGateway {
         actorKey(
           a.parentFsmName,
           a.parentFsmVersion,
-          a.fsmType,
-          a.fsmName,
-          a.fsmVersion,
-          a.fsmLanguage,
+          a.asyncOperationType,
+          a.asyncOperationName,
+          a.asyncOperationVersion,
+          a.asyncOperationLanguage,
         )
       ),
       rejectedActors: [],
@@ -518,10 +518,10 @@ export class SidecarGateway {
       const key = actorKey(
         meta.parentFsmName,
         meta.parentFsmVersion,
-        meta.fsmType,
-        meta.fsmName,
-        meta.fsmVersion,
-        meta.fsmLanguage,
+        meta.asyncOperationType,
+        meta.asyncOperationName,
+        meta.asyncOperationVersion,
+        meta.asyncOperationLanguage,
       );
       this.actorRoutes.set(key, { workerId: register.workerId, meta });
       worker.actors.add(key);

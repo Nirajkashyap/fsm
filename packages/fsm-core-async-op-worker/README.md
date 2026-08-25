@@ -70,10 +70,11 @@ async-operation-worker-gateway --db-url "$DATABASE_URL" --ensure-queue-on-regist
 which running gateway to talk to.
 
 - `list` — no further flags.
-- `invoke` — requires `--parent-fsm-name`, `--parent-fsm-version`, `--fsm-type`,
-  `--fsm-name`, `--fsm-version`, `--fsm-language`; optional `--input <json>`
-  (default `null`), `--instance-id`/`--correlation-id` (default random UUIDs),
-  `--timeout-ms` (default `5000`).
+- `invoke` — requires `--parent-fsm-name`, `--parent-fsm-version`,
+  `--async-operation-type`, `--async-operation-name`,
+  `--async-operation-version`, `--async-operation-language`; optional
+  `--input <json>` (default `null`), `--instance-id`/`--correlation-id` (default
+  random UUIDs), `--timeout-ms` (default `5000`).
 
 **Output** — writes nothing; `list` prints the actor keys currently registered
 with the target gateway, `invoke` calls that actor and prints its result JSON.
@@ -83,8 +84,8 @@ async-operation-worker-gateway-ctl list
 
 async-operation-worker-gateway-ctl invoke \
   --parent-fsm-name creditCheck --parent-fsm-version v01 \
-  --fsm-type promise --fsm-name checkBureau --fsm-version v01 \
-  --fsm-language rust --input '{"ssn":"123"}'
+  --async-operation-type promise --async-operation-name checkBureau --async-operation-version v01 \
+  --async-operation-language rust --input '{"ssn":"123"}'
 ```
 
 ## Prerequisites

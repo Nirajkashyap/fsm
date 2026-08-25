@@ -112,15 +112,15 @@ export interface InvokeObject {
   /**
    * The type of the invoked service. internalAsyncOperation for a new async operation, sharedAsyncOperation for an existing async operation but shared with other FSMs, and fsm for another finite state machine.
    */
-  fsmType: "internalAsyncOperation" | "sharedAsyncOperation" | "fsm";
+  asyncOperationType: "internalAsyncOperation" | "sharedAsyncOperation" | "fsm";
   /**
    * The version of the FSM being invoked.
    */
-  fsmVersion: string;
+  asyncOperationVersion: string;
   /**
    * Language runtime that executes the invoked service. Defaults to typescript. Aligns with the actor folder convention (typescript/, python/, rust/, go/, llm/).
    */
-  fsmLanguage?: "typescript" | "python" | "rust" | "go" | "llm";
+  asyncOperationLanguage?: "typescript" | "python" | "rust" | "go" | "llm";
 }
 export interface TransitionsObject {
   /**

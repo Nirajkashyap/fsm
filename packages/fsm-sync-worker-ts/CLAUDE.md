@@ -66,10 +66,10 @@ this.
 type-check pass with `TS2345` errors in `src/fsmlet/fsmlet.ts` around
 `asyncActors` — `ActorReference[]` (from `@pgfsm/compiler`) isn't assignable to
 the `AsyncActor[]` dnt's bundled compiler expects, because
-`ActorReference.fsmVersion` is `string | undefined` while `AsyncActor`
-presumably wants `string`. Not caused by anything in this doc pass; reproduce
-with `deno task build:npm 0.0.0 --copy-readme` before assuming a docs/README
-change broke it.
+`ActorReference.asyncOperationVersion` is `string | undefined` while
+`AsyncActor` presumably wants `string`. Not caused by anything in this doc pass;
+reproduce with `deno task build:npm 0.0.0 --copy-readme` before assuming a
+docs/README change broke it.
 
 ## Structure (`src/`)
 

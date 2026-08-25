@@ -6,7 +6,7 @@
 import { getLogger } from "@logtape/logtape";
 import { configureCompilerLogger } from "./logger.ts";
 import {
-  addMissingFsmTypeToInvokeActors,
+  addMissingAsyncOperationTypeToInvokeActors,
   deleteFsmJSONFromFolders,
   generateAsyncOperationLogicFromFolders,
   generateFsmJSONFromFolders,
@@ -31,7 +31,7 @@ await configureCompilerLogger();
 
   const exports = {
     generateFsmJSONFromFolders,
-    addMissingFsmTypeToInvokeActors,
+    addMissingAsyncOperationTypeToInvokeActors,
     generateAsyncOperationLogicFromFolders,
     generateSyncOperationLogicFromFolders,
     loadFsmJSONFromFolders,

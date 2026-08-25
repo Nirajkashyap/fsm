@@ -3,9 +3,9 @@
 /// One actor entrypoint a worker process serves. Mirrors
 /// ActorPluginValidationResult's identity fields (see @pgfsm/compiler's
 /// util.ts) — actorKey() in the current sidecar/protocol.ts is what the
-/// gateway routes on. fsm_language is part of the identity (not just a
-/// display field) because the other five fields alone aren't guaranteed
-/// unique across languages.
+/// gateway routes on. async_operation_language is part of the identity (not
+/// just a display field) because the other five fields alone aren't
+/// guaranteed unique across languages.
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct RegisteredActor {
     #[prost(string, tag = "1")]
@@ -13,13 +13,13 @@ pub struct RegisteredActor {
     #[prost(string, tag = "2")]
     pub parent_fsm_version: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
-    pub fsm_type: ::prost::alloc::string::String,
+    pub async_operation_type: ::prost::alloc::string::String,
     #[prost(string, tag = "4")]
-    pub fsm_name: ::prost::alloc::string::String,
+    pub async_operation_name: ::prost::alloc::string::String,
     #[prost(string, tag = "5")]
-    pub fsm_version: ::prost::alloc::string::String,
+    pub async_operation_version: ::prost::alloc::string::String,
     #[prost(string, tag = "6")]
-    pub fsm_language: ::prost::alloc::string::String,
+    pub async_operation_language: ::prost::alloc::string::String,
     #[prost(uint32, tag = "7")]
     pub timeout_ms: u32,
     #[prost(string, tag = "8")]
@@ -44,7 +44,7 @@ pub struct RegisterAck {
     pub accepted: bool,
     #[prost(string, tag = "2")]
     pub gateway_protocol_version: ::prost::alloc::string::String,
-    /// "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
+    /// "parentFsmName@parentFsmVersion@asyncOperationType@asyncOperationName@asyncOperationVersion@asyncOperationLanguage"
     /// keys, mirroring sidecar/protocol.ts's actorKey().
     #[prost(string, repeated, tag = "3")]
     pub registered_actors: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
@@ -67,13 +67,13 @@ pub struct Invoke {
     #[prost(string, tag = "3")]
     pub parent_fsm_version: ::prost::alloc::string::String,
     #[prost(string, tag = "4")]
-    pub fsm_type: ::prost::alloc::string::String,
+    pub async_operation_type: ::prost::alloc::string::String,
     #[prost(string, tag = "5")]
-    pub fsm_name: ::prost::alloc::string::String,
+    pub async_operation_name: ::prost::alloc::string::String,
     #[prost(string, tag = "6")]
-    pub fsm_version: ::prost::alloc::string::String,
+    pub async_operation_version: ::prost::alloc::string::String,
     #[prost(string, tag = "7")]
-    pub fsm_language: ::prost::alloc::string::String,
+    pub async_operation_language: ::prost::alloc::string::String,
     /// JSON-encoded activity input — kept as an opaque string (not a typed
     /// message) the same way activity_gateway.proto's InvokeRequest.input_json
     /// is, since the actual shape is user-defined per actor.
