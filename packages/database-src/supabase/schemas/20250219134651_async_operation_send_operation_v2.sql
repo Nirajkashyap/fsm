@@ -1,8 +1,8 @@
-CREATE OR REPLACE FUNCTION fsm_core.send_event_to_promise_queue_with_event_logs_v2(
-    input_promise_queue_name text,
-    input_promise_fn_name text,
-    input_promise_queue_type text,
-    input_promise_queue_version text,
+CREATE OR REPLACE FUNCTION fsm_core.send_event_to_async_operation_queue_with_event_logs_v2(
+    input_async_operation_queue_name text,
+    input_async_operation_fn_name text,
+    input_async_operation_queue_type text,
+    input_async_operation_queue_version text,
     input_send_to_parent_queue_id uuid,
     input_send_to_parent_queue_type text,
     input_send_to_parent_queue_id_event_name text,
@@ -21,11 +21,11 @@ RETURNS JSONB
 AS $$
 DECLARE
     queue_msg_data jsonb;
-    output_promise_queue_msg_id bigint;
-    output_promise_queue_event_log_id uuid;
+    output_async_operation_queue_msg_id bigint;
+    output_async_operation_queue_event_log_id uuid;
 BEGIN
-    IF input_promise_queue_name IS NULL THEN
-        RAISE EXCEPTION 'promise_queue_name is NULL';
+    IF input_async_operation_queue_name IS NULL THEN
+        RAISE EXCEPTION 'async_operation_queue_name is NULL';
     END IF;
 
     queue_msg_data := jsonb_build_object(
@@ -34,39 +34,39 @@ BEGIN
             'eventPayload', input_event_data,
             'actionType',   input_event_action_type
         ),
-        'queueId',                    input_promise_queue_name,
-        'queueFnName',                input_promise_fn_name,
-        'queueType',                  input_promise_queue_type,
-        'queueVersion',               input_promise_queue_version,
+        'queueId',                    input_async_operation_queue_name,
+        'queueFnName',                input_async_operation_fn_name,
+        'queueType',                  input_async_operation_queue_type,
+        'queueVersion',               input_async_operation_queue_version,
         'sendToParentQueueId',        input_send_to_parent_queue_id,
         'sendToParentQueueType',      input_send_to_parent_queue_type,
         'sendToParentQueueIdEventName', input_send_to_parent_queue_id_event_name
     );
 
     BEGIN
-        SELECT pgmq.send(queue_name := input_promise_queue_name, msg := queue_msg_data, delay := input_event_delay)
-        INTO output_promise_queue_msg_id;
+        SELECT pgmq.send(queue_name := input_async_operation_queue_name, msg := queue_msg_data, delay := input_event_delay)
+        INTO output_async_operation_queue_msg_id;
     EXCEPTION WHEN OTHERS THEN
-        RAISE EXCEPTION 'pgmq.send failed for queue %: %', input_promise_queue_name, SQLERRM;
+        RAISE EXCEPTION 'pgmq.send failed for queue %: %', input_async_operation_queue_name, SQLERRM;
     END;
 
-    IF output_promise_queue_msg_id IS NULL THEN
-        RAISE EXCEPTION 'Failed to send event to queue %', input_promise_queue_name;
+    IF output_async_operation_queue_msg_id IS NULL THEN
+        RAISE EXCEPTION 'Failed to send event to queue %', input_async_operation_queue_name;
     END IF;
 
     -- Append queueMsgId to queue_msg_data
-    queue_msg_data := queue_msg_data || jsonb_build_object('queueMsgId', output_promise_queue_msg_id);
+    queue_msg_data := queue_msg_data || jsonb_build_object('queueMsgId', output_async_operation_queue_msg_id);
 
     -- Append queueMsgDelay to queue_msg_data
     queue_msg_data := queue_msg_data || jsonb_build_object('queueMsgDelay', input_event_delay);
 
 
-    INSERT INTO fsm_core.fsm_promise_queue_event_logs (
-        promise_queue_name,
-        promise_fn_name,
-        promise_queue_type,
-        promise_queue_version,
-        promise_queue_msg_id,
+    INSERT INTO fsm_core.fsm_async_operation_queue_event_logs (
+        async_operation_queue_name,
+        async_operation_fn_name,
+        async_operation_queue_type,
+        async_operation_queue_version,
+        async_operation_queue_msg_id,
         event_name,
         event_data,
         event_delay,
@@ -79,11 +79,11 @@ BEGIN
         event_output,
         error_message
     ) VALUES (
-        input_promise_queue_name,
-        input_promise_fn_name,
-        input_promise_queue_type,
-        input_promise_queue_version,
-        output_promise_queue_msg_id,
+        input_async_operation_queue_name,
+        input_async_operation_fn_name,
+        input_async_operation_queue_type,
+        input_async_operation_queue_version,
+        output_async_operation_queue_msg_id,
         input_event_name,
         input_event_data,
         input_event_delay,
@@ -95,14 +95,14 @@ BEGIN
         input_event_status,
         input_event_output,
         input_error_message
-    ) RETURNING promise_queue_event_log_id INTO output_promise_queue_event_log_id;
+    ) RETURNING async_operation_queue_event_log_id INTO output_async_operation_queue_event_log_id;
 
-    
+
     RETURN jsonb_build_object(
         'queue_data', queue_msg_data,
-        -- 'queue_msg_id', output_promise_queue_msg_id,
+        -- 'queue_msg_id', output_async_operation_queue_msg_id,
         -- 'queue_msg_delay', input_event_delay,
-        'queue_event_log_id', output_promise_queue_event_log_id,
+        'queue_event_log_id', output_async_operation_queue_event_log_id,
         'event_status', input_event_status,
         'event_output', input_event_output,
         'error_message', input_error_message

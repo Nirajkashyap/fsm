@@ -50,7 +50,7 @@ body:
       options:
         - Direct
         - Worker-based (pgmq queue)
-        - Promise / callback-based
+        - Async operation / callback-based
         - Not applicable
     validations:
       required: true

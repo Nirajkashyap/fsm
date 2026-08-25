@@ -75,7 +75,7 @@ enqueue_fsm_dispatch_v2()                    (PG function, control plane)
         fsmscheduler → fsmlet fleet          (orchestrator tier — see ADR-002 Stage 3)
                 │  on xstate.invoke(actor)
                 ▼
-create_promise_queue_and_send_event_from_fsm_instance_id_v2()
+create_async_op_queue_and_send_event_from_fsm_instance_id_v2()
   • INSERT async_operation_instance_and_async_operation_workerlet (status='pending')
   • pg_notify('async_operation_scheduler_work')
                 │
@@ -396,9 +396,9 @@ should not require renegotiating the protocol.
       `activeWorkers` and terminated via the existing
       `signal.addEventListener("abort", ...)` pattern already used for Python.
 - [ ] The TS orchestrator retains sole ownership of `readMessage` (PGMQ poll)
-      and `archiveEventFromFsmPromiseTypeWorker` (archive) — the Rust subprocess
-      never opens a DB connection, verified by inspection/log audit of the
-      reference implementation.
+      and `archiveEventFromFsmAsyncOperationTypeWorker` (archive) — the Rust
+      subprocess never opens a DB connection, verified by inspection/log audit
+      of the reference implementation.
 - [ ] A reference Rust actor + shim exists (fixture under
       `apps/fsm-core-example/` or a test-only fixture) proving the full path
       end-to-end: dispatch → claim → orchestrator forwards over the Unix socket

@@ -1,5 +1,5 @@
 // 30-second poll loop implementing GOAL.md's steps 3-7: every tick, ask
-// Postgres (via claimPendingPromiseEventsForWorkers) for pending work
+// Postgres (via claimPendingAsyncOperationEventsForWorkers) for pending work
 // matching this gateway's currently-registered worker identities, dispatch
 // each claimed event via the sidecar's gRPC/IPC invoke path, and archive
 // the result.
@@ -10,10 +10,10 @@
 // being invoked by an external orchestrator's poll/claim/archive loop.
 
 import { getLogger } from "@logtape/logtape";
-import type { DBDeps, Json, PromiseWorkerIdentity } from "@pgfsm/db";
+import type { AsyncOperationWorkerIdentity, DBDeps, Json } from "@pgfsm/db";
 import {
-  archiveEventFromFsmPromiseTypeWorker,
-  claimPendingPromiseEventsForWorkers,
+  archiveEventFromFsmAsyncOperationTypeWorker,
+  claimPendingAsyncOperationEventsForWorkers,
 } from "@pgfsm/db";
 import { ActivityInvokeError, type SidecarGateway } from "./sidecar/gateway.ts";
 
@@ -36,13 +36,13 @@ const DEFAULT_INVOKE_TIMEOUT_MS = 10_000;
 
 /**
  * Shape of one claimed pending-work row, returned by
- * `claim_pending_promise_events_for_workers_v2` (see that function's own
+ * `claim_pending_async_operation_events_for_workers_v2` (see that function's own
  * doc comment for the PGMQ message payload it's derived from) -- carries
  * enough to both dispatch (identity + input + instance/correlation ids) and
  * archive (queue name/type/version + msg id + event routing fields) the
  * result.
  */
-interface ClaimedPromiseEvent {
+interface ClaimedAsyncOperationEvent {
   parentFsmName: string;
   parentFsmVersion: string;
   asyncOperationType: string;
@@ -52,9 +52,9 @@ interface ClaimedPromiseEvent {
   input: unknown;
   instanceId: string;
   correlationId: string;
-  promiseQueueName: string;
-  promiseQueueType: string;
-  promiseQueueVersion: string;
+  asyncOperationQueueName: string;
+  asyncOperationQueueType: string;
+  asyncOperationQueueVersion: string;
   msgId: number;
   eventName: string;
   eventActionType: string;
@@ -63,7 +63,7 @@ interface ClaimedPromiseEvent {
   sendToParentQueueIdEventName: string;
 }
 
-const REQUIRED_CLAIMED_EVENT_KEYS: (keyof ClaimedPromiseEvent)[] = [
+const REQUIRED_CLAIMED_EVENT_KEYS: (keyof ClaimedAsyncOperationEvent)[] = [
   "parentFsmName",
   "parentFsmVersion",
   "asyncOperationType",
@@ -72,9 +72,9 @@ const REQUIRED_CLAIMED_EVENT_KEYS: (keyof ClaimedPromiseEvent)[] = [
   "asyncOperationLanguage",
   "instanceId",
   "correlationId",
-  "promiseQueueName",
-  "promiseQueueType",
-  "promiseQueueVersion",
+  "asyncOperationQueueName",
+  "asyncOperationQueueType",
+  "asyncOperationQueueVersion",
   "msgId",
   "eventName",
   "eventActionType",
@@ -82,16 +82,16 @@ const REQUIRED_CLAIMED_EVENT_KEYS: (keyof ClaimedPromiseEvent)[] = [
   "sendToParentQueueIdEventName",
 ];
 
-export function parseClaimedPromiseEvent(
+export function parseClaimedAsyncOperationEvent(
   row: unknown,
-): ClaimedPromiseEvent | null {
+): ClaimedAsyncOperationEvent | null {
   if (!row || typeof row !== "object") return null;
   const r = row as Record<string, unknown>;
   for (const key of REQUIRED_CLAIMED_EVENT_KEYS) {
     if (!(key in r)) return null;
   }
   return {
-    ...(r as unknown as ClaimedPromiseEvent),
+    ...(r as unknown as ClaimedAsyncOperationEvent),
     input: r.input ?? null,
     eventDelay: typeof r.eventDelay === "number" ? r.eventDelay : 0,
   };
@@ -99,7 +99,7 @@ export function parseClaimedPromiseEvent(
 
 function actorKeyOf(
   event: Pick<
-    ClaimedPromiseEvent,
+    ClaimedAsyncOperationEvent,
     | "parentFsmName"
     | "parentFsmVersion"
     | "asyncOperationType"
@@ -127,7 +127,7 @@ function actorKeyOf(
 export async function dispatchAndArchive(
   sidecar: SidecarGateway,
   deps: DBDeps,
-  event: ClaimedPromiseEvent,
+  event: ClaimedAsyncOperationEvent,
   invokeTimeoutMs: number,
 ): Promise<void> {
   const executionStartedAt = new Date();
@@ -162,7 +162,7 @@ export async function dispatchAndArchive(
   const executionFinishedAt = new Date();
 
   // Outcome-dependent prefix, matching fsm-async-worker-ts's working
-  // convention exactly (fsmpromiseworker-helper.ts's
+  // convention exactly (fsmasyncoperationworker-helper.ts's
   // send_event_name_to_parent_queue_id): the fsmlet only recognizes
   // "xstate.done.actor.<base>" / "xstate.error.actor.<base>" as a valid
   // transition event -- the claimed row's raw eventName (the un-prefixed
@@ -185,11 +185,11 @@ export async function dispatchAndArchive(
     },
   );
   try {
-    await archiveEventFromFsmPromiseTypeWorker(
+    await archiveEventFromFsmAsyncOperationTypeWorker(
       deps,
-      event.promiseQueueName,
-      event.promiseQueueType,
-      event.promiseQueueVersion,
+      event.asyncOperationQueueName,
+      event.asyncOperationQueueType,
+      event.asyncOperationQueueVersion,
       event.msgId,
       prefixedEventName,
       event.eventActionType,
@@ -217,7 +217,7 @@ async function pollOnce(
   deps: DBDeps,
   invokeTimeoutMs: number,
 ): Promise<void> {
-  const workers: PromiseWorkerIdentity[] = sidecar
+  const workers: AsyncOperationWorkerIdentity[] = sidecar
     .listRegisteredActorIdentities();
   if (workers.length === 0) {
     logger.info("No registered workers; skipping poll tick");
@@ -226,9 +226,9 @@ async function pollOnce(
 
   let claimed: Json[];
   try {
-    claimed = await claimPendingPromiseEventsForWorkers(deps, workers);
+    claimed = await claimPendingAsyncOperationEventsForWorkers(deps, workers);
   } catch (error) {
-    logger.error("claimPendingPromiseEventsForWorkers failed: {error}", {
+    logger.error("claimPendingAsyncOperationEventsForWorkers failed: {error}", {
       error,
     });
     return;
@@ -238,7 +238,7 @@ async function pollOnce(
     workerCount: workers.length,
   });
   for (const row of claimed) {
-    const event = parseClaimedPromiseEvent(row);
+    const event = parseClaimedAsyncOperationEvent(row);
     if (!event) {
       logger.error("Skipping unparseable claimed event row: {row}", {
         row,

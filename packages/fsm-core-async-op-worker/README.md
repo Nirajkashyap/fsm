@@ -1,6 +1,6 @@
 # @pgfsm/async-worker
 
-The Activity Gateway for promise-type async FSM operations across polyglot
+The Activity Gateway for async-operation-type FSM operations across polyglot
 (TypeScript/Python/Rust/Go) actors: a standalone gateway process that accepts
 worker registrations over a Unix socket, polls Postgres for pending work
 matching those registrations, dispatches it to the right worker, and archives
@@ -53,7 +53,7 @@ reference. Examples below assume a global install
 **Output/side effect** — starts a long-running process: a gRPC service
 (client-facing) backed by a Unix-socket sidecar (worker-facing), plus — unless
 disabled — its own Postgres poll loop that claims and dispatches pending
-promise-type async operations to whichever actors are currently registered, then
+async-operation-type work to whichever actors are currently registered, then
 archives each result. Runs until `SIGINT`/`SIGTERM` (a second signal
 force-exits).
 
@@ -84,7 +84,7 @@ async-operation-worker-gateway-ctl list
 
 async-operation-worker-gateway-ctl invoke \
   --parent-fsm-name creditCheck --parent-fsm-version v01 \
-  --async-operation-type promise --async-operation-name checkBureau --async-operation-version v01 \
+  --async-operation-type internalAsyncOperation --async-operation-name checkBureau --async-operation-version v01 \
   --async-operation-language rust --input '{"ssn":"123"}'
 ```
 

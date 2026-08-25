@@ -1,9 +1,9 @@
 begin;
 select plan(12);
 
-select has_function('fsm_core', 'create_promise_queue_and_send_event_from_fsm_instance_id_v2',
+select has_function('fsm_core', 'create_async_op_queue_and_send_event_from_fsm_instance_id_v2',
   ARRAY['text', 'jsonb', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'uuid'],
-  'create_promise_queue_and_send_event_from_fsm_instance_id_v2(...) exists');
+  'create_async_op_queue_and_send_event_from_fsm_instance_id_v2(...) exists');
 select has_function('fsm_core', 'create_fsm_queue_and_send_event_from_fsm_instance_id_v2',
   ARRAY['text', 'jsonb', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'uuid'],
   'create_fsm_queue_and_send_event_from_fsm_instance_id_v2(...) exists');
@@ -14,34 +14,34 @@ select has_function('fsm_core', 'archive_event_from_fsm_type_worker_v2',
   ARRAY['text', 'bigint', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'jsonb', 'uuid', 'text', 'text'],
   'archive_event_from_fsm_type_worker_v2(...) exists');
 
-delete from fsm_core.fsm_promise_queue_event_logs where promise_queue_name like 'pFsm_v1_%';
+delete from fsm_core.fsm_async_operation_queue_event_logs where async_operation_queue_name like 'pFsm_v1_%';
 delete from fsm_core.fsm_instance where fsm_name = 'srcFsm' and fsm_version = 'v1';
 insert into fsm_core.fsm_instance (id, fsm_name, fsm_version)
 values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid, 'srcFsm', 'v1');
 
 select results_eq(
   $$ select (r->>'start_queue_worker')::boolean, (r->'queue_data'->>'queueId')
-     from fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
+     from fsm_core.create_async_op_queue_and_send_event_from_fsm_instance_id_v2(
        'evt1', '{"x": 1}'::jsonb, 'someId', 'invoke', 'someSrc', 'childOp', 'internalAsyncOperation', 'v1',
        'pFsm', 'v1', 'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) r $$,
   $$ values (true, 'pFsm_v1_i_childOp_t'::text) $$,
-  'the first call for a not-yet-existing promise queue creates it (start_queue_worker=true), naming delegated to compute_promise_queue_name_v2'
+  'the first call for a not-yet-existing async-operation queue creates it (start_queue_worker=true), naming delegated to compute_async_operation_queue_name_v2'
 );
 select results_eq(
   $$ select (r->>'start_queue_worker')::boolean
-     from fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
+     from fsm_core.create_async_op_queue_and_send_event_from_fsm_instance_id_v2(
        'evt2', '{"x": 2}'::jsonb, 'someId2', 'invoke', 'someSrc', 'childOp', 'internalAsyncOperation', 'v1',
        'pFsm', 'v1', 'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) r $$,
   $$ values (false) $$,
-  'a second call for the same promise queue reuses it (start_queue_worker=false)'
+  'a second call for the same async-operation queue reuses it (start_queue_worker=false)'
 );
 select throws_ok(
-  $$ select fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
+  $$ select fsm_core.create_async_op_queue_and_send_event_from_fsm_instance_id_v2(
        'evt', '{}'::jsonb, 'id', 'invoke', 'src', 'x', 'unsupportedType', 'v1', 'p', 'v1',
        'typescript', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid) $$,
   'P0001',
-  'create_promise_queue_and_send_event_from_fsm_instance_id_v2: unsupported fsmType: unsupportedType',
-  'an unsupported fsmType still raises (validated here, before delegating naming to compute_promise_queue_name_v2)'
+  'create_async_op_queue_and_send_event_from_fsm_instance_id_v2: unsupported fsmType: unsupportedType',
+  'an unsupported fsmType still raises (validated here, before delegating naming to compute_async_operation_queue_name_v2)'
 );
 
 -- Characterization test: create_fsm_queue_and_send_event_from_fsm_instance_id_v2
@@ -69,8 +69,8 @@ select throws_ok(
   'send_event_to_queue_from_fsm_instance_id_v2 rejects an unrecognized fsmType'
 );
 
--- Simplest case for the macro archive/save function: no schedule/promise queue
--- churn, non-terminal status (no parent notify), just update instance state
+-- Simplest case for the macro archive/save function: no schedule/async-operation
+-- queue churn, non-terminal status (no parent notify), just update instance state
 -- and archive the current queue message.
 delete from fsm_core.fsm_instance where fsm_name = 'archMacroFsm' and fsm_version = 'v1';
 insert into fsm_core.fsm_instance (id, fsm_name, fsm_version)
@@ -85,18 +85,18 @@ select results_eq(
        '"active"'::jsonb, '{"foo": "bar"}'::jsonb, '{"ctx": 1}'::jsonb, '{"xs": 1}'::jsonb,
        NULL, NULL, NULL) $$,
   $$ values ('{
-       "parent_notify_result": null, "added_promise_queue_data": [], "added_schedule_queue_data": [],
-       "new_total_promise_queue_data": [], "old_total_promise_queue_data": null,
+       "parent_notify_result": null, "added_async_operation_queue_data": [], "added_schedule_queue_data": [],
+       "new_total_async_operation_queue_data": [], "old_total_async_operation_queue_data": null,
        "new_total_schedule_queue_data": [], "old_total_schedule_queue_data": null,
-       "not_confirmed_removed_promise_queue_data": [], "not_confirmed_removed_schedule_queue_data": [],
-       "confirmed_removed_promise_queue_data_failed": [], "confirmed_removed_promise_queue_data_success": [],
+       "not_confirmed_removed_async_operation_queue_data": [], "not_confirmed_removed_schedule_queue_data": [],
+       "confirmed_removed_async_operation_queue_data_failed": [], "confirmed_removed_async_operation_queue_data_success": [],
        "confirmed_removed_schedule_queue_data_failed": [], "confirmed_removed_schedule_queue_data_success": []
      }'::jsonb) $$,
-  'with no schedule/promise churn and a non-terminal status, the result is all empty arrays and no parent notify'
+  'with no schedule/async-operation churn and a non-terminal status, the result is all empty arrays and no parent notify'
 );
 select results_eq(
   $$ select fsm_instance_status, fsm_instance_state, fsm_instance_context, fsm_instance_xstate_state,
-            total_schedule_queue_data, total_promise_queue_data
+            total_schedule_queue_data, total_async_operation_queue_data
      from fsm_core.fsm_instance where id = 'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid $$,
   $$ values ('"active"'::jsonb, '{"foo": "bar"}'::jsonb, '{"ctx": 1}'::jsonb, '{"xs": 1}'::jsonb, '[]'::jsonb, '[]'::jsonb) $$,
   'the fsm_instance row is updated with the new status/state/context/xstate_state'

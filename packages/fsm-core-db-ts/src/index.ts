@@ -81,13 +81,13 @@ export type {
 } from "./25_async_operation_worker_v1/asyncOperationWorkerlet.ts";
 
 export {
-  claimPendingPromiseEventsForWorkers,
-  computePromiseQueueName,
-  ensurePromiseQueueForWorker,
+  claimPendingAsyncOperationEventsForWorkers,
+  computeAsyncOperationQueueName,
+  ensureAsyncOperationQueueForWorker,
 } from "./30_async_operation_worker_v2/asyncOperationWorker.ts";
 export type {
-  EnsurePromiseQueueForWorkerResult,
-  PromiseWorkerIdentity,
+  AsyncOperationWorkerIdentity,
+  EnsureAsyncOperationQueueForWorkerResult,
 } from "./30_async_operation_worker_v2/asyncOperationWorker.ts";
 
-export { archiveEventFromFsmPromiseTypeWorker } from "./30_async_operation_worker_v2/asyncOperationCtl.ts";
+export { archiveEventFromFsmAsyncOperationTypeWorker } from "./30_async_operation_worker_v2/asyncOperationCtl.ts";

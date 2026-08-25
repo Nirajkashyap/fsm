@@ -237,7 +237,7 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
 # Async operation workflow folder
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
-  -f apps/fsm-core-example/promise \
+  -f apps/fsm-core-example/fsm \
   -w internalAsyncOperation
 ```
 

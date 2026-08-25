@@ -61,9 +61,9 @@ type SessionResponseMessage = InstanceType<typeof SessionResponse>;
  * (see sidecar_gateway.proto), hand-written rather than derived via
  * `InstanceType<typeof RegisteredActor>` — unlike this file's other
  * `*Message` aliases, this one is re-exported and consumed by other files
- * (gatewayServer.ts, asyncOpPollLoop.ts's `PromiseWorkerIdentity`), and the
+ * (gatewayServer.ts, asyncOpPollLoop.ts's `AsyncOperationWorkerIdentity`), and the
  * derived alias silently widened to `AnyMessage` once it crossed a file
- * boundary under `deno check` (caught by `PromiseWorkerIdentity` assignment
+ * boundary under `deno check` (caught by `AsyncOperationWorkerIdentity` assignment
  * errors downstream, not by this file's own check). The actual values
  * flowing through these fields are still real generated `RegisteredActor`
  * instances off the wire — structurally compatible with this interface, so
@@ -287,7 +287,7 @@ export class SidecarGateway {
   /**
    * Full identity of every currently-registered actor (not just the routing
    * key) — the shape the async-op poll loop sends to
-   * `claimPendingPromiseEventsForWorkers` (minus a `handler`, since these are
+   * `claimPendingAsyncOperationEventsForWorkers` (minus a `handler`, since these are
    * remote processes reached over the socket, not in-process functions).
    */
   listRegisteredActorIdentities(): RegisteredActor[] {

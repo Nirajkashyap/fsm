@@ -1,19 +1,19 @@
-DROP TABLE IF EXISTS fsm_core.fsm_promise_queue_event_logs;
-create table fsm_core.fsm_promise_queue_event_logs (
-    promise_queue_event_log_id uuid not null primary key default gen_random_uuid(),
-   
-    promise_queue_name text,
-    promise_fn_name text,
-    promise_queue_type text,
-    promise_queue_version text,
-    promise_queue_msg_id bigint, 
+DROP TABLE IF EXISTS fsm_core.fsm_async_operation_queue_event_logs;
+create table fsm_core.fsm_async_operation_queue_event_logs (
+    async_operation_queue_event_log_id uuid not null primary key default gen_random_uuid(),
+
+    async_operation_queue_name text,
+    async_operation_fn_name text,
+    async_operation_queue_type text,
+    async_operation_queue_version text,
+    async_operation_queue_msg_id bigint,
 
     event_name text,
     event_data jsonb,
     event_delay integer,
 
     -- use 1. event_source or 2. sent_to_parent to determine the source of the event, e.g., external http request, internal finit state machine event, or sent from child queue
-    
+
     -- 1. event_source can be external http request, internal finit state machine event
     -- event_source_type text, -- this will always fsm
     -- event_source_queue_id uuid, -- e.g., if event_source_type is 'fsm', this is the fsm_instance_id of the source fsm instance

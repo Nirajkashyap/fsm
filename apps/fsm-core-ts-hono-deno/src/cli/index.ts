@@ -12,7 +12,7 @@ const args = parseArgs(Deno.args, {
     "db-url",
     "url-path-prefix",
     "port",
-    "shared-promise-path",
+    "shared-async-operation-path",
     "fsm-path",
     "env-file",
   ],
@@ -36,7 +36,7 @@ OPTIONS
   -d, --db-url <url>                Database connection URL (overrides DATABASE_URL env var)
   -u, --url-path-prefix <prefix>    URL path prefix for all routes (default: /fsm)
   -p, --port <port>                 Port to listen on (default: 9999)
-      --shared-promise-path <path>  Absolute path to sharedPromise FSM folder
+      --shared-async-operation-path <path>  Absolute path to sharedAsyncOperation FSM folder
       --fsm-path <path>             Absolute path to fsm FSM folder
       --env-file <path>             Path to .env file (default: ./.env)
   -h, --help                        Show this help message
@@ -53,7 +53,7 @@ EXAMPLES
     --db-url postgres://user:pass@localhost/db \\
     --url-path-prefix /api/fsm \\
     --port 8080 \\
-    --shared-promise-path /abs/path/to/sharedPromise \\
+    --shared-async-operation-path /abs/path/to/sharedAsyncOperation \\
     --fsm-path /abs/path/to/fsm
 
   # Use a custom env file
@@ -89,8 +89,11 @@ if (!dbUrl) {
 
 // Validate that FSM paths exist if provided
 const pathsToCheck: Array<[string, string]> = [];
-if (args["shared-promise-path"]) {
-  pathsToCheck.push(["--shared-promise-path", args["shared-promise-path"]]);
+if (args["shared-async-operation-path"]) {
+  pathsToCheck.push([
+    "--shared-async-operation-path",
+    args["shared-async-operation-path"],
+  ]);
 }
 if (args["fsm-path"]) pathsToCheck.push(["--fsm-path", args["fsm-path"]]);
 
@@ -113,9 +116,9 @@ const { Hono } = await import("hono");
 // ── Build FSM config from CLI flags ─────────────────────────────────────────
 
 const fsmConfig: FsmStartupConfig = {};
-if (args["shared-promise-path"]) {
-  fsmConfig.sharedPromise = {
-    folderPath: args["shared-promise-path"],
+if (args["shared-async-operation-path"]) {
+  fsmConfig.sharedAsyncOperation = {
+    folderPath: args["shared-async-operation-path"],
     skipDirs: [],
   };
 }

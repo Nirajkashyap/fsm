@@ -34,7 +34,7 @@ live in `src/scaffold-templates/`.
 - [ ] **Fix actor stub signature.** `operation-logic-scaffold.ts` emits actor
       stubs as `<src>(context, event)` returning nothing, but actors are invoked
       as `actorFn(input): Promise<output>` (see
-      `packages/fsm-async-worker-ts/src/asyncOperationWorkerlet/fsmpromiseworker-helper.ts`).
+      `packages/fsm-async-worker-ts/src/asyncOperationWorkerlet/fsmasyncoperationworker-helper.ts`).
       Emit an async, single-`input` stub returning `Promise`.
 - [ ] **Distinguish internal vs external actors.** `extractFsmPluginRefs`
       carries

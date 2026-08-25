@@ -137,11 +137,11 @@ export async function macrostepV2(
     remove_from_current_fsm_instance_queue_id: queueName,
     remove_current_queue_msg_id: msg.msg_id,
     to_be_removed_schedule_queue_msg_ids: [] as Json[],
-    to_be_removed_promise_queue_msg_ids: [] as Json[],
+    to_be_removed_async_operation_queue_msg_ids: [] as Json[],
     to_be_added_schedule_queue_data: [] as Json[],
-    to_be_added_promise_queue_data: [] as Json[],
+    to_be_added_async_operation_queue_data: [] as Json[],
     input_total_schedule_queue_data: [] as Json[],
-    input_total_promise_queue_data: [] as Json[],
+    input_total_async_operation_queue_data: [] as Json[],
     fsm_instance_data_save_fsm_status: {},
     fsm_instance_data_save_fsm_state: {},
     fsm_instance_data_save_fsm_context: {} as Json,
@@ -157,13 +157,13 @@ export async function macrostepV2(
   // pass cuurent_context to all actions and update its value after every action execution
   const total_schedule_queue_data =
     (fsmInstanceRow?.total_schedule_queue_data || []) as Json[];
-  const total_promise_queue_data =
-    (fsmInstanceRow?.total_promise_queue_data || []) as Json[];
+  const total_async_operation_queue_data =
+    (fsmInstanceRow?.total_async_operation_queue_data || []) as Json[];
 
   let remove_schedule_queue_msg_ids_xstate = [] as Json[];
-  const remove_promise_queue_msg_ids_xstate = [] as Json[];
+  const remove_async_operation_queue_msg_ids_xstate = [] as Json[];
   const new_schedule_queue_data = [] as Json[];
-  const new_promise_queue_data = [] as Json[];
+  const new_async_operation_queue_data = [] as Json[];
 
   let selectedTransition;
   if (eventType === "initialTransition_event") {
@@ -261,7 +261,7 @@ export async function macrostepV2(
       remove_schedule_queue_msg_ids_xstate.push(action);
     } else if (action.type === "xstate.invoke") { //
       // this is equivalent to xstate.stopChild from worker-helper.ts
-      remove_promise_queue_msg_ids_xstate.push(action);
+      remove_async_operation_queue_msg_ids_xstate.push(action);
     } else {
       // fsm events - try to execute implementation from actionsModule
       current_context = await runActionImplementation(
@@ -301,7 +301,7 @@ export async function macrostepV2(
       });
     } else if (action.type === "xstate.invoke") {
       // this is equivalent to xstate.spawnChild from worker-helper.ts
-      new_promise_queue_data.push({ ...action, "type": action.type });
+      new_async_operation_queue_data.push({ ...action, "type": action.type });
     } else {
       // fsm events - try to execute implementation from actionsModule
       current_context = await runActionImplementation(
@@ -335,22 +335,24 @@ export async function macrostepV2(
     total_schedule_queue_data;
 
   // cancle ivnoke of previous state's children ( PATCH )
-  // const [new_total_promise_queue_data, remove_promise_queue_msg_ids] =  splitBySendEventName(total_promise_queue_data, remove_promise_queue_msg_ids_xstate);
+  // const [new_total_async_operation_queue_data, remove_async_operation_queue_msg_ids] =  splitBySendEventName(total_async_operation_queue_data, remove_async_operation_queue_msg_ids_xstate);
 
-  // // remove current promise event from total_promise_queue_data if it is executing xstate.done.actor or xstate.error.actor events
+  // // remove current async-operation event from total_async_operation_queue_data if it is executing xstate.done.actor or xstate.error.actor events
   // let removeEventName;
   // removeEventName = eventType.replace("xstate.done.actor.", "");
   // removeEventName = removeEventName.replace("xstate.error.actor.", "");
-  // const update_new_total_promise_queue_data = new_total_promise_queue_data.filter((item)=> item.event.send_event_name_to_parent_queue_id !== removeEventName);
+  // const update_new_total_async_operation_queue_data = new_total_async_operation_queue_data.filter((item)=> item.event.send_event_name_to_parent_queue_id !== removeEventName);
 
-  // macroSaveFnPayload.to_be_removed_promise_queue_msg_ids = remove_promise_queue_msg_ids;
-  // macroSaveFnPayload.input_total_promise_queue_data = update_new_total_promise_queue_data;
-  // macroSaveFnPayload.to_be_added_promise_queue_data = new_promise_queue_data;
+  // macroSaveFnPayload.to_be_removed_async_operation_queue_msg_ids = remove_async_operation_queue_msg_ids;
+  // macroSaveFnPayload.input_total_async_operation_queue_data = update_new_total_async_operation_queue_data;
+  // macroSaveFnPayload.to_be_added_async_operation_queue_data = new_async_operation_queue_data;
 
-  macroSaveFnPayload.to_be_removed_promise_queue_msg_ids =
-    remove_promise_queue_msg_ids_xstate;
-  macroSaveFnPayload.to_be_added_promise_queue_data = new_promise_queue_data;
-  macroSaveFnPayload.input_total_promise_queue_data = total_promise_queue_data;
+  macroSaveFnPayload.to_be_removed_async_operation_queue_msg_ids =
+    remove_async_operation_queue_msg_ids_xstate;
+  macroSaveFnPayload.to_be_added_async_operation_queue_data =
+    new_async_operation_queue_data;
+  macroSaveFnPayload.input_total_async_operation_queue_data =
+    total_async_operation_queue_data;
 
   macroSaveFnPayload.fsm_instance_data_save_fsm_context = current_context;
 

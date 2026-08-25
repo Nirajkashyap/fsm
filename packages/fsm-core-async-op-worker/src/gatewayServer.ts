@@ -5,7 +5,7 @@
 // fsm-async-worker-ts, not a passive service another orchestrator's
 // poll/claim/archive loop calls into — when `options.asyncOpPollLoop` is
 // set, this process owns its own Postgres connection and drives pending
-// promise-type work for its currently-registered actors itself.
+// async-operation-type work for its currently-registered actors itself.
 //
 // Ported from the polygot-lang-ipc-worker prototype's server/src/main.ts,
 // adapted to the ActivityGatewayService proto contract
@@ -27,7 +27,7 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import type { ConnectRouter, ServiceImpl } from "@connectrpc/connect";
 import * as http2 from "node:http2";
 import { getLogger } from "@logtape/logtape";
-import { type DBDeps, ensurePromiseQueueForWorker } from "@pgfsm/db";
+import { type DBDeps, ensureAsyncOperationQueueForWorker } from "@pgfsm/db";
 import {
   ActivityInvokeError,
   actorKey,
@@ -88,7 +88,7 @@ export interface GatewayServerOptions {
     invokeTimeoutMs?: number;
   };
   /**
-   * When set, ensures a PGMQ queue exists (fsm_core.ensure_promise_queue_for_worker,
+   * When set, ensures a PGMQ queue exists (fsm_core.ensure_async_operation_queue_for_worker,
    * idempotent) for every actor a worker registers — fire-and-forget, doesn't
    * block or fail registration itself. Queue name is the actor's full
    * identity joined with '_': parentFsmName_parentFsmVersion_asyncOperationType_asyncOperationName_asyncOperationVersion_asyncOperationLanguage.
@@ -166,18 +166,20 @@ export async function startActivityGatewayServer(
         actor.asyncOperationVersion,
         actor.asyncOperationLanguage,
       );
-      ensurePromiseQueueForWorker(ensureQueueDeps, actor).then((result) => {
-        logger.info(
-          "Ensured promise queue {queueName} for actor {actorKey} (alreadyExisted={alreadyExisted})",
-          {
-            queueName: result.queueName,
-            actorKey: key,
-            alreadyExisted: result.alreadyExisted,
-          },
-        );
-      }).catch((error) => {
+      ensureAsyncOperationQueueForWorker(ensureQueueDeps, actor).then(
+        (result) => {
+          logger.info(
+            "Ensured async-operation queue {queueName} for actor {actorKey} (alreadyExisted={alreadyExisted})",
+            {
+              queueName: result.queueName,
+              actorKey: key,
+              alreadyExisted: result.alreadyExisted,
+            },
+          );
+        },
+      ).catch((error) => {
         logger.error(
-          "Failed to ensure promise queue for actor {actorKey}: {error}",
+          "Failed to ensure async-operation queue for actor {actorKey}: {error}",
           { actorKey: key, error },
         );
       });

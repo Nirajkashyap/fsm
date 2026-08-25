@@ -16,7 +16,7 @@ create table fsm_core.fsm_instance (
   fsm_instance_xstate_state jsonb,
 
   total_schedule_queue_data jsonb DEFAULT '[]'::jsonb,
-  total_promise_queue_data jsonb DEFAULT '[]'::jsonb,
+  total_async_operation_queue_data jsonb DEFAULT '[]'::jsonb,
 
 
   parent uuid default '00000000-0000-0000-0000-000000000001', -- Self-reference, 00000000-0000-0000-0000-000000000001 for system

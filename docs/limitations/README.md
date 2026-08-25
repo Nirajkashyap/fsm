@@ -5,8 +5,8 @@ in each package's `docs/limitations/`.
 
 ## Cross-cutting (this folder)
 
-| File                                                   | Summary                                                                                        |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| [pgmq-queue-name-length.md](pgmq-queue-name-length.md) | pgmq enforces a 47-char queue name limit — constrains FSM and promise actor naming conventions |
+| File                                                   | Summary                                                                                                |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| [pgmq-queue-name-length.md](pgmq-queue-name-length.md) | pgmq enforces a 47-char queue name limit — constrains FSM and async-operation actor naming conventions |
 
 ## Package limitations

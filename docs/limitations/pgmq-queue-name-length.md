@@ -76,9 +76,9 @@ veryLongParentFsmName_v01_veryLongPromiseNameX  ← 48 chars → runtime error
 - Keep `fsmName` and `parentFsmName` short — prefer abbreviated identifiers
   (e.g. `ccCheck` over `creditCheck`)
 - Keep version strings short — `v1` rather than `v1.0.0`
-- Add a naming convention rule: combined promise queue name
+- Add a naming convention rule: combined async-operation queue name
   (`parentFsmName + _ + parentFsmVersion + _ + fsmName`) must not exceed 47
   characters
 - Future: add a check in the FSM compiler or
-  `create_promise_queue_and_send_event_from_fsm_instance_id_v2` to validate
+  `create_async_op_queue_and_send_event_from_fsm_instance_id_v2` to validate
   queue name length before calling `pgmq.create()`

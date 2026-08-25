@@ -5,9 +5,9 @@ package's `docs/todo/`.
 
 ## Cross-cutting (this folder)
 
-| File                                                   | Summary                                                                                                                   | Status     |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [pgmq-queue-name-length.md](pgmq-queue-name-length.md) | Add runtime + compile-time validation for 47-char promise queue name limit — affects `database-src` and `fsm-compiler-ts` | 🔲 Pending |
+| File                                                   | Summary                                                                                                                           | Status     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [pgmq-queue-name-length.md](pgmq-queue-name-length.md) | Add runtime + compile-time validation for 47-char async-operation queue name limit — affects `database-src` and `fsm-compiler-ts` | 🔲 Pending |
 
 ## Package / app TODOs
 

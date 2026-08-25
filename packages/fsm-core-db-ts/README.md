@@ -10,7 +10,7 @@ this.
 - Sends events to queues (`sendEventToFsmQueueWithEventLogs`)
 - Runs microsteps (`microstep`)
 - Archives macrostep results (`archiveEventFromFsmTypeWorker`,
-  `archiveEventFromFsmPromiseTypeWorker`)
+  `archiveEventFromFsmAsyncOperationTypeWorker`)
 - Manages pgmq queues (`createPgmqQueue`, `readMessage`, `deleteMessage`)
 - Provides advisory lock helpers (`fsm-instance-lock.ts`)
 

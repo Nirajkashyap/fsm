@@ -27,7 +27,7 @@ export type FsmFolderConfig = {
 
 // Used in: fsmlet.ts, cli/fsmlet.ts, index.ts (direct import)
 export type FsmStartupConfig = {
-  sharedPromise?: FsmFolderConfig;
+  sharedAsyncOperation?: FsmFolderConfig;
   fsm?: FsmFolderConfig;
 };
 
@@ -97,16 +97,16 @@ export type MacrostepV2Result = {
     | null;
   to_be_removed_schedule_queue_msg_ids:
     ArchiveWorkerArgs["to_be_removed_schedule_queue_msg_ids"];
-  to_be_removed_promise_queue_msg_ids:
-    ArchiveWorkerArgs["to_be_removed_promise_queue_msg_ids"];
+  to_be_removed_async_operation_queue_msg_ids:
+    ArchiveWorkerArgs["to_be_removed_async_operation_queue_msg_ids"];
   to_be_added_schedule_queue_data:
     ArchiveWorkerArgs["to_be_added_schedule_queue_data"];
-  to_be_added_promise_queue_data:
-    ArchiveWorkerArgs["to_be_added_promise_queue_data"];
+  to_be_added_async_operation_queue_data:
+    ArchiveWorkerArgs["to_be_added_async_operation_queue_data"];
   input_total_schedule_queue_data:
     ArchiveWorkerArgs["input_total_schedule_queue_data"];
-  input_total_promise_queue_data:
-    ArchiveWorkerArgs["input_total_promise_queue_data"];
+  input_total_async_operation_queue_data:
+    ArchiveWorkerArgs["input_total_async_operation_queue_data"];
   fsm_instance_data_save_fsm_status:
     ArchiveWorkerArgs["fsm_instance_data_save_fsm_status"];
   fsm_instance_data_save_fsm_state:

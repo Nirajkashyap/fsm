@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """
-Promise worker (while-loop runner) for Python actors.
+Async-operation worker (while-loop runner) for Python actors.
 
 Usage:
-    python3 fsmpromiseworker.py \
+    python3 fsmasyncoperationworker.py \
         <module_path> <fn_name> <queue_name> \
-        <fsm_promise_name> <fsm_promise_type> <fsm_promise_version>
+        <fsm_async_operation_name> <fsm_async_operation_type> <fsm_async_operation_version>
 
 Environment:
     DATABASE_URL  PostgreSQL connection string
 
-Python counterpart of asyncOperationWorkerlet/fsmpromiseworker.ts: expects the
-named PGMQ queue to already exist (it does not create one — the caller is
-responsible, matching startFSMPromiseWorker.ts's pgmqQueueExists guard), then
-polls it with a 30s visibility timeout, invokes the actor function for each
+Python counterpart of asyncOperationWorkerlet/fsmasyncoperationworker.ts: expects
+the named PGMQ queue to already exist (it does not create one — the caller is
+responsible, matching startFSMAsyncOperationWorker.ts's pgmqQueueExists guard),
+then polls it with a 30s visibility timeout, invokes the actor function for each
 message, and archives the result through
-fsm_core.archive_event_from_fsm_promise_type_worker_v2 — the same RPC the
-TypeScript promise worker calls — so parent-FSM routing behaves identically
-regardless of actor language. Spawned as a subprocess by
+fsm_core.archive_event_from_fsm_async_operation_type_worker_v2 — the same RPC the
+TypeScript async-operation worker calls — so parent-FSM routing behaves
+identically regardless of actor language. Spawned as a subprocess by
 asyncOperationWorkerlet.ts for lang="python" actors. Uses psycopg2
 (pip install psycopg2-binary).
 """
@@ -59,7 +59,7 @@ def _load_fn(module_path: str, fn_name: str):
     return fn
 
 
-def _process_message(cur, psycopg2_extras, queue_name, promise_queue_type, promise_queue_version, msg, actor_fn, is_async):
+def _process_message(cur, psycopg2_extras, queue_name, async_operation_queue_type, async_operation_queue_version, msg, actor_fn, is_async):
     msg_id = msg["msg_id"]
     payload = msg["message"] or {}
     event_data = payload.get("eventData") or {}
@@ -90,7 +90,7 @@ def _process_message(cur, psycopg2_extras, queue_name, promise_queue_type, promi
 
     cur.execute(
         """
-        SELECT * FROM fsm_core.archive_event_from_fsm_promise_type_worker_v2(
+        SELECT * FROM fsm_core.archive_event_from_fsm_async_operation_type_worker_v2(
             %s::text, %s::text, %s::text, %s::bigint,
             %s::text, %s::text, %s::jsonb, %s::integer,
             %s::uuid, %s::text, %s::timestamptz, %s::integer,
@@ -99,8 +99,8 @@ def _process_message(cur, psycopg2_extras, queue_name, promise_queue_type, promi
         """,
         (
             queue_name,
-            promise_queue_type,
-            promise_queue_version,
+            async_operation_queue_type,
+            async_operation_queue_version,
             msg_id,
             event_name,
             event_action_type,
@@ -134,9 +134,9 @@ def run(
     module_path: str,
     fn_name: str,
     queue_name: str,
-    fsm_promise_name: str,
-    fsm_promise_type: str,
-    fsm_promise_version: str,
+    fsm_async_operation_name: str,
+    fsm_async_operation_type: str,
+    fsm_async_operation_version: str,
 ) -> None:
     signal.signal(signal.SIGTERM, _handle_shutdown)
     signal.signal(signal.SIGINT, _handle_shutdown)
@@ -196,8 +196,8 @@ def run(
                     cur,
                     psycopg2.extras,
                     queue_name,
-                    fsm_promise_type,
-                    fsm_promise_version,
+                    fsm_async_operation_type,
+                    fsm_async_operation_version,
                     msg,
                     actor_fn,
                     is_async,
@@ -224,14 +224,14 @@ if __name__ == "__main__":
         print(
             f"Usage: {sys.argv[0]} "
             "<module_path> <fn_name> <queue_name> "
-            "<fsm_promise_name> <fsm_promise_type> <fsm_promise_version>",
+            "<fsm_async_operation_name> <fsm_async_operation_type> <fsm_async_operation_version>",
             file=sys.stderr,
         )
         sys.exit(2)
 
-    _, _module_path, _fn_name, _queue_name, _promise_name, _promise_type, _promise_version = sys.argv
+    _, _module_path, _fn_name, _queue_name, _async_operation_name, _async_operation_type, _async_operation_version = sys.argv
 
     try:
-        run(_module_path, _fn_name, _queue_name, _promise_name, _promise_type, _promise_version)
+        run(_module_path, _fn_name, _queue_name, _async_operation_name, _async_operation_type, _async_operation_version)
     except KeyboardInterrupt:
         sys.exit(0)

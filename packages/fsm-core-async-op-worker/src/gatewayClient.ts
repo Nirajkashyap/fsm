@@ -1,5 +1,5 @@
 // Thin gRPC client for the Activity Gateway. Intended caller: the
-// "rust"/"go" branch of startPromiseWorkerForLang in
+// "rust"/"go" branch of startAsyncOperationWorkerForLang in
 // asyncOperationWorkerlet.ts, once that wiring is implemented per SPEC-001 —
 // this file is base scaffolding, not yet integrated there.
 //

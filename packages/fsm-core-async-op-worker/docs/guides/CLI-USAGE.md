@@ -14,12 +14,12 @@ Concretely, it:
    (`SidecarGateway`).
 2. **Owns its own Postgres connection and poll loop** — every 30 seconds
    (default), asks Postgres which pending work matches its currently-registered
-   workers (`claimPendingPromiseEventsForWorkers` — see the "PGMQ message
+   workers (`claimPendingAsyncOperationEventsForWorkers` — see the "PGMQ message
    payload shape" section below), with zero dependency on any external
    orchestrator's poll loop.
 3. **Dispatches and archives** — for each claimed item, invokes the right worker
    over the sidecar socket (`sidecar.invoke()`) and archives the result
-   (`archiveEventFromFsmPromiseTypeWorker`), non-blocking, per actor.
+   (`archiveEventFromFsmAsyncOperationTypeWorker`), non-blocking, per actor.
 4. **Optionally exposes a client-facing gRPC/Connect API** (`Invoke`,
    `ListRegisteredActors`) — the _original_ reason this package existed (a
    gateway another orchestrator calls into), now secondary to (2)/(3) since this
@@ -124,11 +124,11 @@ deno task gateway \
 
 ### `--ensure-queue-on-register` behavior
 
-For every actor a worker registers, calls `ensurePromiseQueueForWorker`
-(`fsm_core.ensure_promise_queue_for_worker_v2` under the hood), which ensures a
-PGMQ queue exists — idempotent, safe on every re-registration, not just the
-first. `asyncOperationType` is always shortened to its first character; when
-`asyncOperationType` is exactly `"internalAsyncOperation"`,
+For every actor a worker registers, calls `ensureAsyncOperationQueueForWorker`
+(`fsm_core.ensure_async_operation_queue_for_worker_v2` under the hood), which
+ensures a PGMQ queue exists — idempotent, safe on every re-registration, not
+just the first. `asyncOperationType` is always shortened to its first character;
+when `asyncOperationType` is exactly `"internalAsyncOperation"`,
 `asyncOperationVersion` is dropped entirely and `asyncOperationLanguage` is also
 shortened to its first character:
 
@@ -161,22 +161,24 @@ Every `--poll-interval-ms` (default 30s):
 
 1. Reads `sidecar.listRegisteredActorIdentities()` — if nothing is registered,
    skips this tick entirely (no DB call).
-2. Calls `claimPendingPromiseEventsForWorkers(deps, workers)`
-   (`fsm_core.claim_pending_promise_events_for_workers_v2` under the hood) — for
-   each registered worker identity, computes its queue name (same rule as
-   `--ensure-queue-on-register` above, via the shared
-   `fsm_core.compute_promise_queue_name_v2`), skips identities with no existing
-   queue, and reads up to one message (`vt=30s`) from each queue that exists.
+2. Calls `claimPendingAsyncOperationEventsForWorkers(deps, workers)`
+   (`fsm_core.claim_pending_async_operation_events_for_workers_v2` under the
+   hood) — for each registered worker identity, computes its queue name (same
+   rule as `--ensure-queue-on-register` above, via the shared
+   `fsm_core.compute_async_operation_queue_name_v2`), skips identities with no
+   existing queue, and reads up to one message (`vt=30s`) from each queue that
+   exists.
 3. For each claimed row: dispatches via `sidecar.invoke()`, then archives the
-   result via `archiveEventFromFsmPromiseTypeWorker()` — fire-and-forget, so one
-   slow/failed dispatch never blocks another actor's dispatch or the next poll
-   tick.
+   result via `archiveEventFromFsmAsyncOperationTypeWorker()` — fire-and-forget,
+   so one slow/failed dispatch never blocks another actor's dispatch or the next
+   poll tick.
 
 #### PGMQ message payload shape
 
 The poll loop reads whatever `pgmq.send()` put in an internalAsyncOperation
 actor's queue — same shape
-`fsm_core.send_event_to_promise_queue_with_event_logs_v2` already builds:
+`fsm_core.send_event_to_async_operation_queue_with_event_logs_v2` already
+builds:
 
 ```json
 {
@@ -223,10 +225,10 @@ not read by the claim function.
 > (TS-side) concern, not yet implemented.
 
 To enqueue a test message directly (bypasses
-`send_event_to_promise_queue_with_event_logs_v2`'s FK requirement on a real
-`fsm_instance` row — useful for testing the poll loop without standing up a full
-FSM instance), once a queue exists (e.g. via `--ensure-queue-on-register` or a
-direct call to `ensure_promise_queue_for_worker_v2`):
+`send_event_to_async_operation_queue_with_event_logs_v2`'s FK requirement on a
+real `fsm_instance` row — useful for testing the poll loop without standing up a
+full FSM instance), once a queue exists (e.g. via `--ensure-queue-on-register`
+or a direct call to `ensure_async_operation_queue_for_worker_v2`):
 
 ```sql
 SELECT pgmq.send('creditCheck_v01_i_checkBureau_t', jsonb_build_object(
@@ -266,8 +268,8 @@ result (e.g. triggered directly via the API) uses
 }
 ```
 
-`archive_event_from_fsm_promise_type_worker_v2` recognizes `NULL` and both
-sentinel uuids — `fsm_core.pg_system_queue_uuid()` (`...0000`) and
+`archive_event_from_fsm_async_operation_type_worker_v2` recognizes `NULL` and
+both sentinel uuids — `fsm_core.pg_system_queue_uuid()` (`...0000`) and
 `fsm_core.api_system_queue_uuid()` (`...0001`) — as "no real parent to notify"
 and skips the parent-notify send, returning
 `send_to_parent_result:
