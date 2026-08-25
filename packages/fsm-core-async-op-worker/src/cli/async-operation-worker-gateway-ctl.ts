@@ -29,7 +29,7 @@ OPTIONS
 INVOKE OPTIONS
   --parent-fsm-name <name>       required
   --parent-fsm-version <ver>     required
-  --fsm-type <type>              required, e.g. promise
+  --fsm-type <type>              required, e.g. internalAsyncOperation
   --fsm-name <name>              required
   --fsm-version <ver>            required
   --fsm-language <lang>          required, e.g. typescript, python, rust, go
@@ -55,7 +55,7 @@ EXAMPLE
 
   deno run --allow-all cli/async-operation-worker-gateway-ctl.ts invoke \\
     --parent-fsm-name creditCheck --parent-fsm-version v01 \\
-    --fsm-type promise --fsm-name checkBureau --fsm-version v01 \\
+    --fsm-type internalAsyncOperation --fsm-name checkBureau --fsm-version v01 \\
     --fsm-language rust --input '{{"ssn":"123"}}'
 `);
 }

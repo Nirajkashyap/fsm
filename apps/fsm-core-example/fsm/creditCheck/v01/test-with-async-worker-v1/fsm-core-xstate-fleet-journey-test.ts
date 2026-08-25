@@ -151,7 +151,7 @@ async function startFleet(): Promise<Fleet> {
   const asyncOpWorkerletHandle = await startAsyncOperationWorkerlet(
     deps,
     FSM_FOLDER_PATH,
-    "promise",
+    "internalAsyncOperation",
     SKIP_DIRS,
     [],
     ["typescript"],
@@ -417,7 +417,7 @@ Deno.test({
           asyncOperationInstanceId: crypto.randomUUID(),
           asyncOperationName: "verifyCredentials",
           asyncOperationVersion: fsm_version,
-          asyncOperationType: "promise",
+          asyncOperationType: "internalAsyncOperation",
           parentFsmName: fsm_name,
           parentFsmVersion: fsm_version,
           asyncOperationLanguage: "typescript",

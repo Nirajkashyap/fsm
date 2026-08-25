@@ -11,7 +11,7 @@ its actions, guards, delays, and actors.
 | `creditCheck`       | `fsm/creditCheck/`       | Credit verification flow — parallel credit agency checks, actor invocations |
 | `carVitals`         | `fsm/carVitals/`         | Vehicle diagnostics state machine                                           |
 | `taskMachineConfig` | `fsm/taskMachineConfig/` | Generic task workflow                                                       |
-| `vitalsWorkflow`    | `fsm/vitalsWorkflow/`    | Shared, reusable sub-workflow (fsmType `sharedFsm`) invoked by other FSMs   |
+| `vitalsWorkflow`    | `fsm/vitalsWorkflow/`    | Reusable sub-workflow (fsmType `fsm`) invoked by other FSMs                 |
 
 Shared actors live in `actors/`, `actions/`, `guards/`, `delays/` at the root of
 this app; shared, reusable FSMs (like `vitalsWorkflow`) live alongside the

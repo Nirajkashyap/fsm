@@ -95,10 +95,10 @@ Validation lives in `src/validate-async-operation-logic-v2.ts`
 - [x] **Language filter (`--lang`).** `validateAsyncOperationFromFoldersV2`
       accepts `runtimeLanguages: OperationLang[] = []` (empty = all); wired to
       `--lang` in the CLI for `validate-async-operation`.
-- [x] **Validate per-`fsmLanguage` actors, not just `sharedPromise`.**
+- [x] **Validate per-`fsmLanguage` actors, not just `sharedAsyncOperation`.**
       `validateAsyncOperationFromFoldersV2` walks every requested language
-      folder's `actors/` directory directly (not scoped to `sharedPromise`
-      dependency exports).
+      folder's `actors/` directory directly (not scoped to
+      `sharedAsyncOperation` dependency exports).
 - [ ] **Arity/shape validation** (shared with PRD-002). Validation checks that
       the export is a `function` but not its arity, so actor stubs with the
       wrong `(input) => Promise` signature still pass.

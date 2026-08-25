@@ -1,7 +1,8 @@
 import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["@pgfsm/compiler", "delete"]);
-import { isVersionFolderName, type WorkflowType } from "./util.ts";
+import { isVersionFolderName } from "./util.ts";
+import type { WorkflowType } from "./types/index.ts";
 
 async function deleteFsmJSONFromFolder(
   dirEntryName: string,

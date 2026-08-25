@@ -295,14 +295,14 @@ Deno.test("cli validate-sync-operation with -w shorthand exits 0", async () => {
 
 // --- validate-async-operation ---
 
-Deno.test("cli validate-async-operation runs on vitalsWorkflow (shared, sharedPromise) folder", async () => {
+Deno.test("cli validate-async-operation runs on vitalsWorkflow (shared, sharedAsyncOperation) folder", async () => {
   const { code } = await runCli([
     "-c",
     "validate-async-operation",
     "-f",
     FSM_FOLDER,
     "-w",
-    "sharedPromise",
+    "sharedAsyncOperation",
     "--skip-dirs",
     "carVitals,creditCheck,taskMachineConfig",
   ]);

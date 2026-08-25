@@ -1,14 +1,10 @@
 import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["@pgfsm/compiler", "load"]);
-import {
-  extractFsmPluginRefs,
-  isVersionFolderName,
-  type WorkflowType,
-} from "./util.ts";
+import { extractFsmPluginRefs, isVersionFolderName } from "./util.ts";
 import { type DBDeps, loadFsmFromJson } from "@pgfsm/db";
 import type { Json } from "@pgfsm/db/database.types";
-import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
+import type { FsmMachineJson, WorkflowType } from "./types/index.ts";
 
 async function loadFsmJSONFromFolder(
   dirEntryName: string,
@@ -39,10 +35,12 @@ async function loadFsmJSONFromFolder(
       src: actor.src,
     }));
 
-    logger.info("Found dependent children for {fsm}: {children}", {
-      fsm: `${dirEntryName}/${dirEntryNameVersion}`,
-      children: dependentChildren,
-    });
+    if (dependentChildren.length > 0) {
+      logger.info("Found dependent children for {fsm}: {children}", {
+        fsm: `${dirEntryName}/${dirEntryNameVersion}`,
+        children: dependentChildren,
+      });
+    }
 
     // 2. Process fsmData and insert into database using helper functions
     // Call loadFsmStateFromJsonV2 and loadFsmTransitionFromJsonV2 with fsmData

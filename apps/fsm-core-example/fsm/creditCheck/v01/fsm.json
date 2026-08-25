@@ -160,7 +160,7 @@
               "src": "verifyCredentials",
               "type": "xstate.invoke",
               "id": "0.(machine).creditCheck.Verifying Credentials",
-              "fsmType": "promise",
+              "fsmType": "internalAsyncOperation",
               "fsmVersion": "v01",
               "fsmLanguage": "typescript"
             }
@@ -285,7 +285,7 @@
                       "src": "checkReportsTable",
                       "id": "equiGavinDBActor",
                       "type": "xstate.invoke",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v01",
                       "fsmLanguage": "typescript"
                     }
@@ -388,7 +388,7 @@
                       "src": "checkBureauRust",
                       "id": "equiGavinFetchActor",
                       "type": "xstate.invoke",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v01",
                       "fsmLanguage": "rust"
                     }
@@ -530,7 +530,7 @@
                       "src": "CheckReportsTable",
                       "id": "gavUnionDBActor",
                       "type": "xstate.invoke",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v01",
                       "fsmLanguage": "go"
                     }
@@ -633,7 +633,7 @@
                       "src": "checkBureau",
                       "id": "gavUnionFetchActor",
                       "type": "xstate.invoke",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v01",
                       "fsmLanguage": "python"
                     }
@@ -775,7 +775,7 @@
                       "src": "checkReportsTable",
                       "id": "gavperianCheckActor",
                       "type": "xstate.invoke",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v01",
                       "fsmLanguage": "typescript"
                     }
@@ -878,7 +878,7 @@
                       "src": "checkBureau",
                       "id": "checkGavPerianActor",
                       "type": "xstate.invoke",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v01",
                       "fsmLanguage": "typescript"
                     }
@@ -1046,7 +1046,7 @@
                   "src": "determineMiddleScore",
                   "id": "scoreDeterminationActor",
                   "type": "xstate.invoke",
-                  "fsmType": "promise",
+                  "fsmType": "internalAsyncOperation",
                   "fsmVersion": "v01",
                   "fsmLanguage": "typescript"
                 }
@@ -1105,7 +1105,7 @@
                   "src": "generateInterestRates",
                   "type": "xstate.invoke",
                   "id": "0.(machine).creditCheck.DeterminingInterestRateOptions.FetchingRates",
-                  "fsmType": "promise",
+                  "fsmType": "internalAsyncOperation",
                   "fsmVersion": "v01",
                   "fsmLanguage": "typescript"
                 }

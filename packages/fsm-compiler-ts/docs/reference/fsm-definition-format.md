@@ -168,19 +168,18 @@ Invocations spawn actors when a state is entered. Each invocation has a `src`
       "type": "xstate.invoke",
       "id": "myActor",
       "src": "myActorName",
-      "fsmType": "promise",
+      "fsmType": "internalAsyncOperation",
       "fsmVersion": "v01"
     }
   ]
 }
 ```
 
-| `fsmType`       | Meaning                                          |
-| --------------- | ------------------------------------------------ |
-| `promise`       | A new async function — one queue per invocation  |
-| `sharedPromise` | An async function shared across FSM instances    |
-| `fsm`           | A child FSM — gets its own instance and queue    |
-| `sharedFsm`     | A child FSM sharing a queue with other instances |
+| `fsmType`                | Meaning                                         |
+| ------------------------ | ----------------------------------------------- |
+| `internalAsyncOperation` | A new async function — one queue per invocation |
+| `sharedAsyncOperation`   | An async function shared across FSM instances   |
+| `fsm`                    | A child FSM — gets its own instance and queue   |
 
 When the actor completes, XState sends `xstate.done.actor.<id>` back to the
 parent FSM. On error: `xstate.error.actor.<id>`.

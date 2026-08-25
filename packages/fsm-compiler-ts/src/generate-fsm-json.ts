@@ -10,51 +10,16 @@ import {
   DELAY_ACTION_NAME_PREFIX,
   isVersionFolderName,
   RAISE_CANCEL,
-  type WorkflowType,
 } from "./util.ts";
 import type { AnyStateNodeDefinition } from "xstate";
 import type {
   ActionObject,
-  InvokeObject,
-} from "./generated/fsm-machine-schema.types.ts";
-
-/**
- * Working shape for the compiler's internal transform pipeline — the space
- * between raw XState `.toJSON()` output and the fully-compiled FsmMachineJson
- * (see ./generated/fsm-machine-schema.types.ts, generated from
- * ../../database-src/fsm.machine.schema.v3.json). Entry/exit items may still
- * be plain strings (XState 5 action shorthand, normalized to actionObjects by
- * normalizeActionsToObjects below) or `null` placeholders left by
- * conditionally-skipped actions in machine.ts (stripped by
- * removeNullActions). By the time generateFsmJSONFromMachineFile finishes the
- * pipeline, the result should satisfy FsmMachineJson — enforced at runtime by
- * the AJV validation in the showRecommendation step.
- */
-type FsmDraftAction = string | ActionObject;
-
-type FsmDraftTransition = {
-  actions?: FsmDraftAction[];
-  eventType?: string;
-  delay?: string | number;
-  guard?: string;
-  source?: string;
-  target?: string[];
-};
-
-type FsmDraftInvoke = Partial<InvokeObject> & { src?: string };
-
-export type FsmDraftStateNode = {
-  id?: string;
-  key?: string;
-  type?: string;
-  entry?: FsmDraftAction[];
-  exit?: FsmDraftAction[];
-  initial?: { actions?: FsmDraftAction[]; source?: string; target?: string[] };
-  on?: Record<string, FsmDraftTransition[]>;
-  transitions?: FsmDraftTransition[];
-  invoke?: FsmDraftInvoke[];
-  states?: Record<string, FsmDraftStateNode>;
-};
+  FsmDraftAction,
+  FsmDraftInvoke,
+  FsmDraftStateNode,
+  FsmDraftTransition,
+  WorkflowType,
+} from "./types/index.ts";
 
 /**
  * Pure function — returns a new FSM JSON object with all null values removed
@@ -288,7 +253,7 @@ export function addMissingFsmTypeToInvokeActors(
 
   function fillInvokeDefaults(invokeObj: FsmDraftInvoke) {
     if (!("fsmType" in invokeObj)) {
-      invokeObj.fsmType = "promise";
+      invokeObj.fsmType = "internalAsyncOperation";
     }
     if (!("fsmVersion" in invokeObj)) {
       invokeObj.fsmVersion = parentFsmVersion;
@@ -299,7 +264,7 @@ export function addMissingFsmTypeToInvokeActors(
     if (invokeObj.src) {
       childActorsInfo.push({
         child_actor_src: invokeObj.src,
-        child_actor_fsmType: invokeObj.fsmType ?? "promise",
+        child_actor_fsmType: invokeObj.fsmType ?? "internalAsyncOperation",
         child_actor_fsmVersion: invokeObj.fsmVersion ?? parentFsmVersion,
         child_actor_fsmLanguage: invokeObj.fsmLanguage ?? "typescript",
       });

@@ -46,15 +46,15 @@ deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-worker
 
 ### Options
 
-| Flag                          | Alias | Required | Default                    | Description                                                                        |
-| ----------------------------- | ----- | -------- | -------------------------- | ---------------------------------------------------------------------------------- |
-| `--folder-path <path>`        | `-f`  | yes      | —                          | Path to the FSM folder tree to scan for async actors (validated before DB connect) |
-| `--runtime-languages <langs>` | `-l`  | yes      | —                          | Comma-separated languages to validate: `typescript`, `python`, `go`, `rust`        |
-| `--db-url <url>`              | `-d`  | no       | `DATABASE_URL` from `.env` | PostgreSQL connection string                                                       |
-| `--max-concurrency <n>`       | `-m`  | no       | `8`                        | Max concurrent queue-workers on this node                                          |
-| `--workerlet-id <id>`         | `-i`  | no       | random UUID                | Stable identity across restarts — also read from `ASYNC_OP_WORKERLET_ID` env var   |
-| `--workflow-type <type>`      | `-t`  | no       | `promise`                  | `promise` (actors co-located with an FSM) or `sharedPromise` (shared actors)       |
-| `--help`                      | `-h`  | —        | —                          | Print help and exit                                                                |
+| Flag                          | Alias | Required | Default                    | Description                                                                                        |
+| ----------------------------- | ----- | -------- | -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `--folder-path <path>`        | `-f`  | yes      | —                          | Path to the FSM folder tree to scan for async actors (validated before DB connect)                 |
+| `--runtime-languages <langs>` | `-l`  | yes      | —                          | Comma-separated languages to validate: `typescript`, `python`, `go`, `rust`                        |
+| `--db-url <url>`              | `-d`  | no       | `DATABASE_URL` from `.env` | PostgreSQL connection string                                                                       |
+| `--max-concurrency <n>`       | `-m`  | no       | `8`                        | Max concurrent queue-workers on this node                                                          |
+| `--workerlet-id <id>`         | `-i`  | no       | random UUID                | Stable identity across restarts — also read from `ASYNC_OP_WORKERLET_ID` env var                   |
+| `--workflow-type <type>`      | `-t`  | no       | `internalAsyncOperation`   | `internalAsyncOperation` (actors co-located with an FSM) or `sharedAsyncOperation` (shared actors) |
+| `--help`                      | `-h`  | —        | —                          | Print help and exit                                                                                |
 
 > **Why `--runtime-languages` is required:** the validator scans per-language
 > subdirectories (`typescript/`, `python/`, etc.) and only checks the languages
@@ -68,20 +68,20 @@ deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-worker
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts \
   --folder-path apps/fsm-core-example/fsm \
   --runtime-languages typescript \
-  --workflow-type promise
+  --workflow-type internalAsyncOperation
 
 # Multiple languages
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts \
   --folder-path apps/fsm-core-example/fsm \
   --runtime-languages typescript,python \
-  --workflow-type promise
+  --workflow-type internalAsyncOperation
 
 # Full options
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts \
   --folder-path apps/fsm-core-example/fsm \
   --runtime-languages typescript \
   --db-url postgresql://user:pass@localhost:5432/db \
-  --workflow-type promise \
+  --workflow-type internalAsyncOperation \
   --max-concurrency 4 \
   --workerlet-id my-async-node-01
 ```
@@ -229,18 +229,18 @@ instance for testing or ops purposes.
 
 ### Options
 
-| Flag                         | Alias | Description                                                                       |
-| ---------------------------- | ----- | --------------------------------------------------------------------------------- |
-| `--command <command>`        | `-c`  | Command to run — `list-instances` / `list-meta` / `dispatch` (required)           |
-| `--instance-id <uuid>`       |       | Async-operation instance ID (`dispatch` only; default: random UUID)               |
-| `--name <name>`              | `-n`  | Async-operation name (required for `dispatch`)                                    |
-| `--version <version>`        | `-v`  | Async-operation version (required for `dispatch`)                                 |
-| `--type <type>`              | `-t`  | Async-operation type, e.g. `promise` \| `sharedPromise` (required for `dispatch`) |
-| `--parent-fsm-name <name>`   |       | Parent FSM name (required for `dispatch`)                                         |
-| `--parent-fsm-version <ver>` |       | Parent FSM version (required for `dispatch`)                                      |
-| `--language <lang>`          | `-l`  | Async-operation language, e.g. `typescript` (required for `dispatch`)             |
-| `--db-url <url>`             | `-d`  | PostgreSQL connection string (overrides `DATABASE_URL` from `.env`)               |
-| `--help`                     | `-h`  | Print help and exit                                                               |
+| Flag                         | Alias | Description                                                                                             |
+| ---------------------------- | ----- | ------------------------------------------------------------------------------------------------------- |
+| `--command <command>`        | `-c`  | Command to run — `list-instances` / `list-meta` / `dispatch` (required)                                 |
+| `--instance-id <uuid>`       |       | Async-operation instance ID (`dispatch` only; default: random UUID)                                     |
+| `--name <name>`              | `-n`  | Async-operation name (required for `dispatch`)                                                          |
+| `--version <version>`        | `-v`  | Async-operation version (required for `dispatch`)                                                       |
+| `--type <type>`              | `-t`  | Async-operation type, e.g. `internalAsyncOperation` \| `sharedAsyncOperation` (required for `dispatch`) |
+| `--parent-fsm-name <name>`   |       | Parent FSM name (required for `dispatch`)                                                               |
+| `--parent-fsm-version <ver>` |       | Parent FSM version (required for `dispatch`)                                                            |
+| `--language <lang>`          | `-l`  | Async-operation language, e.g. `typescript` (required for `dispatch`)                                   |
+| `--db-url <url>`             | `-d`  | PostgreSQL connection string (overrides `DATABASE_URL` from `.env`)                                     |
+| `--help`                     | `-h`  | Print help and exit                                                                                     |
 
 ### Examples
 
@@ -256,7 +256,7 @@ deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts
 # Manually enqueue an async-operation instance
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts \
   -c dispatch \
-  -n checkBureau -v 1 -t promise \
+  -n checkBureau -v 1 -t internalAsyncOperation \
   --parent-fsm-name creditCheck --parent-fsm-version 1 \
   -l typescript
 ```
@@ -288,7 +288,7 @@ invocations from the repo root:
 
 ```bash
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts -c <command> [options]
-deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts -f <path> -l typescript -t promise
+deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts -f <path> -l typescript -t internalAsyncOperation
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-scheduler.ts
 ```
 

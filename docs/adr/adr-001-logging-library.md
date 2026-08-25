@@ -78,7 +78,7 @@ package identity:
 @pgfsm/worker   → ["@pgfsm/worker", "worker"]
                    ["@pgfsm/worker", "macrostep"]
                    ["@pgfsm/worker", "macrostep", "actions"]
-                   ["@pgfsm/worker", "promise"]
+                   ["@pgfsm/worker", "internalAsyncOperation"]
                    ["@pgfsm/worker", "dispatcher"]
                    ["@pgfsm/worker", "bootstrap"]
 

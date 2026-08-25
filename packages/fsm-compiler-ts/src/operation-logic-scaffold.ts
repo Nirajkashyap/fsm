@@ -1,12 +1,21 @@
 import { getLogger } from "@logtape/logtape";
 import {
-  type ActorReference,
   DenoCommand,
   isValidPythonIdentifier,
   isVersionFolderName,
   toGoExportedName,
 } from "./util.ts";
-import type { FsmMachineJson } from "./generated/fsm-machine-schema.types.ts";
+import type {
+  ActorReference,
+  ActorsBarrelLang,
+  FsmMachineJson,
+  OperationKind,
+  OperationLang,
+  RegisteredActor,
+  WorkerSdkProtocol,
+  WriteWorkerSdkOptions,
+  WrittenActor,
+} from "./types/index.ts";
 import { deriveTemplateInput } from "./scaffold-templates/derive-template-input.ts";
 import { getPreamble, getTemplate } from "./scaffold-templates/registry.ts";
 import { render as renderTsActorsRegistry } from "./scaffold-templates/eta/typescript/actors-registry.generated.ts";
@@ -43,13 +52,6 @@ import { render as renderGoWorkerSdkGitignore } from "./scaffold-templates/eta/g
 
 const logger = getLogger(["@pgfsm/compiler", "scaffold"]);
 
-/**
- * Languages an operation-logic module can be scaffolded in.
- * Aligns with the `fsmLanguage` enum on invoke objects and the actor folder
- * convention (`typescript/`, `python/`, `rust/`, `go/`).
- */
-export type OperationLang = "typescript" | "python" | "rust" | "go";
-
 export const SUPPORTED_OPERATION_LANGS: OperationLang[] = [
   "typescript",
   "python",
@@ -60,9 +62,6 @@ export const SUPPORTED_OPERATION_LANGS: OperationLang[] = [
 export function isOperationLang(value: string): value is OperationLang {
   return (SUPPORTED_OPERATION_LANGS as string[]).includes(value);
 }
-
-/** The kind of operation logic being scaffolded. */
-export type OperationKind = "actions" | "guards" | "delays" | "actors";
 
 /** The index-module filename written for a given language. */
 export function operationModuleFileName(lang: OperationLang): string {
@@ -250,19 +249,6 @@ export async function writeActorFile(
   return file;
 }
 
-/** One actor file written by {@linkcode writeActorFile}, recorded for the manifest/barrel. */
-export type WrittenActor = {
-  /** The actor's original `src` — its identity (invoke id), independent of language. */
-  src: string;
-  /** Sanitized filename component (see {@linkcode actorFileBaseName}) — the folder/file name on disk. */
-  fileBaseName: string;
-  fsmLanguage: OperationLang;
-  /** Path relative to the version-folder root, e.g. `typescript/actors/checkBureau/checkBureau.ts`. */
-  filePath: string;
-  /** The callable/importable symbol name in `fsmLanguage` — equals `src` except for Go (see {@linkcode toGoExportedName}). */
-  exportedName: string;
-};
-
 /** Builds the {@linkcode WrittenActor} record for the file a {@linkcode writeActorFile} call for this actor produces. */
 export function toWrittenActor(
   lang: OperationLang,
@@ -281,31 +267,6 @@ export function toWrittenActor(
 }
 
 /**
- * A {@linkcode WrittenActor} plus the activity-registration identity a
- * worker SDK needs to register with the Activity Gateway (see
- * `actorKey()`/`RegisteredActor` in
- * `packages/fsm-core-async-op-worker/src/sidecar/protocol.ts`) — everything
- * {@linkcode writeActorsRegistry}/{@linkcode writeAggregateActorsRegistry}
- * need to emit a self-describing registration, not just a name -> callable
- * map. Matches the flattened identity model `fsm-compiler-ts`'s own
- * `validateAsyncOperationFromFolders` already used: `fsmName` is the actor's
- * own `src` (not a separate sub-FSM reference), `fsmVersion` is the parent
- * FSM's version. `fsmType` is `"promise"` for actors scaffolded from an
- * invoke object (the only kind {@linkcode toRegisteredActor} builds) or
- * `"sharedAsyncOp"` for the standalone, non-FSM-scoped pool
- * `create-async-logic.ts` writes into — downstream, `fsmType` is an opaque
- * string (used only inside `actorKey()`'s composite key), so this is safe to
- * extend.
- */
-export type RegisteredActor = WrittenActor & {
-  parentFsmName: string;
-  parentFsmVersion: string;
-  fsmType: "promise" | "sharedAsyncOp";
-  fsmName: string;
-  fsmVersion: string;
-};
-
-/**
  * Builds the {@linkcode RegisteredActor} record for the file a
  * {@linkcode writeActorFile} call for this actor produces, given the
  * version-folder path it was written under.
@@ -322,7 +283,7 @@ export function toRegisteredActor(
     ...written,
     parentFsmName,
     parentFsmVersion,
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: written.src,
     fsmVersion: parentFsmVersion,
   };
@@ -349,24 +310,6 @@ export async function writeActorsManifest(
   await Deno.writeTextFile(file, JSON.stringify(manifest, null, 2) + "\n");
   return file;
 }
-
-/**
- * Languages with a natural single-file "re-export everything" idiom directly
- * inside a version folder (`<lang>/actors/<barrel/registry filename>`). Go is
- * deliberately excluded here: each actor already lives in its own
- * subdirectory, which in Go makes it a separate package *and* its own Go
- * module (see {@linkcode writeGoActorModule}) — there's no re-export syntax
- * across module boundaries, only `require`/`replace`. A per-version Go
- * registry would need its own `go.mod` requiring/replacing every sibling
- * actor module individually; {@linkcode writeAggregateGoRegistry} already
- * does exactly that, just scoped to the whole app run rather than one
- * version folder at a time — so Go's generated registry lives there instead
- * of here, not because it's missing. (The two blockers an earlier version of
- * this comment cited — unexported Go stub names, and not knowing each
- * actor's own Go module import path — were resolved by #83/#84: see
- * {@linkcode toGoExportedName} and {@linkcode goActorModulePath}.)
- */
-export type ActorsBarrelLang = "typescript" | "python" | "rust";
 
 const ACTORS_BARREL_FILE_NAME: Record<ActorsBarrelLang, string> = {
   typescript: "index.ts",
@@ -883,22 +826,6 @@ const GATEWAY_SIDECAR_PROTO_GEN_GO_REL_PATH =
  */
 const GATEWAY_SIDECAR_PROTOCOL_IMPORT_PATH =
   "../../../../packages/fsm-core-async-op-worker/src/sidecar/protocol.ts";
-
-/**
- * Which sidecar wire protocol the generated worker SDKs speak. `"grpc"`
- * (default) is the proto-defined `SidecarGatewayService` from #100.
- * `"legacy"` restores the pre-#100 hand-rolled length-prefixed-JSON
- * envelope (`sidecar/protocol.ts`, hand-ported per language via
- * `worker-sdk-protocol.eta`) — kept available behind
- * `--worker-sdk-protocol legacy` for anyone not yet ready to move off it;
- * has no schema-drift protection across languages the way `"grpc"` does,
- * which is the whole reason #100 exists.
- */
-export type WorkerSdkProtocol = "grpc" | "legacy";
-
-export interface WriteWorkerSdkOptions {
-  protocol?: WorkerSdkProtocol;
-}
 
 /**
  * Writes the cli/main entrypoint + sdk protocol implementation + build

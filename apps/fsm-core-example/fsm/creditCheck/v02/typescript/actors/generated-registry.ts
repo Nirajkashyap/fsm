@@ -21,7 +21,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "fetchInterestRateOptions",
     fsmVersion: "v02",
     fsmLanguage: "typescript",
@@ -30,7 +30,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "verifyCredentials",
     fsmVersion: "v02",
     fsmLanguage: "typescript",
@@ -39,7 +39,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "CheckingCreditScores3parallel",
     fsmVersion: "v02",
     fsmLanguage: "typescript",
@@ -48,7 +48,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "checkReportsTable",
     fsmVersion: "v02",
     fsmLanguage: "typescript",
@@ -57,7 +57,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "checkBureau",
     fsmVersion: "v02",
     fsmLanguage: "typescript",
@@ -66,7 +66,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "determineMiddleScore",
     fsmVersion: "v02",
     fsmLanguage: "typescript",
@@ -75,7 +75,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "creditCheck",
     parentFsmVersion: "v02",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "generateInterestRates",
     fsmVersion: "v02",
     fsmLanguage: "typescript",

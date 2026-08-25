@@ -136,12 +136,12 @@ export async function macrostepV2(
   const macroSaveFnPayload = {
     remove_from_current_fsm_instance_queue_id: queueName,
     remove_current_queue_msg_id: msg.msg_id,
-    remove_schedule_queue_msg_ids: [] as Json[],
-    remove_promise_queue_msg_ids: [] as Json[],
-    new_schedule_queue_data: [] as Json[],
-    new_promise_queue_data: [] as Json[],
-    total_schedule_queue_data: [] as Json[],
-    total_promise_queue_data: [] as Json[],
+    to_be_removed_schedule_queue_msg_ids: [] as Json[],
+    to_be_removed_promise_queue_msg_ids: [] as Json[],
+    to_be_added_schedule_queue_data: [] as Json[],
+    to_be_added_promise_queue_data: [] as Json[],
+    input_total_schedule_queue_data: [] as Json[],
+    input_total_promise_queue_data: [] as Json[],
     fsm_instance_data_save_fsm_status: {},
     fsm_instance_data_save_fsm_state: {},
     fsm_instance_data_save_fsm_context: {} as Json,
@@ -324,14 +324,15 @@ export async function macrostepV2(
   // get both removed and new_total_schedule_queue_data
   // const [new_total_schedule_queue_data, remove_schedule_queue_msg_ids] = splitByEventTypes(total_schedule_queue_data, remove_schedule_queue_msg_ids_xstate);
 
-  // macroSaveFnPayload.remove_schedule_queue_msg_ids = remove_schedule_queue_msg_ids;
-  // macroSaveFnPayload.total_schedule_queue_data = new_total_schedule_queue_data;
-  // macroSaveFnPayload.new_schedule_queue_data = new_schedule_queue_data;
+  // macroSaveFnPayload.to_be_removed_schedule_queue_msg_ids = remove_schedule_queue_msg_ids;
+  // macroSaveFnPayload.input_total_schedule_queue_data = new_total_schedule_queue_data;
+  // macroSaveFnPayload.to_be_added_schedule_queue_data = new_schedule_queue_data;
 
-  macroSaveFnPayload.remove_schedule_queue_msg_ids =
+  macroSaveFnPayload.to_be_removed_schedule_queue_msg_ids =
     remove_schedule_queue_msg_ids_xstate;
-  macroSaveFnPayload.new_schedule_queue_data = new_schedule_queue_data;
-  macroSaveFnPayload.total_schedule_queue_data = total_schedule_queue_data;
+  macroSaveFnPayload.to_be_added_schedule_queue_data = new_schedule_queue_data;
+  macroSaveFnPayload.input_total_schedule_queue_data =
+    total_schedule_queue_data;
 
   // cancle ivnoke of previous state's children ( PATCH )
   // const [new_total_promise_queue_data, remove_promise_queue_msg_ids] =  splitBySendEventName(total_promise_queue_data, remove_promise_queue_msg_ids_xstate);
@@ -342,14 +343,14 @@ export async function macrostepV2(
   // removeEventName = removeEventName.replace("xstate.error.actor.", "");
   // const update_new_total_promise_queue_data = new_total_promise_queue_data.filter((item)=> item.event.send_event_name_to_parent_queue_id !== removeEventName);
 
-  // macroSaveFnPayload.remove_promise_queue_msg_ids = remove_promise_queue_msg_ids;
-  // macroSaveFnPayload.total_promise_queue_data = update_new_total_promise_queue_data;
-  // macroSaveFnPayload.new_promise_queue_data = new_promise_queue_data;
+  // macroSaveFnPayload.to_be_removed_promise_queue_msg_ids = remove_promise_queue_msg_ids;
+  // macroSaveFnPayload.input_total_promise_queue_data = update_new_total_promise_queue_data;
+  // macroSaveFnPayload.to_be_added_promise_queue_data = new_promise_queue_data;
 
-  macroSaveFnPayload.remove_promise_queue_msg_ids =
+  macroSaveFnPayload.to_be_removed_promise_queue_msg_ids =
     remove_promise_queue_msg_ids_xstate;
-  macroSaveFnPayload.new_promise_queue_data = new_promise_queue_data;
-  macroSaveFnPayload.total_promise_queue_data = total_promise_queue_data;
+  macroSaveFnPayload.to_be_added_promise_queue_data = new_promise_queue_data;
+  macroSaveFnPayload.input_total_promise_queue_data = total_promise_queue_data;
 
   macroSaveFnPayload.fsm_instance_data_save_fsm_context = current_context;
 

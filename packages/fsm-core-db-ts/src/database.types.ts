@@ -1,7 +1,7 @@
 // deno-lint-ignore no-unused-vars
 import type { MergeDeep } from "type-fest";
-import type { Database as DatabaseGenerated } from "../../../packages/database-src/database.types.ts";
-import type { Json as JsonGenerated } from "../../../packages/database-src/database.types.ts";
+import type { Database as DatabaseGenerated } from "../../../packages/database-src/generated/database.types.ts";
+import type { Json as JsonGenerated } from "../../../packages/database-src/generated/database.types.ts";
 
 // TODO: narrow this back to just `JsonGenerated`. The `| any` is a temporary
 // escape hatch for callers passing values the Supabase-generated Json type

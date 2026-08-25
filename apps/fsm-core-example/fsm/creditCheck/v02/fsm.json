@@ -210,7 +210,7 @@
               "src": "verifyCredentials",
               "type": "xstate.invoke",
               "id": "0.(machine).creditCheck.Verifying Credentials",
-              "fsmType": "promise",
+              "fsmType": "internalAsyncOperation",
               "fsmVersion": "v02",
               "fsmLanguage": "typescript"
             }
@@ -337,7 +337,7 @@
                       "src": "checkReportsTable",
                       "type": "xstate.invoke",
                       "id": "0.(machine).creditCheck.CheckingCreditScores.CheckingEquiGavin.CheckingForExistingReport",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v02",
                       "fsmLanguage": "typescript"
                     }
@@ -443,7 +443,7 @@
                       "src": "checkBureau",
                       "type": "xstate.invoke",
                       "id": "0.FetchingReportMagicIDatequiGavinFetchActor",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v02",
                       "fsmLanguage": "typescript"
                     }
@@ -591,7 +591,7 @@
                       "src": "checkReportsTable",
                       "type": "xstate.invoke",
                       "id": "0.(machine).creditCheck.CheckingCreditScores.CheckingGavUnion.CheckingForExistingReport",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v02",
                       "fsmLanguage": "typescript"
                     }
@@ -694,7 +694,7 @@
                       "src": "checkBureau",
                       "type": "xstate.invoke",
                       "id": "0.(machine).creditCheck.CheckingCreditScores.CheckingGavUnion.FetchingReport",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v02",
                       "fsmLanguage": "typescript"
                     }
@@ -842,7 +842,7 @@
                       "src": "checkReportsTable",
                       "type": "xstate.invoke",
                       "id": "0.(machine).creditCheck.CheckingCreditScores.CheckingGavperian.CheckingForExistingReport",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v02",
                       "fsmLanguage": "typescript"
                     }
@@ -948,7 +948,7 @@
                       "src": "checkBureau",
                       "type": "xstate.invoke",
                       "id": "0.(machine).creditCheck.CheckingCreditScores.CheckingGavperian.FetchingReport",
-                      "fsmType": "promise",
+                      "fsmType": "internalAsyncOperation",
                       "fsmVersion": "v02",
                       "fsmLanguage": "typescript"
                     }
@@ -1059,7 +1059,7 @@
               "src": "CheckingCreditScores3parallel",
               "type": "xstate.invoke",
               "id": "0.(machine).creditCheck.CheckingCreditScores",
-              "fsmType": "promise",
+              "fsmType": "internalAsyncOperation",
               "fsmVersion": "v02",
               "fsmLanguage": "typescript"
             }
@@ -1133,7 +1133,7 @@
                   "src": "determineMiddleScore",
                   "type": "xstate.invoke",
                   "id": "0.(machine).creditCheck.DeterminingInterestRateOptions.DeterminingMiddleScore",
-                  "fsmType": "promise",
+                  "fsmType": "internalAsyncOperation",
                   "fsmVersion": "v02",
                   "fsmLanguage": "typescript"
                 }
@@ -1192,7 +1192,7 @@
                   "src": "generateInterestRates",
                   "type": "xstate.invoke",
                   "id": "0.(machine).creditCheck.DeterminingInterestRateOptions.FetchingRates",
-                  "fsmType": "promise",
+                  "fsmType": "internalAsyncOperation",
                   "fsmVersion": "v02",
                   "fsmLanguage": "typescript"
                 }
@@ -1462,7 +1462,7 @@
       "src": "fetchInterestRateOptions",
       "type": "xstate.invoke",
       "id": "0.(machine)",
-      "fsmType": "promise",
+      "fsmType": "internalAsyncOperation",
       "fsmVersion": "v02",
       "fsmLanguage": "typescript"
     }

@@ -16,7 +16,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "taskMachineConfig",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "fetchTasks",
     fsmVersion: "v01",
     fsmLanguage: "typescript",
@@ -25,7 +25,7 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "taskMachineConfig",
     parentFsmVersion: "v01",
-    fsmType: "promise",
+    fsmType: "internalAsyncOperation",
     fsmName: "updateTask",
     fsmVersion: "v01",
     fsmLanguage: "typescript",

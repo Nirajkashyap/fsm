@@ -36,12 +36,11 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts -c <command> -f <
 
 ### Workflow Types
 
-| Value           | Description                      |
-| --------------- | -------------------------------- |
-| `fsm`           | Standard FSM definition          |
-| `sharedFsm`     | Shared FSM used as a child actor |
-| `sharedPromise` | Shared promise-based actor       |
-| `promise`       | Promise workflow                 |
+| Value                    | Description                        |
+| ------------------------ | ---------------------------------- |
+| `fsm`                    | Standard FSM definition            |
+| `sharedAsyncOperation`   | Shared async-operation-based actor |
+| `internalAsyncOperation` | Async operation workflow           |
 
 ---
 
@@ -188,13 +187,6 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-sync-operation \
   -f apps/fsm-core-example/fsm \
   -w fsm
-
-# Shared FSMs only (vitalsWorkflow lives under fsm/ alongside top-level FSMs)
-deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
-  -c validate-sync-operation \
-  -f apps/fsm-core-example/fsm \
-  -w sharedFsm \
-  --skip-dirs carVitals,creditCheck,taskMachineConfig
 ```
 
 **Required:** `-w / --workflow-type`
@@ -222,14 +214,14 @@ present in the actor folders).
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
   -f apps/fsm-core-example/fsm \
-  -w sharedPromise \
+  -w sharedAsyncOperation \
   --skip-dirs carVitals,creditCheck,taskMachineConfig
 
 # TypeScript actors only
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
   -f apps/fsm-core-example/fsm \
-  -w sharedPromise \
+  -w sharedAsyncOperation \
   --skip-dirs carVitals,creditCheck,taskMachineConfig \
   --lang typescript
 
@@ -237,15 +229,15 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
   -f apps/fsm-core-example/fsm \
-  -w sharedPromise \
+  -w sharedAsyncOperation \
   --skip-dirs carVitals,creditCheck,taskMachineConfig \
   --lang typescript,python
 
-# Promise workflow folder
+# Async operation workflow folder
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   -c validate-async-operation \
   -f apps/fsm-core-example/promise \
-  -w promise
+  -w internalAsyncOperation
 ```
 
 **Required:** `-w / --workflow-type`

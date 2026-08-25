@@ -3,6 +3,7 @@
     "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.97.0",
     "dotenv": "npm:dotenv@^16.5.0",
     "dotenv-cli": "npm:dotenv-cli@^8.0.0",
+    "json-schema-to-typescript": "npm:json-schema-to-typescript@^15.0.4",
     "semver": "npm:semver@^7.8.5",
     "supabase": "npm:supabase@2.19",
     "tsx": "npm:tsx@^4.19.4",
@@ -10,6 +11,8 @@
     "xstate": "npm:xstate@^5.28.0"
   },
   "tasks": {
-    "restart-with-diff-temp": "deno run --allow-all supabase-restart-with-diff.ts"
+    "restart-with-diff-temp": "deno run --allow-all supabase-restart-with-diff.ts",
+    "generate:fsm-types": "deno run --allow-read --allow-write --allow-sys --allow-env scripts/generate-fsm-json-types.ts",
+    "generate:pg-types": "deno run --allow-read --allow-write scripts/generate-fsm-json-postgres-types.ts"
   }
 }

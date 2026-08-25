@@ -38,7 +38,7 @@ Sample fsm json
           "type": "xstate.invoke",
           "id": "creditBureauCheck",
           "src": "checkBureau", // exported fn in <lang>/actors/checkBureau/checkBureau.<ext>
-          "fsmType": "promise", // promise | sharedPromise | sharedFsm | fsm
+          "fsmType": "internalAsyncOperation", // internalAsyncOperation | sharedAsyncOperation | fsm
           "fsmVersion": "1",
           "fsmLanguage": "typescript" // the routing key for the polyglot model // typescript | python | rust | go | llm  (🔭 reserved)
         }
@@ -315,7 +315,7 @@ deno run --allow-all packages/fsm-sync-worker-ts/src/cli/fsmctl.ts -c stop -q <i
 deno run --allow-all packages/fsm-core-async-op-worker/src/cli/async-operation-worker-gateway-ctl.ts list
 deno run --allow-all packages/fsm-core-async-op-worker/src/cli/async-operation-worker-gateway-ctl.ts invoke \
   --parent-fsm-name creditCheck --parent-fsm-version v01 \
-  --fsm-type promise --fsm-name checkBureau --fsm-version v01 \
+  --fsm-type internalAsyncOperation --fsm-name checkBureau --fsm-version v01 \
   --fsm-language typescript \
   --input '{"ssn":"123"}'
 ```
@@ -363,7 +363,7 @@ a sidecar socket.
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-workerlet.ts \
   -f /abs/path/to/apps/fsm-core-example/fsm \
   -l typescript,python     # runtime languages to validate/activate (required)
-  -t promise                # workflow type: promise | sharedPromise (default promise)
+  -t internalAsyncOperation  # workflow type: internalAsyncOperation | sharedAsyncOperation (default internalAsyncOperation)
   -m 8                      # max concurrent queue-workers (default 8)
   # -i <workerlet-id>       # stable identity (default: random UUID per startup)
   # -d <db-url>             # overrides DATABASE_URL
@@ -412,7 +412,7 @@ deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-schedu
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts -c list-instances
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts -c list-meta
 deno run --allow-all packages/fsm-async-worker-ts/src/cli/async-operation-ctl.ts -c dispatch \
-  -n checkBureau -v 1 -t promise \
+  -n checkBureau -v 1 -t internalAsyncOperation \
   --parent-fsm-name creditCheck --parent-fsm-version 1 \
   -l typescript
 ```

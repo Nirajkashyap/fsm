@@ -40,9 +40,9 @@ absolute path — not `./fsm`) and must **not** end with `/`.
   directory's own name, e.g. `.../creditCheck/v01/machine.ts` → `v01`.
 
 Other flags: `-w`/`--workflow-type`
-(`fsm | sharedFsm | sharedPromise |
-promise`, default `fsm`), `-s`/`--skip-dirs`
-(comma-separated FSM names to skip, directory mode only),
+(`fsm | sharedAsyncOperation |
+internalAsyncOperation`, default `fsm`),
+`-s`/`--skip-dirs` (comma-separated FSM names to skip, directory mode only),
 `-r`/`--show-recommendation` (also validates the generated `fsm.json` against
 the FSM JSON schema and logs any errors — doesn't change what's written).
 
@@ -55,7 +55,7 @@ the FSM JSON schema and logs any errors — doesn't change what's written).
 
 ```bash
 npx @pgfsm/compiler -c generate -f fsm
-npx @pgfsm/compiler -c generate -f fsm -w sharedFsm --skip-dirs carVitals
+npx @pgfsm/compiler -c generate -f fsm --skip-dirs carVitals
 npx @pgfsm/compiler -c generate -f apps/fsm-core-example/fsm/creditCheck/v01/machine.ts
 ```
 
@@ -190,7 +190,7 @@ import {
 } from "@pgfsm/compiler";
 
 import type { OperationLang, WorkflowType } from "@pgfsm/compiler";
-// WorkflowType  = "fsm" | "sharedFsm" | "sharedPromise" | "promise"
+// WorkflowType  = "fsm" | "sharedAsyncOperation" | "internalAsyncOperation"
 // OperationLang = "typescript" | "python" | "rust" | "go"
 ```
 

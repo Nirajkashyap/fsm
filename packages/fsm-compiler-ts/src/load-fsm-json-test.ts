@@ -17,12 +17,13 @@ const pool = new Pool({ connectionString: Deno.env.get("DATABASE_URL") });
     db: pool,
   };
 
-  // vitalsWorkflow is a shared, reusable sub-workflow (fsmType "sharedFsm"),
-  // so it's scanned separately from the top-level FSMs (fsmType "fsm") even
-  // though both now live under the same fsm/ folder.
+  // vitalsWorkflow is a reusable sub-workflow invoked by carVitals (fsmType
+  // "fsm"). load_fsm_from_json_v2 requires a referenced child FSM to already
+  // exist in fsm_core.fsm_states, so it must be loaded first, in its own
+  // pass, before the rest of the folders (which include its invoker).
   await loadFsmJSONFromFolders(
     fsmfolderPath,
-    "sharedFsm",
+    "fsm",
     ["carVitals", "creditCheck", "taskMachineConfig"],
     deps,
   );
