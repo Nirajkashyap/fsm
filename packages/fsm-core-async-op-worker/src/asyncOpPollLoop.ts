@@ -162,7 +162,7 @@ export async function dispatchAndArchive(
   const executionFinishedAt = new Date();
 
   // Outcome-dependent prefix, matching fsm-async-worker-ts's working
-  // convention exactly (fsmpromiseworker-helper.ts's
+  // convention exactly (fsmasyncoperationworker-helper.ts's
   // send_event_name_to_parent_queue_id): the fsmlet only recognizes
   // "xstate.done.actor.<base>" / "xstate.error.actor.<base>" as a valid
   // transition event -- the claimed row's raw eventName (the un-prefixed

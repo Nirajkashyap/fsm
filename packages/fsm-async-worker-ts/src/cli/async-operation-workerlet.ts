@@ -57,7 +57,7 @@ DESCRIPTION
   Validates async operations in the given folder for the specified runtime languages,
   loads them into async_operation_meta, registers itself in async_operation_workerlet,
   then listens for scheduled work via pg_notify. On each notification it atomically
-  claims a dispatch entry and starts a long-running promise worker for that actor queue.
+  claims a dispatch entry and starts a long-running async-operation worker for that actor queue.
   Sends heartbeats every 5 s. Deregisters cleanly on shutdown.
 
 EXAMPLE

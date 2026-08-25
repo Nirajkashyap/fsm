@@ -2,11 +2,11 @@
 
 This package provides three CLIs:
 
-| CLI                           | Entry point                            | Role                                                                                                                                                                         |
-| ----------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **async-operation-workerlet** | `src/cli/async-operation-workerlet.ts` | Long-running async-op node agent (kubelet equivalent) — validates actors, registers in `async_operation_workerlet`, claims and drives promise workers via LISTEN + heartbeat |
-| **async-operation-scheduler** | `src/cli/async-operation-scheduler.ts` | Control-plane routing process (kube-scheduler equivalent) for `async-operation-workerlet` node agents. Run once per cluster, not on worker nodes                             |
-| **async-operation-ctl**       | `src/cli/async-operation-ctl.ts`       | One-shot control CLI (kubectl equivalent) — list-instances/list-meta/dispatch against the async-operation dispatch tables, then exits                                        |
+| CLI                           | Entry point                            | Role                                                                                                                                                                                 |
+| ----------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **async-operation-workerlet** | `src/cli/async-operation-workerlet.ts` | Long-running async-op node agent (kubelet equivalent) — validates actors, registers in `async_operation_workerlet`, claims and drives async-operation workers via LISTEN + heartbeat |
+| **async-operation-scheduler** | `src/cli/async-operation-scheduler.ts` | Control-plane routing process (kube-scheduler equivalent) for `async-operation-workerlet` node agents. Run once per cluster, not on worker nodes                                     |
+| **async-operation-ctl**       | `src/cli/async-operation-ctl.ts`       | One-shot control CLI (kubectl equivalent) — list-instances/list-meta/dispatch against the async-operation dispatch tables, then exits                                                |
 
 For the FSM-side CLIs (`fsmlet`, `fsmscheduler`, `fsmctl`), see
 [`fsm-sync-worker-ts/docs/guides/CLI-USAGE.md`](../../../fsm-sync-worker-ts/docs/guides/CLI-USAGE.md).
@@ -33,8 +33,8 @@ For the FSM-side CLIs (`fsmlet`, `fsmscheduler`, `fsmctl`), see
 operations (analogous to `fsmlet` for FSMs). It scans an FSM folder for async
 actors, loads them into `async_operation_meta`, registers itself in
 `async_operation_workerlet`, then listens for work routed by the scheduler via
-`pg_notify`. It drives one long-running promise-worker per actor queue, bounded
-by `--max-concurrency`.
+`pg_notify`. It drives one long-running async-operation worker per actor queue,
+bounded by `--max-concurrency`.
 
 ### Invocation
 
@@ -113,8 +113,8 @@ contains FSM subdirectories, the same path you would give `fsmlet`:
    `async_op_workerlet_work_<id>`.
 5. **Claim & dispatch** — on each notification, calls
    `claim_scheduled_for_async_operation_workerlet()` atomically, then starts a
-   long-running promise-worker for that actor queue (one worker per unique
-   queue, bounded by semaphore).
+   long-running async-operation worker for that actor queue (one worker per
+   unique queue, bounded by semaphore).
 6. **Heartbeat** — sends a heartbeat every 5 s so the scheduler can score this
    node.
 7. **Fallback poll** — polls every 30 s to catch any `pg_notify` missed after a
@@ -315,10 +315,11 @@ Both `fsmlet` (`--fsm-folder-path`) and `async-operation-workerlet`
 `actions`, `guards`, and `delays` are each a single `index.ts` module exporting
 every name in that category. `actors` is one subfolder per actor — matching
 exactly what `generate-async-logic` (`@pgfsm/compiler`) scaffolds — and
-`startFSMPromiseWorker` (`asyncOperationWorkerlet/fsmpromiseworker.ts`) loads
-each actor from its own file at runtime, using the module path and export name
-already resolved during validation (`ActorPluginValidationResult.fsmModulePath`
-/ `.method`) — no aggregating `actors/index.ts` is needed or read.
+`startFSMAsyncOperationWorker`
+(`asyncOperationWorkerlet/fsmasyncoperationworker.ts`) loads each actor from its
+own file at runtime, using the module path and export name already resolved
+during validation (`ActorPluginValidationResult.fsmModulePath` / `.method`) — no
+aggregating `actors/index.ts` is needed or read.
 
 Any of these subdirectories may be absent if the FSM does not use that feature
 type. The path is validated at startup — an invalid path exits with code 1

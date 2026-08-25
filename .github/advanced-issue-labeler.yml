@@ -48,8 +48,8 @@ policy:
             keys: ["Direct"]
           - name: "exec: worker"
             keys: ["Worker-based (pgmq queue)"]
-          - name: "exec: promise"
-            keys: ["Promise / callback-based"]
+          - name: "exec: async-operation"
+            keys: ["Async operation / callback-based"]
 
       - id: [severity]
         block-list: []

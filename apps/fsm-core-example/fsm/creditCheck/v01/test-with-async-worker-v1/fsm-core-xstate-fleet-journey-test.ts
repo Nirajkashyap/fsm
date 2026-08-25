@@ -328,7 +328,7 @@ Deno.test({
 // invokes a promise actor — so this test dispatches it explicitly, mirroring
 // what the `async-operation-ctl.ts dispatch` CLI command does. This must
 // happen *after* Submit has been processed (so the per-actor pgmq queue
-// exists) — startFSMPromiseWorker exits immediately with no retry if the
+// exists) — startFSMAsyncOperationWorker exits immediately with no retry if the
 // queue is missing when the workerlet claims the dispatch.
 Deno.test({
   name:

@@ -152,11 +152,11 @@ helpers, callable from anywhere):
   `dispatchAndArchive()` now prefixes it with `"xstate.done.actor."` /
   `"xstate.error.actor."` (based on the invoke outcome) before archiving,
   matching `fsm-async-worker-ts`'s working convention
-  (`fsmpromiseworker-helper.ts`'s `send_event_name_to_parent_queue_id`). Without
-  this the fsmlet could never find a matching transition for the raw eventName
-  and the FSM instance stayed stuck at the invoking state forever, even though
-  the actor invoke itself succeeded — caught via a real end-to-end run, not just
-  unit coverage.
+  (`fsmasyncoperationworker-helper.ts`'s `send_event_name_to_parent_queue_id`).
+  Without this the fsmlet could never find a matching transition for the raw
+  eventName and the FSM instance stayed stuck at the invoking state forever,
+  even though the actor invoke itself succeeded — caught via a real end-to-end
+  run, not just unit coverage.
 - **PGMQ's 48-character queue name limit** isn't fully solved. The
   `async_operation_type = "internalAsyncOperation"` shortening (drop
   `async_operation_version`, first-char `async_operation_language`) fits typical

@@ -19,7 +19,7 @@ import {
   validateAsyncOperationFromFolders,
   type WorkflowType,
 } from "@pgfsm/compiler";
-import { startFSMPromiseWorker } from "./fsmpromiseworker.ts";
+import { startFSMAsyncOperationWorker } from "./fsmasyncoperationworker.ts";
 
 const logger = getLogger(["@pgfsm/worker", "async-op-workerlet"]);
 
@@ -84,13 +84,14 @@ export type AsyncOperationWorkerletOptions = {
 };
 
 /**
- * Dispatches to the language-appropriate promise worker for a single actor queue.
- * Long-running: runs until signal is aborted or the process exits.
- * - typescript: polls PGMQ via startFSMPromiseWorker
+ * Dispatches to the language-appropriate async-operation worker for a single
+ * actor queue. Long-running: runs until signal is aborted or the process
+ * exits.
+ * - typescript: polls PGMQ via startFSMAsyncOperationWorker
  * - python: spawns subprocess and awaits its exit
  * - go / rust: logs a warning (not yet implemented)
  */
-async function startPromiseWorkerForLang(
+async function startAsyncOperationWorkerForLang(
   result: ActorPluginValidationResult,
   deps: DBDeps,
   queueName: string,
@@ -105,7 +106,7 @@ async function startPromiseWorkerForLang(
   } = result;
 
   if (lang === "typescript") {
-    await startFSMPromiseWorker(
+    await startFSMAsyncOperationWorker(
       deps,
       queueName,
       fnName,
@@ -115,7 +116,7 @@ async function startPromiseWorkerForLang(
       signal,
     );
   } else if (lang === "python") {
-    const scriptPath = `${_srcDir}fsmpromiseworker.py`;
+    const scriptPath = `${_srcDir}fsmasyncoperationworker.py`;
     const proc = new Deno.Command("python3", {
       args: [
         scriptPath,
@@ -132,14 +133,14 @@ async function startPromiseWorkerForLang(
       stderr: "inherit",
     }).spawn();
     logger.info(
-      "Started Python promise worker for {fnName} (PID {pid}) on queue {queue}",
+      "Started Python async-operation worker for {fnName} (PID {pid}) on queue {queue}",
       { fnName, pid: proc.pid, queue: queueName },
     );
     signal?.addEventListener("abort", () => proc.kill());
     await proc.status;
   } else {
     logger.warn(
-      "Promise worker for lang={lang} not yet implemented (actor={fnName})",
+      "Async-operation worker for lang={lang} not yet implemented (actor={fnName})",
       { lang, fnName },
     );
   }
@@ -154,7 +155,7 @@ async function startPromiseWorkerForLang(
  *   3. Registers itself in async_operation_workerlet with the full supported-op list.
  *   4. Opens a dedicated LISTEN connection on async_op_workerlet_work_<id>.
  *   5. On each notify: claimScheduledForAsyncOperationWorkerlet() atomically, then
- *      starts a long-running promise worker for that actor queue (one per queue).
+ *      starts a long-running async-operation worker for that actor queue (one per queue).
  *   6. Heartbeat every 5 s + fallback poll every 30 s to catch missed notifications.
  *
  * Returns immediately with a handle; the daemon runs in the background.
@@ -309,7 +310,7 @@ export async function startAsyncOperationWorkerlet(
       { workerletId, lang: result.asyncOperationLanguage, queue: queueName },
     );
 
-    startPromiseWorkerForLang(
+    startAsyncOperationWorkerForLang(
       result,
       deps,
       queueName,

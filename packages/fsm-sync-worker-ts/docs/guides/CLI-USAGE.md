@@ -360,11 +360,12 @@ Both `fsmlet` (`--fsm-folder-path`) and the sibling package's
 `actions`, `guards`, and `delays` are each a single `index.ts` module exporting
 every name in that category. `actors` is one subfolder per actor — matching
 exactly what `generate-async-logic` (`@pgfsm/compiler`) scaffolds — and
-`startFSMPromiseWorker`
-(`fsm-async-worker-ts/src/asyncOperationWorkerlet/fsmpromiseworker.ts`) loads
-each actor from its own file at runtime, using the module path and export name
-already resolved during validation (`ActorPluginValidationResult.fsmModulePath`
-/ `.method`) — no aggregating `actors/index.ts` is needed or read.
+`startFSMAsyncOperationWorker`
+(`fsm-async-worker-ts/src/asyncOperationWorkerlet/fsmasyncoperationworker.ts`)
+loads each actor from its own file at runtime, using the module path and export
+name already resolved during validation
+(`ActorPluginValidationResult.fsmModulePath` / `.method`) — no aggregating
+`actors/index.ts` is needed or read.
 
 Any of these subdirectories may be absent if the FSM does not use that feature
 type. The path is validated at startup — an invalid path exits with code 1

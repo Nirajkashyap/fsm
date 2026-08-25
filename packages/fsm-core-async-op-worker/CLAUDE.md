@@ -5,7 +5,7 @@ protocol live in the root `CLAUDE.md` / `AGENTS.md`.
 
 ## What it is
 
-The Activity Gateway for promise-type async FSM operations across polyglot
+The Activity Gateway for async-operation-type FSM operations across polyglot
 (TypeScript/Python/Rust/Go) actors — a standalone alternative to
 `fsm-async-worker-ts` (v1, now `@pgfsm/async-worker-old`), not something that
 integrates with or is invoked by it. It owns its own poll/dispatch/archive loop

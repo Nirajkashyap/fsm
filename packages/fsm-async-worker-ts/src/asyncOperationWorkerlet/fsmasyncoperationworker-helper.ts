@@ -3,10 +3,10 @@ import type { Database, Json } from "@pgfsm/db/database.types";
 import type { DBDeps } from "@pgfsm/db";
 import type { FsmQueueMessage } from "../types.ts";
 
-export type FSMPromiseArchiveData = {
-  promise_queue_name: string;
-  promise_queue_type: string;
-  promise_queue_version: string;
+export type FSMAsyncOperationArchiveData = {
+  async_operation_queue_name: string;
+  async_operation_queue_type: string;
+  async_operation_queue_version: string;
   msg_id: number | null;
   event_name: string;
   event_action_type: string;
@@ -22,15 +22,15 @@ export type FSMPromiseArchiveData = {
   error_message: string | null;
 };
 
-export async function processFSMPromiseQueueMessage(
+export async function processFSMAsyncOperationQueueMessage(
   _deps: DBDeps,
-  promise_queue_name: string,
+  async_operation_queue_name: string,
   msg: Database["pgmq"]["CompositeTypes"]["message_record"],
-  _promise_fn_name: string,
-  promise_version?: string,
-  promise_queue_type?: string,
+  _fsm_async_operation_name: string,
+  async_operation_version?: string,
+  async_operation_queue_type?: string,
   actorFn?: ((input: unknown) => Promise<unknown>) | undefined,
-): Promise<FSMPromiseArchiveData> {
+): Promise<FSMAsyncOperationArchiveData> {
   const execution_started_at = new Date().toISOString();
   const msg_id = msg.msg_id;
   const msgData = msg.message as unknown as FsmQueueMessage;
@@ -63,11 +63,11 @@ export async function processFSMPromiseQueueMessage(
         if (isSuccess) {
           send_event_name_to_parent_queue_id = "xstate.done.actor." +
             event_name_base;
-          resolve({ result: "Promise fulfilled successfully" });
+          resolve({ result: "Async operation fulfilled successfully" });
         } else {
           send_event_name_to_parent_queue_id = "xstate.error.actor." +
             event_name_base;
-          error_message = "Promise failed";
+          error_message = "Async operation failed";
           resolve({ error: error_message });
         }
       }, 300);
@@ -80,9 +80,9 @@ export async function processFSMPromiseQueueMessage(
     new Date(execution_started_at).getTime();
 
   return {
-    promise_queue_name,
-    promise_queue_type: promise_queue_type ?? "",
-    promise_queue_version: promise_version ?? "",
+    async_operation_queue_name,
+    async_operation_queue_type: async_operation_queue_type ?? "",
+    async_operation_queue_version: async_operation_version ?? "",
     msg_id,
     event_name: send_event_name_to_parent_queue_id,
     event_action_type,

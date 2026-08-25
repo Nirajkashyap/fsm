@@ -75,7 +75,7 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
 The worker invokes an actor as a single-argument async function:
 
 ```ts
-// how the worker calls it (fsmpromiseworker-helper.ts)
+// how the worker calls it (fsmasyncoperationworker-helper.ts)
 const result = await actorFn(eventPayload); // (input) => Promise<output>
 ```
 
@@ -123,8 +123,8 @@ Tracked in [TODO.md](../todo/TODO.md):
 
 1. **Actor stub signature mismatch** — generator emits `(context, event)`
    returning void; actors are invoked as `actorFn(input): Promise<output>` (per
-   `processFSMPromiseQueueMessage`). Emit an async single-`input` stub returning
-   `Promise`.
+   `processFSMAsyncOperationQueueMessage`). Emit an async single-`input` stub
+   returning `Promise`.
 2. **No internal/external actor distinction** — actor refs now carry
    `asyncOperationLanguage` but no ownership signal, so external actors still
    get local stubs they should not. Carry an ownership signal on the invoke

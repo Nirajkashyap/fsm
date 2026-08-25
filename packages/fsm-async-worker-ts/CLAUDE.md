@@ -19,7 +19,7 @@ Full CLI reference (flags, defaults, examples) lives in
 ## Commands
 
 ```bash
-deno task async-operation-workerlet # node agent — claims & drives promise workers
+deno task async-operation-workerlet # node agent — claims & drives async-operation workers
 deno task async-operation-scheduler # control-plane router (run once per cluster)
 deno task async-operation-ctl       # one-shot control CLI
 deno task check                     # deno check src/index.ts
@@ -30,6 +30,7 @@ deno task check                     # deno check src/index.ts
 - `cli/` — three CLI entry points (`async-operation-workerlet.ts`,
   `async-operation-scheduler.ts`, `async-operation-ctl.ts`)
 - `asyncOperationWorkerlet/` — node-agent implementation, including
-  `fsmpromiseworker.py` (a polyglot example actor, not leftover Python tooling)
+  `fsmasyncoperationworker.py` (a polyglot example actor, not leftover Python
+  tooling)
 - `asyncOperationScheduler/` — control-plane routing implementation
 - `logger.ts` — composition-root LogTape config for this process

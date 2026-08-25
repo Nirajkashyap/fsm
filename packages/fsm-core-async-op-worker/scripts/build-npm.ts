@@ -24,7 +24,7 @@ await build({
     name: "@pgfsm/async-worker",
     version: Deno.args[0]?.replace(/^v/, "") ?? "0.0.0",
     description:
-      "Activity Gateway (async-operation-worker-gateway/-ctl) for promise-type async FSM operations across polyglot actors",
+      "Activity Gateway (async-operation-worker-gateway/-ctl) for async-operation-type FSM operations across polyglot actors",
     license: "Apache-2.0",
     // pg ships no types of its own; dnt only auto-installs packages that
     // are themselves import specifiers, so without this the type-check
