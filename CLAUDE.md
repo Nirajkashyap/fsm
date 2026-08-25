@@ -55,3 +55,15 @@ packages/
 Each linked subdirectory has its own `CLAUDE.md` with commands, file structure,
 dependencies, and naming conventions scoped to that area — consult it when
 working there instead of duplicating detail here.
+
+## Schema Change Propagation
+
+`packages/database-src/` is the source of truth for both the FSM JSON schema and
+the PostgreSQL schema; most other packages consume generated types derived from
+one or the other. Editing either fans out through a specific chain of regenerate
+→ review → verify steps across `fsm-compiler-ts`, `fsm-core-db-ts`,
+`fsm-sync-worker-ts`, and (selectively — see the doc for why it's usually out of
+scope there) `fsm-core-async-op-worker`. Follow
+[`docs/schema-change-propagation.md`](docs/schema-change-propagation.md)
+whenever a session touches `fsm.machine.schema.v3.json` or a SQL file under
+`packages/database-src/supabase/schemas/`.
