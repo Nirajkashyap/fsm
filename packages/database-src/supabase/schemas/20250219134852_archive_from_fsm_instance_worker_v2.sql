@@ -14,11 +14,11 @@ DROP FUNCTION IF EXISTS fsm_core.create_promise_queue_and_send_event_from_fsm_in
 -- it (see fsm.json), archive_event_from_fsm_type_worker_v2 just wasn't
 -- reading it yet.
 --
--- compute_promise_queue_name_v2 has no fsmType validation of its own (its
--- "otherwise" branch happily names a queue for any fsmType, not just
--- 'sharedAsyncOperation') -- this function still validates fsmType itself,
--- same as before, so an unsupported fsmType keeps raising here rather than
--- silently getting a queue name and proceeding.
+-- compute_promise_queue_name_v2 now also validates fsmType itself and raises
+-- on anything outside internalAsyncOperation/sharedAsyncOperation (see its
+-- own doc comment) -- the check below is redundant against that but kept so
+-- this function fails with its own, call-site-specific message rather than
+-- relying on the shared helper's.
 CREATE OR REPLACE FUNCTION fsm_core.create_promise_queue_and_send_event_from_fsm_instance_id_v2(
     event_name text,
     event_input jsonb,

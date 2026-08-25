@@ -6,15 +6,36 @@
 -- which has already changed twice.
 --
 -- fsm_type is shortened to its first character (e.g. "internalAsyncOperation"
--- -> "i") in all cases, and, specifically when fsm_type =
--- 'internalAsyncOperation', two further reductions to help fit PGMQ's length
--- limit (see below): fsm_version is dropped entirely, and fsm_language is
--- also shortened to its first character.
+-- -> "i") in all cases, and fsm_version is dropped entirely in all cases too
+-- -- for 'internalAsyncOperation' it's the child actor's own version, which
+-- has no bearing on queue identity; for 'sharedAsyncOperation',
+-- create-async-logic.ts's toSharedAsyncOpRegisteredActor always sets
+-- fsm_version equal to parent_fsm_version (same `version` folder value
+-- passed for both), so dropping it loses nothing -- parent_fsm_version is
+-- still in the name. Beyond that, each fsm_type has one further
+-- length-driven reduction: 'internalAsyncOperation' shortens fsm_language to
+-- its first character; 'sharedAsyncOperation' shortens parent_fsm_name to
+-- its first character instead -- lossless there too, since
+-- toSharedAsyncOpRegisteredActor always sets parent_fsm_name to the fixed
+-- constant "sharedAsyncOperation" (SHARED_ASYNC_OP_PARENT_FSM_NAME), never a
+-- real owning FSM's name -- a sharedAsyncOperation identity never comes from
+-- a real invoke object with a distinct parent (that's what
+-- 'internalAsyncOperation' is for -- see operation-logic-scaffold.ts's
+-- toRegisteredActor, "the only kind" that builds it), so the full constant
+-- string carried no identity information to begin with.
 --
 --   fsm_type = 'internalAsyncOperation':
 --     <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>
---   otherwise (e.g. 'sharedAsyncOperation'):
---     <parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>
+--   fsm_type = 'sharedAsyncOperation':
+--     <parentFsmName[0]>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage>
+--
+-- Any other fsm_type raises -- this function only names queues for the two
+-- promise-actor identities ('internalAsyncOperation'/'sharedAsyncOperation'),
+-- never 'fsm'/'sharedFsm'. Previously the "otherwise" branch silently applied
+-- the sharedAsyncOperation naming to any unrecognized fsm_type, which
+-- archive_from_fsm_instance_worker_v2.sql's caller worked around by
+-- validating fsmType itself before calling in -- that workaround is now
+-- redundant (this function raises first) but left in place there.
 --
 -- unlike the existing 'sharedPromise_<fsmName>_<fsmVersion>' convention (see
 -- archive_from_fsm_instance_worker_v2.sql), this one is unique per actor
@@ -23,7 +44,9 @@
 -- queue (in the fsm_type = 'internalAsyncOperation' case, this still holds
 -- since fsm_language is shortened, not dropped -- two languages sharing the
 -- same first letter would collide, but none do among
--- typescript/python/rust/go today: t/p/r/g).
+-- typescript/python/rust/go today: t/p/r/g; in the 'sharedAsyncOperation'
+-- case, shortening parent_fsm_name instead loses no identity either, per the
+-- constant-value reasoning above).
 --
 -- PGMQ caps queue names at 48 characters -- see CLI-USAGE.md's note on this
 -- limit. Still not guaranteed to fit for long parentFsmName/fsmName
@@ -43,10 +66,12 @@ BEGIN
         RETURN input_parent_fsm_name || '_' || input_parent_fsm_version
             || '_' || LEFT(input_fsm_type, 1) || '_' || input_fsm_name || '_'
             || LEFT(input_fsm_language, 1);
-    ELSE
-        RETURN input_parent_fsm_name || '_' || input_parent_fsm_version
+    ELSIF input_fsm_type = 'sharedAsyncOperation' THEN
+        RETURN LEFT(input_parent_fsm_name, 1) || '_' || input_parent_fsm_version
             || '_' || LEFT(input_fsm_type, 1) || '_' || input_fsm_name || '_'
-            || input_fsm_version || '_' || input_fsm_language;
+            || input_fsm_language;
+    ELSE
+        RAISE EXCEPTION 'compute_promise_queue_name_v2: unsupported input_fsm_type: %', input_fsm_type;
     END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
