@@ -29,9 +29,9 @@ npm run generate:pg-types           # (or: deno task generate:pg-types)
 `generate:fsm-types` (`scripts/generate-fsm-json-types.ts`) reads
 `fsm.machine.schema.v3.json` and writes `generated/fsm-machine-schema.types.ts`
 — `fsm-compiler-ts` imports it from there via a cross-package relative path (see
-its `CLAUDE.md`). Run it after any change to the schema's `fsmType`/invoke
-shape. The npm script just delegates to the deno task
-(`deno task generate:fsm-types`); both work identically since `deno` is
+its `CLAUDE.md`). Run it after any change to the schema's
+`asyncOperationType`/invoke shape. The npm script just delegates to the deno
+task (`deno task generate:fsm-types`); both work identically since `deno` is
 proto-pinned at the repo root and resolves here via upward file resolution.
 
 `generated/database.types.ts` (Supabase-generated, via `supabase:gen:types` /

@@ -26,12 +26,13 @@ const logger = getLogger(["@pgfsm/compiler", "create-async-logic"]);
 const SHARED_ASYNC_OP_DIR_NAME = "shared-async-op";
 
 /**
- * Fixed `parentFsmName`/`fsmType` identity every shared-async-op actor
- * registers under — unlike FSM-scoped actors (whose `parentFsmName` is the
- * owning FSM and `fsmType` is `"internalAsyncOperation"`, derived from an
- * invoke object), shared-async-op actors have no owning FSM, so both are
- * constants: `"sharedAsyncOperation"`, the same real `InvokeObject["fsmType"]`
- * value a shared-queue invoke object would carry.
+ * Fixed `parentFsmName`/`asyncOperationType` identity every shared-async-op
+ * actor registers under — unlike FSM-scoped actors (whose `parentFsmName` is
+ * the owning FSM and `asyncOperationType` is `"internalAsyncOperation"`,
+ * derived from an invoke object), shared-async-op actors have no owning FSM,
+ * so both are constants: `"sharedAsyncOperation"`, the same real
+ * `InvokeObject["asyncOperationType"]` value a shared-queue invoke object
+ * would carry.
  */
 const SHARED_ASYNC_OP_FSM_TYPE = "sharedAsyncOperation" as const;
 const SHARED_ASYNC_OP_PARENT_FSM_NAME = "sharedAsyncOperation";
@@ -53,9 +54,9 @@ function toSharedAsyncOpRegisteredActor(
     ...toWrittenActor(lang, { src }),
     parentFsmName: SHARED_ASYNC_OP_PARENT_FSM_NAME,
     parentFsmVersion: version,
-    fsmType: SHARED_ASYNC_OP_FSM_TYPE,
-    fsmName: src,
-    fsmVersion: version,
+    asyncOperationType: SHARED_ASYNC_OP_FSM_TYPE,
+    asyncOperationName: src,
+    asyncOperationVersion: version,
   };
 }
 
@@ -111,7 +112,7 @@ async function rewriteSharedAsyncOpRegistry(
  * `typescript`/`python`/`rust` (see {@linkcode ActorsBarrelLang}), also
  * rewrites that language's `generated-registry.*` from every actor currently
  * on disk (see {@linkcode rewriteSharedAsyncOpRegistry}), each entry's
- * identity fixed to `parentFsmName`/`fsmType` `"sharedAsyncOperation"` since
+ * identity fixed to `parentFsmName`/`asyncOperationType` `"sharedAsyncOperation"` since
  * these actors have no owning FSM. Returns the actor file's absolute path.
  */
 export async function createAsyncOperationLogic(
@@ -129,7 +130,7 @@ export async function createAsyncOperationLogic(
   const absAppRootPath = resolvePluginRootAbsPath(appRootFolder);
   const absFolderPath =
     `${absAppRootPath}/${SHARED_ASYNC_OP_DIR_NAME}/${version}`;
-  const actor: ActorReference = { src: name, fsmLanguage: lang };
+  const actor: ActorReference = { src: name, asyncOperationLanguage: lang };
 
   // shared-async-op has no plugin-root layer between the app root and the
   // version folder (unlike fsm/), so writeActorFile's default path-offset

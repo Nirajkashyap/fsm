@@ -258,7 +258,7 @@ export function toWrittenActor(
   return {
     src: actor.src,
     fileBaseName,
-    fsmLanguage: lang,
+    asyncOperationLanguage: lang,
     filePath: `${lang}/actors/${fileBaseName}/${fileBaseName}.${
       operationFileExtension(lang)
     }`,
@@ -283,9 +283,9 @@ export function toRegisteredActor(
     ...written,
     parentFsmName,
     parentFsmVersion,
-    fsmType: "internalAsyncOperation",
-    fsmName: written.src,
-    fsmVersion: parentFsmVersion,
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: written.src,
+    asyncOperationVersion: parentFsmVersion,
   };
 }
 
@@ -300,9 +300,11 @@ export async function writeActorsManifest(
 ): Promise<string> {
   const file = `${absFolderPath}/actors-manifest.json`;
   const manifest = {
-    actors: actors.map(({ src, fsmLanguage, filePath, exportedName }) => ({
+    actors: actors.map((
+      { src, asyncOperationLanguage, filePath, exportedName },
+    ) => ({
       src,
-      fsmLanguage,
+      asyncOperationLanguage,
       filePath,
       exportedName,
     })),
@@ -344,7 +346,7 @@ export async function writeActorsBarrel(
   actors: WrittenActor[],
   lang: ActorsBarrelLang,
 ): Promise<string | undefined> {
-  const langActors = actors.filter((a) => a.fsmLanguage === lang);
+  const langActors = actors.filter((a) => a.asyncOperationLanguage === lang);
   if (langActors.length === 0) return undefined;
 
   const dir = `${absFolderPath}/${lang}/actors`;
@@ -403,7 +405,7 @@ export async function writeActorsRegistry(
   actors: RegisteredActor[],
   lang: ActorsBarrelLang,
 ): Promise<string | undefined> {
-  const langActors = actors.filter((a) => a.fsmLanguage === lang);
+  const langActors = actors.filter((a) => a.asyncOperationLanguage === lang);
   if (langActors.length === 0) return undefined;
 
   const dir = `${absFolderPath}/${lang}/actors`;
@@ -619,7 +621,7 @@ export async function writeAggregateActorsRegistry(
   actors: RegisteredActor[],
   lang: ActorsBarrelLang,
 ): Promise<string | undefined> {
-  const langActors = actors.filter((a) => a.fsmLanguage === lang);
+  const langActors = actors.filter((a) => a.asyncOperationLanguage === lang);
   if (langActors.length === 0) return undefined;
 
   const dir = `${appRootAbsPath}/${WORKER_SDK_DIR_NAME}/${lang}`;
@@ -721,7 +723,7 @@ export async function writeAggregateGoRegistry(
   pluginRootDirName: string,
   actors: RegisteredActor[],
 ): Promise<string | undefined> {
-  const goActors = actors.filter((a) => a.fsmLanguage === "go");
+  const goActors = actors.filter((a) => a.asyncOperationLanguage === "go");
   if (goActors.length === 0) return undefined;
 
   const appRoot = appRootAbsPath.split("/").at(-1)!;
@@ -869,7 +871,7 @@ export async function writeWorkerSdk(
   const protocol = options.protocol ?? "grpc";
   const appRoot = appRootAbsPath.split("/").at(-1)!;
   const hasLang = (lang: OperationLang) =>
-    actors.some((a) => a.fsmLanguage === lang);
+    actors.some((a) => a.asyncOperationLanguage === lang);
 
   const tsFiles: string[] = [];
   const rustFiles: string[] = [];
@@ -1016,7 +1018,7 @@ export async function writeWorkerSdk(
     // actually being built) still needs its own require+replace for every
     // individual actor module the aggregate pulls in, on top of the
     // aggregate's own require+replace, or the build can't resolve them.
-    const goActors = actors.filter((a) => a.fsmLanguage === "go");
+    const goActors = actors.filter((a) => a.asyncOperationLanguage === "go");
     const aggregateModulePath = `${appRoot}/${GO_AGGREGATE_DIR_NAME}`;
     const goModContent = renderGoModAggregate({
       moduleName: "pgfsm/async-op-worker-sdk",

@@ -72,15 +72,15 @@ type ActorWorker struct {
 	sendMu     sync.Mutex
 }
 
-func ActorKey(parentFsmName, parentFsmVersion, fsmType, fsmName, fsmVersion, fsmLanguage string) string {
-	return fmt.Sprintf("%s@%s@%s@%s@%s@%s", parentFsmName, parentFsmVersion, fsmType, fsmName, fsmVersion, fsmLanguage)
+func ActorKey(parentFsmName, parentFsmVersion, asyncOperationType, asyncOperationName, asyncOperationVersion, asyncOperationLanguage string) string {
+	return fmt.Sprintf("%s@%s@%s@%s@%s@%s", parentFsmName, parentFsmVersion, asyncOperationType, asyncOperationName, asyncOperationVersion, asyncOperationLanguage)
 }
 
 func NewActorWorker(options ActorWorkerOptions, registrations []ActorRegistration) *ActorWorker {
 	handlers := make(map[string]ActorHandler, len(registrations))
 	registered := make([]RegisteredActor, 0, len(registrations))
 	for _, reg := range registrations {
-		key := ActorKey(reg.Meta.ParentFsmName, reg.Meta.ParentFsmVersion, reg.Meta.FsmType, reg.Meta.FsmName, reg.Meta.FsmVersion, reg.Meta.FsmLanguage)
+		key := ActorKey(reg.Meta.ParentFsmName, reg.Meta.ParentFsmVersion, reg.Meta.AsyncOperationType, reg.Meta.AsyncOperationName, reg.Meta.AsyncOperationVersion, reg.Meta.AsyncOperationLanguage)
 		handlers[key] = reg.Handler
 		registered = append(registered, reg.Meta)
 	}
@@ -208,7 +208,7 @@ func (w *ActorWorker) serveLoop() error {
 }
 
 func (w *ActorWorker) handleInvoke(body *sidecargatewayv1.Invoke) {
-	key := ActorKey(body.ParentFsmName, body.ParentFsmVersion, body.FsmType, body.FsmName, body.FsmVersion, body.FsmLanguage)
+	key := ActorKey(body.ParentFsmName, body.ParentFsmVersion, body.AsyncOperationType, body.AsyncOperationName, body.AsyncOperationVersion, body.AsyncOperationLanguage)
 	handler, ok := w.handlers[key]
 	if !ok {
 		w.sendError(body.InvokeId, "NOT_FOUND", fmt.Sprintf("actor not found: %s", key))

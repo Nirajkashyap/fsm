@@ -62,10 +62,10 @@ type InvokeMessage = InstanceType<typeof Invoke>;
 export interface RegisteredActor {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
 }
 
 // Same Deno-vs-tsc inference gap gatewayClient.ts's RawActivityGatewayClient
@@ -84,10 +84,10 @@ export type ActorHandler = (input: unknown) => unknown | Promise<unknown>;
 export type ActorRegistration = {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   handler: ActorHandler;
 };
 
@@ -103,12 +103,12 @@ export interface ActorWorkerOptions {
 function actorKey(reg: {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
 }): string {
-  return `${reg.parentFsmName}@${reg.parentFsmVersion}@${reg.fsmType}@${reg.fsmName}@${reg.fsmVersion}@${reg.fsmLanguage}`;
+  return `${reg.parentFsmName}@${reg.parentFsmVersion}@${reg.asyncOperationType}@${reg.asyncOperationName}@${reg.asyncOperationVersion}@${reg.asyncOperationLanguage}`;
 }
 
 function parseInputJson(json: string): unknown {
@@ -206,10 +206,10 @@ export class ActorWorker {
       registeredActors.push({
         parentFsmName: reg.parentFsmName,
         parentFsmVersion: reg.parentFsmVersion,
-        fsmType: reg.fsmType,
-        fsmName: reg.fsmName,
-        fsmVersion: reg.fsmVersion,
-        fsmLanguage: reg.fsmLanguage,
+        asyncOperationType: reg.asyncOperationType,
+        asyncOperationName: reg.asyncOperationName,
+        asyncOperationVersion: reg.asyncOperationVersion,
+        asyncOperationLanguage: reg.asyncOperationLanguage,
       });
     }
 
@@ -340,10 +340,10 @@ export class ActorWorker {
     const key = actorKey({
       parentFsmName: body.parentFsmName,
       parentFsmVersion: body.parentFsmVersion,
-      fsmType: body.fsmType,
-      fsmName: body.fsmName,
-      fsmVersion: body.fsmVersion,
-      fsmLanguage: body.fsmLanguage,
+      asyncOperationType: body.asyncOperationType,
+      asyncOperationName: body.asyncOperationName,
+      asyncOperationVersion: body.asyncOperationVersion,
+      asyncOperationLanguage: body.asyncOperationLanguage,
     });
     const handler = this.handlers.get(key);
     const started = performance.now();

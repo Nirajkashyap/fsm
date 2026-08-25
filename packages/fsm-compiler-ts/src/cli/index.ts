@@ -66,7 +66,7 @@ USAGE
 
 COMMANDS
   generate                            Generate fsm.json from a folder or a .ts file
-  generate-async-logic                Scaffold actor stubs (per invoke object's fsmLanguage)
+  generate-async-logic                Scaffold actor stubs (per invoke object's asyncOperationLanguage)
   generate-sync-logic                 Scaffold action/guard/delay stubs in --lang language(s)
   create-async-logic                  Scaffold a single actor stub in the shared-async-op pool
   delete                              Delete generated fsm.json / xstate-fsm.json files

@@ -124,33 +124,33 @@
           "src": "checkTirePressure",
           "type": "xstate.invoke",
           "id": "0.vitalscheck.CheckVitals",
-          "fsmType": "internalAsyncOperation",
-          "fsmVersion": "v02",
-          "fsmLanguage": "typescript"
+          "asyncOperationType": "internalAsyncOperation",
+          "asyncOperationVersion": "v02",
+          "asyncOperationLanguage": "typescript"
         },
         {
           "src": "checkOilPressure",
           "type": "xstate.invoke",
           "id": "1.vitalscheck.CheckVitals",
-          "fsmType": "internalAsyncOperation",
-          "fsmVersion": "v02",
-          "fsmLanguage": "typescript"
+          "asyncOperationType": "internalAsyncOperation",
+          "asyncOperationVersion": "v02",
+          "asyncOperationLanguage": "typescript"
         },
         {
           "src": "checkCoolantLevel",
           "type": "xstate.invoke",
           "id": "2.vitalscheck.CheckVitals",
-          "fsmType": "internalAsyncOperation",
-          "fsmVersion": "v02",
-          "fsmLanguage": "typescript"
+          "asyncOperationType": "internalAsyncOperation",
+          "asyncOperationVersion": "v02",
+          "asyncOperationLanguage": "typescript"
         },
         {
           "src": "checkBattery",
           "type": "xstate.invoke",
           "id": "3.vitalscheck.CheckVitals",
-          "fsmType": "internalAsyncOperation",
-          "fsmVersion": "v02",
-          "fsmLanguage": "typescript"
+          "asyncOperationType": "internalAsyncOperation",
+          "asyncOperationVersion": "v02",
+          "asyncOperationLanguage": "typescript"
         }
       ],
       "tags": []

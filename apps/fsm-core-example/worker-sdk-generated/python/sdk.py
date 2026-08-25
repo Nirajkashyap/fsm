@@ -9,8 +9,8 @@ packages/fsm-proto-codegen/proto/fsm-core-async-op-worker/pgfsm/sidecargateway/v
 requests.
 
 Python counterpart of ../typescript/sdk.ts's ActorWorker — same actor_key()
-identity (parent_fsm_name@parent_fsm_version@fsm_type@fsm_name@fsm_version@
-fsm_language), same register -> heartbeat -> serve lifecycle. Outgoing
+identity (parent_fsm_name@parent_fsm_version@async_operation_type@async_operation_name@async_operation_version@
+async_operation_language), same register -> heartbeat -> serve lifecycle. Outgoing
 messages (register, heartbeat, invoke_result, invoke_error) are pushed onto
 a thread-safe queue.Queue that doubles as the request generator grpc's
 synchronous stream_stream stub drains on its own thread — the natural Python
@@ -19,8 +19,8 @@ manual reader/writer thread pair for the same duplex stream.
 
 Actor discovery is no longer a runtime folder scan + dynamic module load —
 `fsm-compiler-ts` generates a static, self-describing registry (a list of
-dicts with parent_fsm_name/parent_fsm_version/fsm_type/fsm_name/fsm_version/
-fsm_language/handler, see
+dicts with parent_fsm_name/parent_fsm_version/async_operation_type/async_operation_name/async_operation_version/
+async_operation_language/handler, see
 `packages/fsm-compiler-ts/src/operation-logic-scaffold.ts`'s
 `writeActorsRegistry`/`writeAggregateActorsRegistry`) that this SDK just
 iterates. `ActorWorker` takes that list directly; the CLI is what wires it to
@@ -57,14 +57,14 @@ class ProtocolError(Exception):
 def _actor_key(
     parent_fsm_name: str,
     parent_fsm_version: str,
-    fsm_type: str,
-    fsm_name: str,
-    fsm_version: str,
-    fsm_language: str,
+    async_operation_type: str,
+    async_operation_name: str,
+    async_operation_version: str,
+    async_operation_language: str,
 ) -> str:
     return (
-        f"{parent_fsm_name}@{parent_fsm_version}@{fsm_type}@{fsm_name}"
-        f"@{fsm_version}@{fsm_language}"
+        f"{parent_fsm_name}@{parent_fsm_version}@{async_operation_type}@{async_operation_name}"
+        f"@{async_operation_version}@{async_operation_language}"
     )
 
 
@@ -102,20 +102,20 @@ class ActorWorker:
             key = _actor_key(
                 reg["parent_fsm_name"],
                 reg["parent_fsm_version"],
-                reg["fsm_type"],
-                reg["fsm_name"],
-                reg["fsm_version"],
-                reg["fsm_language"],
+                reg["async_operation_type"],
+                reg["async_operation_name"],
+                reg["async_operation_version"],
+                reg["async_operation_language"],
             )
             self._handlers[key] = reg["handler"]
             registered_actors.append(
                 pb.RegisteredActor(
                     parent_fsm_name=reg["parent_fsm_name"],
                     parent_fsm_version=reg["parent_fsm_version"],
-                    fsm_type=reg["fsm_type"],
-                    fsm_name=reg["fsm_name"],
-                    fsm_version=reg["fsm_version"],
-                    fsm_language=reg["fsm_language"],
+                    async_operation_type=reg["async_operation_type"],
+                    async_operation_name=reg["async_operation_name"],
+                    async_operation_version=reg["async_operation_version"],
+                    async_operation_language=reg["async_operation_language"],
                 )
             )
 
@@ -212,10 +212,10 @@ class ActorWorker:
         key = _actor_key(
             body.parent_fsm_name,
             body.parent_fsm_version,
-            body.fsm_type,
-            body.fsm_name,
-            body.fsm_version,
-            body.fsm_language,
+            body.async_operation_type,
+            body.async_operation_name,
+            body.async_operation_version,
+            body.async_operation_language,
         )
         handler = self._handlers.get(key)
 

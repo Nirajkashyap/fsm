@@ -10,10 +10,10 @@ import (
 type ActorRegistration struct {
 	ParentFsmName    string
 	ParentFsmVersion string
-	FsmType          string
-	FsmName          string
-	FsmVersion       string
-	FsmLanguage      string
+	AsyncOperationType          string
+	AsyncOperationName          string
+	AsyncOperationVersion       string
+	AsyncOperationLanguage      string
 	Handler          func(input any) (any, error)
 }
 
@@ -23,10 +23,10 @@ func ActorRegistrations() []ActorRegistration {
 		{
 			ParentFsmName:    <%~ JSON.stringify(a.parentFsmName) %>,
 			ParentFsmVersion: <%~ JSON.stringify(a.parentFsmVersion) %>,
-			FsmType:          <%~ JSON.stringify(a.fsmType) %>,
-			FsmName:          <%~ JSON.stringify(a.fsmName) %>,
-			FsmVersion:       <%~ JSON.stringify(a.fsmVersion) %>,
-			FsmLanguage:      <%~ JSON.stringify(a.fsmLanguage) %>,
+			AsyncOperationType:          <%~ JSON.stringify(a.asyncOperationType) %>,
+			AsyncOperationName:          <%~ JSON.stringify(a.asyncOperationName) %>,
+			AsyncOperationVersion:       <%~ JSON.stringify(a.asyncOperationVersion) %>,
+			AsyncOperationLanguage:      <%~ JSON.stringify(a.asyncOperationLanguage) %>,
 			Handler:          <%~ a.alias %>.<%~ a.exportedName %>,
 		},
 <% } -%>

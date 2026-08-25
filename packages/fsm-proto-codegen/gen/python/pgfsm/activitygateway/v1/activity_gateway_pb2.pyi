@@ -7,28 +7,28 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class InvokeRequest(_message.Message):
-    __slots__ = ("parent_fsm_name", "parent_fsm_version", "fsm_type", "fsm_name", "fsm_version", "fsm_language", "input_json", "instance_id", "correlation_id", "timeout_ms")
+    __slots__ = ("parent_fsm_name", "parent_fsm_version", "async_operation_type", "async_operation_name", "async_operation_version", "async_operation_language", "input_json", "instance_id", "correlation_id", "timeout_ms")
     PARENT_FSM_NAME_FIELD_NUMBER: _ClassVar[int]
     PARENT_FSM_VERSION_FIELD_NUMBER: _ClassVar[int]
-    FSM_TYPE_FIELD_NUMBER: _ClassVar[int]
-    FSM_NAME_FIELD_NUMBER: _ClassVar[int]
-    FSM_VERSION_FIELD_NUMBER: _ClassVar[int]
-    FSM_LANGUAGE_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_NAME_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_VERSION_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_OPERATION_LANGUAGE_FIELD_NUMBER: _ClassVar[int]
     INPUT_JSON_FIELD_NUMBER: _ClassVar[int]
     INSTANCE_ID_FIELD_NUMBER: _ClassVar[int]
     CORRELATION_ID_FIELD_NUMBER: _ClassVar[int]
     TIMEOUT_MS_FIELD_NUMBER: _ClassVar[int]
     parent_fsm_name: str
     parent_fsm_version: str
-    fsm_type: str
-    fsm_name: str
-    fsm_version: str
-    fsm_language: str
+    async_operation_type: str
+    async_operation_name: str
+    async_operation_version: str
+    async_operation_language: str
     input_json: str
     instance_id: str
     correlation_id: str
     timeout_ms: int
-    def __init__(self, parent_fsm_name: _Optional[str] = ..., parent_fsm_version: _Optional[str] = ..., fsm_type: _Optional[str] = ..., fsm_name: _Optional[str] = ..., fsm_version: _Optional[str] = ..., fsm_language: _Optional[str] = ..., input_json: _Optional[str] = ..., instance_id: _Optional[str] = ..., correlation_id: _Optional[str] = ..., timeout_ms: _Optional[int] = ...) -> None: ...
+    def __init__(self, parent_fsm_name: _Optional[str] = ..., parent_fsm_version: _Optional[str] = ..., async_operation_type: _Optional[str] = ..., async_operation_name: _Optional[str] = ..., async_operation_version: _Optional[str] = ..., async_operation_language: _Optional[str] = ..., input_json: _Optional[str] = ..., instance_id: _Optional[str] = ..., correlation_id: _Optional[str] = ..., timeout_ms: _Optional[int] = ...) -> None: ...
 
 class InvokeResponse(_message.Message):
     __slots__ = ("ok", "output_json", "error_code", "error_message", "retriable")

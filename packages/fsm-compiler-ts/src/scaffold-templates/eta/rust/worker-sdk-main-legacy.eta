@@ -116,10 +116,10 @@ fn registrations_from_generated() -> Vec<ActorRegistration> {
             meta: RegisteredActor {
                 parent_fsm_name: reg.parent_fsm_name.to_string(),
                 parent_fsm_version: reg.parent_fsm_version.to_string(),
-                fsm_type: reg.fsm_type.to_string(),
-                fsm_name: reg.fsm_name.to_string(),
-                fsm_version: reg.fsm_version.to_string(),
-                fsm_language: reg.fsm_language.to_string(),
+                async_operation_type: reg.async_operation_type.to_string(),
+                async_operation_name: reg.async_operation_name.to_string(),
+                async_operation_version: reg.async_operation_version.to_string(),
+                async_operation_language: reg.async_operation_language.to_string(),
             },
             handler: Box::new(reg.handler) as ActorHandler,
         })
@@ -134,7 +134,7 @@ fn main() {
     for reg in &registrations {
         println!(
             "  + {}@{} (parent {}@{})",
-            reg.meta.fsm_name, reg.meta.fsm_version, reg.meta.parent_fsm_name, reg.meta.parent_fsm_version
+            reg.meta.async_operation_name, reg.meta.async_operation_version, reg.meta.parent_fsm_name, reg.meta.parent_fsm_version
         );
     }
 

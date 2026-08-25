@@ -778,10 +778,10 @@ export type Database = {
       };
       compute_promise_queue_name_v2: {
         Args: {
-          input_fsm_language: string;
-          input_fsm_name: string;
-          input_fsm_type: string;
-          input_fsm_version: string;
+          input_async_operation_language: string;
+          input_async_operation_name: string;
+          input_async_operation_type: string;
+          input_async_operation_version: string;
           input_parent_fsm_name: string;
           input_parent_fsm_version: string;
         };
@@ -861,10 +861,10 @@ export type Database = {
       };
       ensure_promise_queue_for_worker_v2: {
         Args: {
-          input_fsm_language: string;
-          input_fsm_name: string;
-          input_fsm_type: string;
-          input_fsm_version: string;
+          input_async_operation_language: string;
+          input_async_operation_name: string;
+          input_async_operation_type: string;
+          input_async_operation_version: string;
           input_parent_fsm_name: string;
           input_parent_fsm_version: string;
         };
@@ -1414,11 +1414,14 @@ export type Database = {
       };
     };
     Enums: {
+      async_operation_language: "typescript" | "python" | "rust" | "go" | "llm";
+      async_operation_type:
+        | "internalAsyncOperation"
+        | "sharedAsyncOperation"
+        | "fsm";
       fsm_history_type: "shallow" | "deep";
-      fsm_language: "typescript" | "python" | "rust" | "go" | "llm";
       fsm_root_type: "compound" | "parallel";
       fsm_state_type: "atomic" | "compound" | "parallel" | "final" | "history";
-      fsm_type: "internalAsyncOperation" | "sharedAsyncOperation" | "fsm";
     };
     CompositeTypes: {
       ancestor_states_result_v1: {
@@ -1814,11 +1817,15 @@ export type CompositeTypes<
 export const Constants = {
   fsm_core: {
     Enums: {
+      async_operation_language: ["typescript", "python", "rust", "go", "llm"],
+      async_operation_type: [
+        "internalAsyncOperation",
+        "sharedAsyncOperation",
+        "fsm",
+      ],
       fsm_history_type: ["shallow", "deep"],
-      fsm_language: ["typescript", "python", "rust", "go", "llm"],
       fsm_root_type: ["compound", "parallel"],
       fsm_state_type: ["atomic", "compound", "parallel", "final", "history"],
-      fsm_type: ["internalAsyncOperation", "sharedAsyncOperation", "fsm"],
     },
   },
   pgmq: {

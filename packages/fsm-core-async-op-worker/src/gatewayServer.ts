@@ -47,10 +47,10 @@ interface RawActivityGatewayServiceImpl {
   invoke(request: {
     parentFsmName: string;
     parentFsmVersion: string;
-    fsmType: string;
-    fsmName: string;
-    fsmVersion: string;
-    fsmLanguage: string;
+    asyncOperationType: string;
+    asyncOperationName: string;
+    asyncOperationVersion: string;
+    asyncOperationLanguage: string;
     inputJson: string;
     instanceId: string;
     correlationId: string;
@@ -91,7 +91,7 @@ export interface GatewayServerOptions {
    * When set, ensures a PGMQ queue exists (fsm_core.ensure_promise_queue_for_worker,
    * idempotent) for every actor a worker registers — fire-and-forget, doesn't
    * block or fail registration itself. Queue name is the actor's full
-   * identity joined with '_': parentFsmName_parentFsmVersion_fsmType_fsmName_fsmVersion_fsmLanguage.
+   * identity joined with '_': parentFsmName_parentFsmVersion_asyncOperationType_asyncOperationName_asyncOperationVersion_asyncOperationLanguage.
    */
   ensureQueueOnRegister?: {
     deps: DBDeps;
@@ -161,10 +161,10 @@ export async function startActivityGatewayServer(
       const key = actorKey(
         actor.parentFsmName,
         actor.parentFsmVersion,
-        actor.fsmType,
-        actor.fsmName,
-        actor.fsmVersion,
-        actor.fsmLanguage,
+        actor.asyncOperationType,
+        actor.asyncOperationName,
+        actor.asyncOperationVersion,
+        actor.asyncOperationLanguage,
       );
       ensurePromiseQueueForWorker(ensureQueueDeps, actor).then((result) => {
         logger.info(
@@ -209,10 +209,10 @@ export async function startActivityGatewayServer(
           {
             parentFsmName: req.parentFsmName,
             parentFsmVersion: req.parentFsmVersion,
-            fsmType: req.fsmType,
-            fsmName: req.fsmName,
-            fsmVersion: req.fsmVersion,
-            fsmLanguage: req.fsmLanguage,
+            asyncOperationType: req.asyncOperationType,
+            asyncOperationName: req.asyncOperationName,
+            asyncOperationVersion: req.asyncOperationVersion,
+            asyncOperationLanguage: req.asyncOperationLanguage,
             input: parseInput(req.inputJson ?? ""),
             instanceId: req.instanceId,
             correlationId: req.correlationId,

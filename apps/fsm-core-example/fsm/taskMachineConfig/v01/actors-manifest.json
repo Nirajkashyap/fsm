@@ -2,13 +2,13 @@
   "actors": [
     {
       "src": "fetchTasks",
-      "fsmLanguage": "typescript",
+      "asyncOperationLanguage": "typescript",
       "filePath": "typescript/actors/fetchTasks/fetchTasks.ts",
       "exportedName": "fetchTasks"
     },
     {
       "src": "updateTask",
-      "fsmLanguage": "typescript",
+      "asyncOperationLanguage": "typescript",
       "filePath": "typescript/actors/updateTask/updateTask.ts",
       "exportedName": "updateTask"
     }

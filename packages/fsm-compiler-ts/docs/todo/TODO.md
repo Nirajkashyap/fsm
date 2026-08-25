@@ -18,12 +18,12 @@ live in `src/scaffold-templates/`.
 
 - [x] **Adopt schema v3.** Imports `fsm.machine.schema.v3.json` in
       `src/generate-fsm-json.ts` and `src/validate-sync-operation-logic.ts`.
-- [x] **Wire `fsmLanguage` on invoke objects.** Backfilled (default
+- [x] **Wire `asyncOperationLanguage` on invoke objects.** Backfilled (default
       `typescript`) and parsed onto `ActorReference`.
 - [x] **Language-keyed scaffolding.** Actors are generated per invoke object's
-      `fsmLanguage` (`generate-async-logic`); actions/guards/delays are
-      generated in the `--lang` language(s) (`generate-sync-logic`). Supported
-      languages: `typescript`, `python`, `rust`, `go`.
+      `asyncOperationLanguage` (`generate-async-logic`); actions/guards/delays
+      are generated in the `--lang` language(s) (`generate-sync-logic`).
+      Supported languages: `typescript`, `python`, `rust`, `go`.
 - [ ] **Native schema-validate command (optional).** The "from scratch" flow
       relies on external `ajv-cli` to validate a hand-authored `fsm.json`. A
       first-class `-c validate-schema` command (schema-only, no plugin exports,
@@ -37,9 +37,11 @@ live in `src/scaffold-templates/`.
       `packages/fsm-async-worker-ts/src/asyncOperationWorkerlet/fsmpromiseworker-helper.ts`).
       Emit an async, single-`input` stub returning `Promise`.
 - [ ] **Distinguish internal vs external actors.** `extractFsmPluginRefs`
-      carries `{ src, fsmType?, fsmVersion?, fsmLanguage? }` but no ownership
-      signal, so a local stub is emitted for every `src`. External actors (owned
-      by another fleet) should be referenced, not stubbed locally.
+      carries
+      `{ src, asyncOperationType?, asyncOperationVersion?, asyncOperationLanguage? }`
+      but no ownership signal, so a local stub is emitted for every `src`.
+      External actors (owned by another fleet) should be referenced, not stubbed
+      locally.
 - [ ] **Idempotent regeneration.** `writeActorFile` (actors) and
       `writeOperationModule` (actions/guards/delays) in
       `src/operation-logic-scaffold.ts` overwrite their targets with
@@ -47,16 +49,17 @@ live in `src/scaffold-templates/`.
       already exist (or merge) rather than overwriting. (Applies to PRD-003.)
 - [x] **Language-keyed actor scaffolding.** `generate-async-logic` writes one
       file per invoke at `<lang>/actors/<src>/<src>.<ext>` (a subfolder named
-      after the actor `src`), routed by `fsmLanguage`.
+      after the actor `src`), routed by `asyncOperationLanguage`.
 - [ ] **Dedup key regressed to `lang/src` only.**
       `generateAsyncOperationLogicFromFolders` dedupes by
       `${lang}/${actorFileBaseName(actor)}` (src only) — two invokes sharing a
-      `src` but differing in `fsmType`/`fsmVersion` collapse into the same file,
-      a collision that was previously fixed by deduping on the full
-      `<fsmType>_<fsmVersion>_<src>` key. That fix was lost when the file layout
-      moved to per-`src` subfolders. Either accept one file per `src` per
-      language as the intended contract, or restore a type/version-aware key
-      (and folder layout) if collisions are actually possible in practice.
+      `src` but differing in `asyncOperationType`/`asyncOperationVersion`
+      collapse into the same file, a collision that was previously fixed by
+      deduping on the full `<asyncOperationType>_<asyncOperationVersion>_<src>`
+      key. That fix was lost when the file layout moved to per-`src` subfolders.
+      Either accept one file per `src` per language as the intended contract, or
+      restore a type/version-aware key (and folder layout) if collisions are
+      actually possible in practice.
 
 ## Scaffold sync operation logic (PRD-003)
 
@@ -95,10 +98,10 @@ Validation lives in `src/validate-async-operation-logic-v2.ts`
 - [x] **Language filter (`--lang`).** `validateAsyncOperationFromFoldersV2`
       accepts `runtimeLanguages: OperationLang[] = []` (empty = all); wired to
       `--lang` in the CLI for `validate-async-operation`.
-- [x] **Validate per-`fsmLanguage` actors, not just `sharedAsyncOperation`.**
-      `validateAsyncOperationFromFoldersV2` walks every requested language
-      folder's `actors/` directory directly (not scoped to
-      `sharedAsyncOperation` dependency exports).
+- [x] **Validate per-`asyncOperationLanguage` actors, not just
+      `sharedAsyncOperation`.** `validateAsyncOperationFromFoldersV2` walks
+      every requested language folder's `actors/` directory directly (not scoped
+      to `sharedAsyncOperation` dependency exports).
 - [ ] **Arity/shape validation** (shared with PRD-002). Validation checks that
       the export is a `function` but not its arity, so actor stubs with the
       wrong `(input) => Promise` signature still pass.

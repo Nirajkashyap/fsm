@@ -24,10 +24,10 @@ the original 8 steps) are listed at the end of §3.
    {
      parentFsmName: "creditCheck",
      parentFsmVersion: "v01",
-     fsmType: "internalAsyncOperation",
-     fsmName: "checkReportsTable",
-     fsmVersion: "v01",
-     fsmLanguage: "typescript",
+     asyncOperationType: "internalAsyncOperation",
+     asyncOperationName: "checkReportsTable",
+     asyncOperationVersion: "v01",
+     asyncOperationLanguage: "typescript",
      handler: checkReportsTable,
    }
    ```
@@ -41,10 +41,10 @@ the original 8 steps) are listed at the end of §3.
      {
        parentFsmName: "creditCheck",
        parentFsmVersion: "v01",
-       fsmType: "internalAsyncOperation",
-       fsmName: "checkReportsTable",
-       fsmVersion: "v01",
-       fsmLanguage: "typescript",
+       asyncOperationType: "internalAsyncOperation",
+       asyncOperationName: "checkReportsTable",
+       asyncOperationVersion: "v01",
+       asyncOperationLanguage: "typescript",
      },
      // ...
    ];
@@ -73,7 +73,7 @@ symbols):
 
 | File                                        | Export                                           | What it does                                                                                                                                                                                                                                                        |
 | ------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sidecar/protocol.ts`                       | `actorKey()`                                     | Builds the `parentFsmName@...@fsmLanguage` routing key from an identity tuple.                                                                                                                                                                                      |
+| `sidecar/protocol.ts`                       | `actorKey()`                                     | Builds the `parentFsmName@...@asyncOperationLanguage` routing key from an identity tuple.                                                                                                                                                                           |
 | `sidecar/protocol.ts`                       | `makeEnvelope()`                                 | Wraps a body in the `WireEnvelope` (`v`, `id`, `type`, `ts_unix_ms`, `source`, `target`, `body`).                                                                                                                                                                   |
 | `sidecar/protocol.ts`                       | `writeFrame()` / `readFrame()`                   | Length-prefixed JSON framing over the raw socket.                                                                                                                                                                                                                   |
 | `sidecar/gateway.ts`                        | `class SidecarGateway`                           | Owns the worker-facing Unix socket.                                                                                                                                                                                                                                 |
@@ -157,13 +157,13 @@ helpers, callable from anywhere):
   the actor invoke itself succeeded — caught via a real end-to-end run, not just
   unit coverage.
 - **PGMQ's 48-character queue name limit** isn't fully solved. The
-  `fsm_type = "internalAsyncOperation"` shortening (drop `fsm_version`,
-  first-char `fsm_language`) fits typical identities, but the
-  non-`"internalAsyncOperation"` path (`sharedAsyncOperation` etc.) still
-  carries the full identity and remains exposed; very long
-  `parentFsmName`/`fsmName` values can exceed it either way. The queue-ensure
-  and claim-read calls both just throw/skip in that case today — no
-  truncation/hashing fallback.
+  `async_operation_type = "internalAsyncOperation"` shortening (drop
+  `async_operation_version`, first-char `async_operation_language`) fits typical
+  identities, but the non-`"internalAsyncOperation"` path
+  (`sharedAsyncOperation` etc.) still carries the full identity and remains
+  exposed; very long `parentFsmName`/`asyncOperationName` values can exceed it
+  either way. The queue-ensure and claim-read calls both just throw/skip in that
+  case today — no truncation/hashing fallback.
 - **No automated test coverage.** Everything in §3 above was verified manually
   this session (real local DB, real Unix socket connections, real enqueued PGMQ
   messages) — there's no `deno test` suite covering `asyncOpPollLoop.ts`, the

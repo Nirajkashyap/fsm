@@ -45,10 +45,19 @@ Deno.test("createAsyncOperationLogic - writes a generated-registry.ts entry with
       'parentFsmName: "sharedAsyncOperation",',
     );
     assertStringIncludes(registryContent, 'parentFsmVersion: "v01",');
-    assertStringIncludes(registryContent, 'fsmType: "sharedAsyncOperation",');
-    assertStringIncludes(registryContent, 'fsmName: "checkCreditScore",');
-    assertStringIncludes(registryContent, 'fsmVersion: "v01",');
-    assertStringIncludes(registryContent, 'fsmLanguage: "typescript",');
+    assertStringIncludes(
+      registryContent,
+      'asyncOperationType: "sharedAsyncOperation",',
+    );
+    assertStringIncludes(
+      registryContent,
+      'asyncOperationName: "checkCreditScore",',
+    );
+    assertStringIncludes(registryContent, 'asyncOperationVersion: "v01",');
+    assertStringIncludes(
+      registryContent,
+      'asyncOperationLanguage: "typescript",',
+    );
     assertStringIncludes(registryContent, "handler: checkCreditScore,");
   } finally {
     await Deno.remove(dir, { recursive: true });

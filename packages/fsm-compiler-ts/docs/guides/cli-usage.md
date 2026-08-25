@@ -81,8 +81,8 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
 Scaffold **actor** stubs (from each state's `invoke` objects) — one file per
 invoke at `<lang>/actors/<src>/<src>.<ext>` (a subfolder named after the actor
 `src`), each exporting a function named after the actor `src`. Each actor is
-generated in the language declared by its invoke object's `fsmLanguage` (default
-`typescript`).
+generated in the language declared by its invoke object's
+`asyncOperationLanguage` (default `typescript`).
 
 Useful for bootstrapping a new FSM — run `generate` first, then
 `generate-async-logic`.
@@ -128,10 +128,11 @@ For `typescript`/`python`/`rust`, also rewrites that language's
 `<version>/<lang>/actors/` (this run's actor included) — so repeated
 `create-async-logic` calls accumulate registry entries instead of each one
 clobbering the last. Every entry's identity is fixed: `parentFsmName` and
-`fsmType` are always `"sharedAsyncOp"` (these actors have no owning FSM),
-`fsmName` is the actor name, and `parentFsmVersion`/`fsmVersion` are both
-`--version`. Go has no per-version registry — each Go actor is already its own
-Go module (see its own `go.mod`), so only the actor file is written for `go`.
+`asyncOperationType` are always `"sharedAsyncOp"` (these actors have no owning
+FSM), `asyncOperationName` is the actor name, and
+`parentFsmVersion`/`asyncOperationVersion` are both `--version`. Go has no
+per-version registry — each Go actor is already its own Go module (see its own
+`go.mod`), so only the actor file is written for `go`.
 
 ```bash
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
@@ -196,8 +197,8 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
 ### `validate-async-operation`
 
 Validate that every actor module exports its named function, routed by
-`fsmLanguage`. Each language is checked by calling its runtime — no database
-connection required.
+`asyncOperationLanguage`. Each language is checked by calling its runtime — no
+database connection required.
 
 | Language     | Runtime called                               |
 | ------------ | -------------------------------------------- |

@@ -12,7 +12,7 @@ const logger = getLogger(["@pgfsm/compiler", "sync-logic"]);
  * Scaffolds sync operation logic (actions / guards / delays) for every versioned
  * FSM under `folderPath`, in each of the requested `langs`.
  *
- * Unlike actors (which are routed by each invoke object's `fsmLanguage`), sync
+ * Unlike actors (which are routed by each invoke object's `asyncOperationLanguage`), sync
  * logic is generated in whatever language(s) the caller asks for — a machine's
  * actions/guards/delays can be implemented in `typescript`, `python`, `rust`, or
  * `go`.

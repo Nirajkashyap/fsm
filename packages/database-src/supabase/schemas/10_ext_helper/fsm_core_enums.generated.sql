@@ -8,11 +8,11 @@
 --   $defs.actionObject's if/then conditional enum — not a real field
 --     constraint, actionObject.type is free text
 
--- from $.$defs.invokeObject.properties.fsmType
-CREATE TYPE fsm_core.fsm_type AS ENUM ('internalAsyncOperation', 'sharedAsyncOperation', 'fsm');
+-- from $.$defs.invokeObject.properties.asyncOperationType
+CREATE TYPE fsm_core.async_operation_type AS ENUM ('internalAsyncOperation', 'sharedAsyncOperation', 'fsm');
 
--- from $.$defs.invokeObject.properties.fsmLanguage
-CREATE TYPE fsm_core.fsm_language AS ENUM ('typescript', 'python', 'rust', 'go', 'llm');
+-- from $.$defs.invokeObject.properties.asyncOperationLanguage
+CREATE TYPE fsm_core.async_operation_language AS ENUM ('typescript', 'python', 'rust', 'go', 'llm');
 
 -- from $.$defs.historyStateNode.allOf.1.properties.history
 CREATE TYPE fsm_core.fsm_history_type AS ENUM ('shallow', 'deep');

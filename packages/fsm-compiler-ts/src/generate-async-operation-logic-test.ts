@@ -8,7 +8,7 @@ dotenv.config({ path: "./../../.env" });
 
   const skipFSMDirs = ["carVitals", "taskMachineConfig", "vitalsWorkflow"];
 
-  // Async operation logic (actors) — routed by each invoke's fsmLanguage.
+  // Async operation logic (actors) — routed by each invoke's asyncOperationLanguage.
   await generateAsyncOperationLogicFromFolders(
     fsmfolderPath,
     skipFSMDirs,

@@ -302,24 +302,30 @@
         "src": {
           "type": "string"
         },
-        "fsmType": {
+        "asyncOperationType": {
           "type": "string",
           "default": "internalAsyncOperation",
           "enum": ["internalAsyncOperation", "sharedAsyncOperation", "fsm"],
           "description": "The type of the invoked service. internalAsyncOperation for a new async operation, sharedAsyncOperation for an existing async operation but shared with other FSMs, and fsm for another finite state machine."
         },
-        "fsmVersion": {
+        "asyncOperationVersion": {
           "type": "string",
           "description": "The version of the FSM being invoked."
         },
-        "fsmLanguage": {
+        "asyncOperationLanguage": {
           "type": "string",
           "default": "typescript",
           "enum": ["typescript", "python", "rust", "go", "llm"],
           "description": "Language runtime that executes the invoked service. Defaults to typescript. Aligns with the actor folder convention (typescript/, python/, rust/, go/, llm/)."
         }
       },
-      "required": ["type", "id", "src", "fsmType", "fsmVersion"],
+      "required": [
+        "type",
+        "id",
+        "src",
+        "asyncOperationType",
+        "asyncOperationVersion"
+      ],
       "additionalProperties": false
     },
     "invokeArray": {

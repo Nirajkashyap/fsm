@@ -24,21 +24,21 @@ const (
 // One actor entrypoint a worker process serves. Mirrors
 // ActorPluginValidationResult's identity fields (see @pgfsm/compiler's
 // util.ts) — actorKey() in the current sidecar/protocol.ts is what the
-// gateway routes on. fsm_language is part of the identity (not just a
-// display field) because the other five fields alone aren't guaranteed
-// unique across languages.
+// gateway routes on. async_operation_language is part of the identity (not
+// just a display field) because the other five fields alone aren't
+// guaranteed unique across languages.
 type RegisteredActor struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	ParentFsmName    string                 `protobuf:"bytes,1,opt,name=parent_fsm_name,json=parentFsmName,proto3" json:"parent_fsm_name,omitempty"`
-	ParentFsmVersion string                 `protobuf:"bytes,2,opt,name=parent_fsm_version,json=parentFsmVersion,proto3" json:"parent_fsm_version,omitempty"`
-	FsmType          string                 `protobuf:"bytes,3,opt,name=fsm_type,json=fsmType,proto3" json:"fsm_type,omitempty"`
-	FsmName          string                 `protobuf:"bytes,4,opt,name=fsm_name,json=fsmName,proto3" json:"fsm_name,omitempty"`
-	FsmVersion       string                 `protobuf:"bytes,5,opt,name=fsm_version,json=fsmVersion,proto3" json:"fsm_version,omitempty"`
-	FsmLanguage      string                 `protobuf:"bytes,6,opt,name=fsm_language,json=fsmLanguage,proto3" json:"fsm_language,omitempty"`
-	TimeoutMs        uint32                 `protobuf:"varint,7,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
-	Description      string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	ParentFsmName          string                 `protobuf:"bytes,1,opt,name=parent_fsm_name,json=parentFsmName,proto3" json:"parent_fsm_name,omitempty"`
+	ParentFsmVersion       string                 `protobuf:"bytes,2,opt,name=parent_fsm_version,json=parentFsmVersion,proto3" json:"parent_fsm_version,omitempty"`
+	AsyncOperationType     string                 `protobuf:"bytes,3,opt,name=async_operation_type,json=asyncOperationType,proto3" json:"async_operation_type,omitempty"`
+	AsyncOperationName     string                 `protobuf:"bytes,4,opt,name=async_operation_name,json=asyncOperationName,proto3" json:"async_operation_name,omitempty"`
+	AsyncOperationVersion  string                 `protobuf:"bytes,5,opt,name=async_operation_version,json=asyncOperationVersion,proto3" json:"async_operation_version,omitempty"`
+	AsyncOperationLanguage string                 `protobuf:"bytes,6,opt,name=async_operation_language,json=asyncOperationLanguage,proto3" json:"async_operation_language,omitempty"`
+	TimeoutMs              uint32                 `protobuf:"varint,7,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
+	Description            string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *RegisteredActor) Reset() {
@@ -85,30 +85,30 @@ func (x *RegisteredActor) GetParentFsmVersion() string {
 	return ""
 }
 
-func (x *RegisteredActor) GetFsmType() string {
+func (x *RegisteredActor) GetAsyncOperationType() string {
 	if x != nil {
-		return x.FsmType
+		return x.AsyncOperationType
 	}
 	return ""
 }
 
-func (x *RegisteredActor) GetFsmName() string {
+func (x *RegisteredActor) GetAsyncOperationName() string {
 	if x != nil {
-		return x.FsmName
+		return x.AsyncOperationName
 	}
 	return ""
 }
 
-func (x *RegisteredActor) GetFsmVersion() string {
+func (x *RegisteredActor) GetAsyncOperationVersion() string {
 	if x != nil {
-		return x.FsmVersion
+		return x.AsyncOperationVersion
 	}
 	return ""
 }
 
-func (x *RegisteredActor) GetFsmLanguage() string {
+func (x *RegisteredActor) GetAsyncOperationLanguage() string {
 	if x != nil {
-		return x.FsmLanguage
+		return x.AsyncOperationLanguage
 	}
 	return ""
 }
@@ -201,7 +201,7 @@ type RegisterAck struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Accepted               bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
 	GatewayProtocolVersion string                 `protobuf:"bytes,2,opt,name=gateway_protocol_version,json=gatewayProtocolVersion,proto3" json:"gateway_protocol_version,omitempty"`
-	// "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
+	// "parentFsmName@parentFsmVersion@asyncOperationType@asyncOperationName@asyncOperationVersion@asyncOperationLanguage"
 	// keys, mirroring sidecar/protocol.ts's actorKey().
 	RegisteredActors []string `protobuf:"bytes,3,rep,name=registered_actors,json=registeredActors,proto3" json:"registered_actors,omitempty"`
 	RejectedActors   []string `protobuf:"bytes,4,rep,name=rejected_actors,json=rejectedActors,proto3" json:"rejected_actors,omitempty"`
@@ -314,14 +314,14 @@ func (x *Heartbeat) GetWorkerId() string {
 
 // Pushed by the gateway, unsolicited, once per activity invocation.
 type Invoke struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	InvokeId         string                 `protobuf:"bytes,1,opt,name=invoke_id,json=invokeId,proto3" json:"invoke_id,omitempty"`
-	ParentFsmName    string                 `protobuf:"bytes,2,opt,name=parent_fsm_name,json=parentFsmName,proto3" json:"parent_fsm_name,omitempty"`
-	ParentFsmVersion string                 `protobuf:"bytes,3,opt,name=parent_fsm_version,json=parentFsmVersion,proto3" json:"parent_fsm_version,omitempty"`
-	FsmType          string                 `protobuf:"bytes,4,opt,name=fsm_type,json=fsmType,proto3" json:"fsm_type,omitempty"`
-	FsmName          string                 `protobuf:"bytes,5,opt,name=fsm_name,json=fsmName,proto3" json:"fsm_name,omitempty"`
-	FsmVersion       string                 `protobuf:"bytes,6,opt,name=fsm_version,json=fsmVersion,proto3" json:"fsm_version,omitempty"`
-	FsmLanguage      string                 `protobuf:"bytes,7,opt,name=fsm_language,json=fsmLanguage,proto3" json:"fsm_language,omitempty"`
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	InvokeId               string                 `protobuf:"bytes,1,opt,name=invoke_id,json=invokeId,proto3" json:"invoke_id,omitempty"`
+	ParentFsmName          string                 `protobuf:"bytes,2,opt,name=parent_fsm_name,json=parentFsmName,proto3" json:"parent_fsm_name,omitempty"`
+	ParentFsmVersion       string                 `protobuf:"bytes,3,opt,name=parent_fsm_version,json=parentFsmVersion,proto3" json:"parent_fsm_version,omitempty"`
+	AsyncOperationType     string                 `protobuf:"bytes,4,opt,name=async_operation_type,json=asyncOperationType,proto3" json:"async_operation_type,omitempty"`
+	AsyncOperationName     string                 `protobuf:"bytes,5,opt,name=async_operation_name,json=asyncOperationName,proto3" json:"async_operation_name,omitempty"`
+	AsyncOperationVersion  string                 `protobuf:"bytes,6,opt,name=async_operation_version,json=asyncOperationVersion,proto3" json:"async_operation_version,omitempty"`
+	AsyncOperationLanguage string                 `protobuf:"bytes,7,opt,name=async_operation_language,json=asyncOperationLanguage,proto3" json:"async_operation_language,omitempty"`
 	// JSON-encoded activity input — kept as an opaque string (not a typed
 	// message) the same way activity_gateway.proto's InvokeRequest.input_json
 	// is, since the actual shape is user-defined per actor.
@@ -385,30 +385,30 @@ func (x *Invoke) GetParentFsmVersion() string {
 	return ""
 }
 
-func (x *Invoke) GetFsmType() string {
+func (x *Invoke) GetAsyncOperationType() string {
 	if x != nil {
-		return x.FsmType
+		return x.AsyncOperationType
 	}
 	return ""
 }
 
-func (x *Invoke) GetFsmName() string {
+func (x *Invoke) GetAsyncOperationName() string {
 	if x != nil {
-		return x.FsmName
+		return x.AsyncOperationName
 	}
 	return ""
 }
 
-func (x *Invoke) GetFsmVersion() string {
+func (x *Invoke) GetAsyncOperationVersion() string {
 	if x != nil {
-		return x.FsmVersion
+		return x.AsyncOperationVersion
 	}
 	return ""
 }
 
-func (x *Invoke) GetFsmLanguage() string {
+func (x *Invoke) GetAsyncOperationLanguage() string {
 	if x != nil {
-		return x.FsmLanguage
+		return x.AsyncOperationLanguage
 	}
 	return ""
 }
@@ -957,15 +957,14 @@ var File_pgfsm_sidecargateway_v1_sidecar_gateway_proto protoreflect.FileDescript
 
 const file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_rawDesc = "" +
 	"\n" +
-	"-pgfsm/sidecargateway/v1/sidecar_gateway.proto\x12\x17pgfsm.sidecargateway.v1\"\xa2\x02\n" +
+	"-pgfsm/sidecargateway/v1/sidecar_gateway.proto\x12\x17pgfsm.sidecargateway.v1\"\xfe\x02\n" +
 	"\x0fRegisteredActor\x12&\n" +
 	"\x0fparent_fsm_name\x18\x01 \x01(\tR\rparentFsmName\x12,\n" +
-	"\x12parent_fsm_version\x18\x02 \x01(\tR\x10parentFsmVersion\x12\x19\n" +
-	"\bfsm_type\x18\x03 \x01(\tR\afsmType\x12\x19\n" +
-	"\bfsm_name\x18\x04 \x01(\tR\afsmName\x12\x1f\n" +
-	"\vfsm_version\x18\x05 \x01(\tR\n" +
-	"fsmVersion\x12!\n" +
-	"\ffsm_language\x18\x06 \x01(\tR\vfsmLanguage\x12\x1d\n" +
+	"\x12parent_fsm_version\x18\x02 \x01(\tR\x10parentFsmVersion\x120\n" +
+	"\x14async_operation_type\x18\x03 \x01(\tR\x12asyncOperationType\x120\n" +
+	"\x14async_operation_name\x18\x04 \x01(\tR\x12asyncOperationName\x126\n" +
+	"\x17async_operation_version\x18\x05 \x01(\tR\x15asyncOperationVersion\x128\n" +
+	"\x18async_operation_language\x18\x06 \x01(\tR\x16asyncOperationLanguage\x12\x1d\n" +
 	"\n" +
 	"timeout_ms\x18\a \x01(\rR\ttimeoutMs\x12 \n" +
 	"\vdescription\x18\b \x01(\tR\vdescription\"\xb0\x01\n" +
@@ -980,16 +979,15 @@ const file_pgfsm_sidecargateway_v1_sidecar_gateway_proto_rawDesc = "" +
 	"\x11registered_actors\x18\x03 \x03(\tR\x10registeredActors\x12'\n" +
 	"\x0frejected_actors\x18\x04 \x03(\tR\x0erejectedActors\"(\n" +
 	"\tHeartbeat\x12\x1b\n" +
-	"\tworker_id\x18\x01 \x01(\tR\bworkerId\"\xa5\x03\n" +
+	"\tworker_id\x18\x01 \x01(\tR\bworkerId\"\x81\x04\n" +
 	"\x06Invoke\x12\x1b\n" +
 	"\tinvoke_id\x18\x01 \x01(\tR\binvokeId\x12&\n" +
 	"\x0fparent_fsm_name\x18\x02 \x01(\tR\rparentFsmName\x12,\n" +
-	"\x12parent_fsm_version\x18\x03 \x01(\tR\x10parentFsmVersion\x12\x19\n" +
-	"\bfsm_type\x18\x04 \x01(\tR\afsmType\x12\x19\n" +
-	"\bfsm_name\x18\x05 \x01(\tR\afsmName\x12\x1f\n" +
-	"\vfsm_version\x18\x06 \x01(\tR\n" +
-	"fsmVersion\x12!\n" +
-	"\ffsm_language\x18\a \x01(\tR\vfsmLanguage\x12\x1d\n" +
+	"\x12parent_fsm_version\x18\x03 \x01(\tR\x10parentFsmVersion\x120\n" +
+	"\x14async_operation_type\x18\x04 \x01(\tR\x12asyncOperationType\x120\n" +
+	"\x14async_operation_name\x18\x05 \x01(\tR\x12asyncOperationName\x126\n" +
+	"\x17async_operation_version\x18\x06 \x01(\tR\x15asyncOperationVersion\x128\n" +
+	"\x18async_operation_language\x18\a \x01(\tR\x16asyncOperationLanguage\x12\x1d\n" +
 	"\n" +
 	"input_json\x18\b \x01(\tR\tinputJson\x12\x1f\n" +
 	"\vinstance_id\x18\t \x01(\tR\n" +

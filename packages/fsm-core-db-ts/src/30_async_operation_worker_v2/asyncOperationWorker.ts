@@ -23,10 +23,10 @@ const COMPUTE_PROMISE_QUEUE_NAME_FN =
 export interface PromiseWorkerIdentity {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
 }
 
 /**
@@ -50,10 +50,10 @@ export async function claimPendingPromiseEventsForWorkers(
         workers.map((w) => ({
           parent_fsm_name: w.parentFsmName,
           parent_fsm_version: w.parentFsmVersion,
-          fsm_type: w.fsmType,
-          fsm_name: w.fsmName,
-          fsm_version: w.fsmVersion,
-          fsm_language: w.fsmLanguage,
+          async_operation_type: w.asyncOperationType,
+          async_operation_name: w.asyncOperationName,
+          async_operation_version: w.asyncOperationVersion,
+          async_operation_language: w.asyncOperationLanguage,
         })),
       ),
     ];
@@ -80,28 +80,29 @@ export interface EnsurePromiseQueueForWorkerResult {
 
 /**
  * Thin wrapper around `ensure_promise_queue_for_worker_v2()` -- ensures a
- * PGMQ queue exists for one promise-actor identity. fsmType is always
- * shortened to its first character; when fsmType is exactly
- * `"internalAsyncOperation"`, fsmVersion is dropped entirely and fsmLanguage
- * is also shortened to its first character (both to help fit PGMQ's length
- * limit -- see below):
+ * PGMQ queue exists for one promise-actor identity. asyncOperationType is
+ * always shortened to its first character; when asyncOperationType is
+ * exactly `"internalAsyncOperation"`, asyncOperationVersion is dropped
+ * entirely and asyncOperationLanguage is also shortened to its first
+ * character (both to help fit PGMQ's length limit -- see below):
  *
- * - `fsmType === "internalAsyncOperation"`:
- *   `<parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmLanguage[0]>`
+ * - `asyncOperationType === "internalAsyncOperation"`:
+ *   `<parentFsmName>_<parentFsmVersion>_<asyncOperationType[0]>_<asyncOperationName>_<asyncOperationLanguage[0]>`
  * - otherwise (e.g. `"sharedAsyncOperation"`):
- *   `<parentFsmName>_<parentFsmVersion>_<fsmType[0]>_<fsmName>_<fsmVersion>_<fsmLanguage>`
+ *   `<parentFsmName>_<parentFsmVersion>_<asyncOperationType[0]>_<asyncOperationName>_<asyncOperationVersion>_<asyncOperationLanguage>`
  *
  * Idempotent: safe to call every time a worker registers this actor, not
  * just the first time (see fsm-core-async-op-worker's
  * `ensureQueueOnRegister` option).
  *
  * PGMQ enforces a hard 48-character queue name limit (`pgmq.validate_queue_name`)
- * -- this call throws if the computed name exceeds it. The `fsmType ===
+ * -- this call throws if the computed name exceeds it. The `asyncOperationType ===
  * "internalAsyncOperation"` shortening above is enough for typical
  * identities (verified: `creditCheck_v01_i_checkReportsTable_t` = 37 chars
- * for a long real example), but long parentFsmName/fsmName values can still
- * exceed it, and the non-`"internalAsyncOperation"` path (still carrying
- * full fsmVersion + fsmLanguage) remains more exposed to this limit.
+ * for a long real example), but long parentFsmName/asyncOperationName values
+ * can still exceed it, and the non-`"internalAsyncOperation"` path (still
+ * carrying full asyncOperationVersion + asyncOperationLanguage) remains more
+ * exposed to this limit.
  */
 export async function ensurePromiseQueueForWorker(
   deps: DBDeps,
@@ -113,10 +114,10 @@ export async function ensurePromiseQueueForWorker(
     const values = [
       identity.parentFsmName,
       identity.parentFsmVersion,
-      identity.fsmType,
-      identity.fsmName,
-      identity.fsmVersion,
-      identity.fsmLanguage,
+      identity.asyncOperationType,
+      identity.asyncOperationName,
+      identity.asyncOperationVersion,
+      identity.asyncOperationLanguage,
     ];
     const res = await deps.db.query<
       { result: { queue_name: string; already_existed: boolean } }
@@ -159,10 +160,10 @@ export async function computePromiseQueueName(
     const values = [
       identity.parentFsmName,
       identity.parentFsmVersion,
-      identity.fsmType,
-      identity.fsmName,
-      identity.fsmVersion,
-      identity.fsmLanguage,
+      identity.asyncOperationType,
+      identity.asyncOperationName,
+      identity.asyncOperationVersion,
+      identity.asyncOperationLanguage,
     ];
     const res = await deps.db.query<{ queue_name: string }>(text, values);
     const queueName = res.rows?.[0]?.queue_name;

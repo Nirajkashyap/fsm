@@ -22,19 +22,19 @@ const (
 )
 
 type InvokeRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	ParentFsmName    string                 `protobuf:"bytes,1,opt,name=parent_fsm_name,json=parentFsmName,proto3" json:"parent_fsm_name,omitempty"`
-	ParentFsmVersion string                 `protobuf:"bytes,2,opt,name=parent_fsm_version,json=parentFsmVersion,proto3" json:"parent_fsm_version,omitempty"`
-	FsmType          string                 `protobuf:"bytes,3,opt,name=fsm_type,json=fsmType,proto3" json:"fsm_type,omitempty"`
-	FsmName          string                 `protobuf:"bytes,4,opt,name=fsm_name,json=fsmName,proto3" json:"fsm_name,omitempty"`
-	FsmVersion       string                 `protobuf:"bytes,5,opt,name=fsm_version,json=fsmVersion,proto3" json:"fsm_version,omitempty"`
-	FsmLanguage      string                 `protobuf:"bytes,6,opt,name=fsm_language,json=fsmLanguage,proto3" json:"fsm_language,omitempty"`
-	InputJson        string                 `protobuf:"bytes,7,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
-	InstanceId       string                 `protobuf:"bytes,8,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	CorrelationId    string                 `protobuf:"bytes,9,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
-	TimeoutMs        uint32                 `protobuf:"varint,10,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	ParentFsmName          string                 `protobuf:"bytes,1,opt,name=parent_fsm_name,json=parentFsmName,proto3" json:"parent_fsm_name,omitempty"`
+	ParentFsmVersion       string                 `protobuf:"bytes,2,opt,name=parent_fsm_version,json=parentFsmVersion,proto3" json:"parent_fsm_version,omitempty"`
+	AsyncOperationType     string                 `protobuf:"bytes,3,opt,name=async_operation_type,json=asyncOperationType,proto3" json:"async_operation_type,omitempty"`
+	AsyncOperationName     string                 `protobuf:"bytes,4,opt,name=async_operation_name,json=asyncOperationName,proto3" json:"async_operation_name,omitempty"`
+	AsyncOperationVersion  string                 `protobuf:"bytes,5,opt,name=async_operation_version,json=asyncOperationVersion,proto3" json:"async_operation_version,omitempty"`
+	AsyncOperationLanguage string                 `protobuf:"bytes,6,opt,name=async_operation_language,json=asyncOperationLanguage,proto3" json:"async_operation_language,omitempty"`
+	InputJson              string                 `protobuf:"bytes,7,opt,name=input_json,json=inputJson,proto3" json:"input_json,omitempty"`
+	InstanceId             string                 `protobuf:"bytes,8,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	CorrelationId          string                 `protobuf:"bytes,9,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	TimeoutMs              uint32                 `protobuf:"varint,10,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *InvokeRequest) Reset() {
@@ -81,30 +81,30 @@ func (x *InvokeRequest) GetParentFsmVersion() string {
 	return ""
 }
 
-func (x *InvokeRequest) GetFsmType() string {
+func (x *InvokeRequest) GetAsyncOperationType() string {
 	if x != nil {
-		return x.FsmType
+		return x.AsyncOperationType
 	}
 	return ""
 }
 
-func (x *InvokeRequest) GetFsmName() string {
+func (x *InvokeRequest) GetAsyncOperationName() string {
 	if x != nil {
-		return x.FsmName
+		return x.AsyncOperationName
 	}
 	return ""
 }
 
-func (x *InvokeRequest) GetFsmVersion() string {
+func (x *InvokeRequest) GetAsyncOperationVersion() string {
 	if x != nil {
-		return x.FsmVersion
+		return x.AsyncOperationVersion
 	}
 	return ""
 }
 
-func (x *InvokeRequest) GetFsmLanguage() string {
+func (x *InvokeRequest) GetAsyncOperationLanguage() string {
 	if x != nil {
-		return x.FsmLanguage
+		return x.AsyncOperationLanguage
 	}
 	return ""
 }
@@ -251,7 +251,7 @@ func (*ListRegisteredActorsRequest) Descriptor() ([]byte, []int) {
 
 type ListRegisteredActorsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// "parentFsmName@parentFsmVersion@fsmType@fsmName@fsmVersion@fsmLanguage"
+	// "parentFsmName@parentFsmVersion@asyncOperationType@asyncOperationName@asyncOperationVersion@asyncOperationLanguage"
 	// keys, one per actor currently registered by a live worker process.
 	ActorKeys     []string `protobuf:"bytes,1,rep,name=actor_keys,json=actorKeys,proto3" json:"actor_keys,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -299,15 +299,14 @@ var File_pgfsm_activitygateway_v1_activity_gateway_proto protoreflect.FileDescri
 
 const file_pgfsm_activitygateway_v1_activity_gateway_proto_rawDesc = "" +
 	"\n" +
-	"/pgfsm/activitygateway/v1/activity_gateway.proto\x12\x18pgfsm.activitygateway.v1\"\xe5\x02\n" +
+	"/pgfsm/activitygateway/v1/activity_gateway.proto\x12\x18pgfsm.activitygateway.v1\"\xc1\x03\n" +
 	"\rInvokeRequest\x12&\n" +
 	"\x0fparent_fsm_name\x18\x01 \x01(\tR\rparentFsmName\x12,\n" +
-	"\x12parent_fsm_version\x18\x02 \x01(\tR\x10parentFsmVersion\x12\x19\n" +
-	"\bfsm_type\x18\x03 \x01(\tR\afsmType\x12\x19\n" +
-	"\bfsm_name\x18\x04 \x01(\tR\afsmName\x12\x1f\n" +
-	"\vfsm_version\x18\x05 \x01(\tR\n" +
-	"fsmVersion\x12!\n" +
-	"\ffsm_language\x18\x06 \x01(\tR\vfsmLanguage\x12\x1d\n" +
+	"\x12parent_fsm_version\x18\x02 \x01(\tR\x10parentFsmVersion\x120\n" +
+	"\x14async_operation_type\x18\x03 \x01(\tR\x12asyncOperationType\x120\n" +
+	"\x14async_operation_name\x18\x04 \x01(\tR\x12asyncOperationName\x126\n" +
+	"\x17async_operation_version\x18\x05 \x01(\tR\x15asyncOperationVersion\x128\n" +
+	"\x18async_operation_language\x18\x06 \x01(\tR\x16asyncOperationLanguage\x12\x1d\n" +
 	"\n" +
 	"input_json\x18\a \x01(\tR\tinputJson\x12\x1f\n" +
 	"\vinstance_id\x18\b \x01(\tR\n" +

@@ -62,10 +62,10 @@ impl ActorWorker {
             let key = actor_key(
                 &reg.meta.parent_fsm_name,
                 &reg.meta.parent_fsm_version,
-                &reg.meta.fsm_type,
-                &reg.meta.fsm_name,
-                &reg.meta.fsm_version,
-                &reg.meta.fsm_language,
+                &reg.meta.async_operation_type,
+                &reg.meta.async_operation_name,
+                &reg.meta.async_operation_version,
+                &reg.meta.async_operation_language,
             );
             handlers.insert(key, reg.handler);
             registered.push(reg.meta);
@@ -199,12 +199,12 @@ impl ActorWorker {
             body.get("parent_fsm_version")
                 .and_then(Value::as_str)
                 .unwrap_or(""),
-            body.get("fsm_type").and_then(Value::as_str).unwrap_or(""),
-            body.get("fsm_name").and_then(Value::as_str).unwrap_or(""),
-            body.get("fsm_version")
+            body.get("async_operation_type").and_then(Value::as_str).unwrap_or(""),
+            body.get("async_operation_name").and_then(Value::as_str).unwrap_or(""),
+            body.get("async_operation_version")
                 .and_then(Value::as_str)
                 .unwrap_or(""),
-            body.get("fsm_language")
+            body.get("async_operation_language")
                 .and_then(Value::as_str)
                 .unwrap_or(""),
         );

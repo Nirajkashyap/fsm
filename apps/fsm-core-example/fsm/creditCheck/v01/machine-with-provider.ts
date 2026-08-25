@@ -67,7 +67,7 @@ export const machineWithProvider = machine.provide({
     // worker-sdk/go can link it — see
     // apps/fsm-core-example/fsm/creditCheck/v01/go/actors/CheckReportsTable/CheckReportsTable.go).
     // This harness only ever runs the typescript implementation regardless
-    // of fsmLanguage, so it still resolves to the same checkReportsTable.ts
+    // of asyncOperationLanguage, so it still resolves to the same checkReportsTable.ts
     // function under the new key.
     CheckReportsTable: fromPromise(
       async ({ input }: { input: { ssn: string; bureauName: string } }) =>
@@ -81,7 +81,7 @@ export const machineWithProvider = machine.provide({
     // machine.ts (the rust-language variant of this same actor — see
     // apps/fsm-core-example/fsm/creditCheck/v01/rust/actors/checkBureauRust/checkBureauRust.rs).
     // This harness only ever runs the typescript implementation regardless
-    // of fsmLanguage, so it still resolves to the same checkBureau.ts
+    // of asyncOperationLanguage, so it still resolves to the same checkBureau.ts
     // function under the new key.
     checkBureauRust: fromPromise(
       async ({ input }: { input: { ssn: string; bureauName: string } }) =>

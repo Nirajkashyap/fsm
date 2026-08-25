@@ -17,10 +17,11 @@ import { MethodKind } from "@bufbuild/protobuf";
  * the generic {function_name, payload_json} shape is replaced with the
  * activity contract from KB-001 §3.2, identifying the actor by its full
  * ActorPluginValidationResult identity (parent_fsm_name, parent_fsm_version,
- * fsm_type, fsm_name, fsm_version, fsm_language) rather than a bare
- * name/version pair — see sidecar_gateway.proto's RegisteredActor.
- * fsm_language is part of the identity (not just metadata) because the
- * other five fields alone aren't guaranteed unique across languages.
+ * async_operation_type, async_operation_name, async_operation_version,
+ * async_operation_language) rather than a bare name/version pair — see
+ * sidecar_gateway.proto's RegisteredActor. async_operation_language is part
+ * of the identity (not just metadata) because the other five fields alone
+ * aren't guaranteed unique across languages.
  *
  * Originally shipped flat as activity-gateway.proto / package
  * pgfsm.activitygateway, exempted from several STANDARD buf lint rules as

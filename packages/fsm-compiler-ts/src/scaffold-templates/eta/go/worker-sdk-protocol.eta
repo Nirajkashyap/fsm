@@ -38,14 +38,14 @@ type WireEnvelope struct {
 type RegisteredActor struct {
 	ParentFsmName    string `json:"parentFsmName"`
 	ParentFsmVersion string `json:"parentFsmVersion"`
-	FsmType          string `json:"fsmType"`
-	FsmName          string `json:"fsmName"`
-	FsmVersion       string `json:"fsmVersion"`
-	FsmLanguage      string `json:"fsmLanguage"`
+	AsyncOperationType          string `json:"asyncOperationType"`
+	AsyncOperationName          string `json:"asyncOperationName"`
+	AsyncOperationVersion       string `json:"asyncOperationVersion"`
+	AsyncOperationLanguage      string `json:"asyncOperationLanguage"`
 }
 
-func ActorKey(parentFsmName, parentFsmVersion, fsmType, fsmName, fsmVersion, fsmLanguage string) string {
-	return fmt.Sprintf("%s@%s@%s@%s@%s@%s", parentFsmName, parentFsmVersion, fsmType, fsmName, fsmVersion, fsmLanguage)
+func ActorKey(parentFsmName, parentFsmVersion, asyncOperationType, asyncOperationName, asyncOperationVersion, asyncOperationLanguage string) string {
+	return fmt.Sprintf("%s@%s@%s@%s@%s@%s", parentFsmName, parentFsmVersion, asyncOperationType, asyncOperationName, asyncOperationVersion, asyncOperationLanguage)
 }
 
 // A monotonic counter is enough uniqueness for envelope ids — the gateway

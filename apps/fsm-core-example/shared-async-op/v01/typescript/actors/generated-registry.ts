@@ -5,10 +5,10 @@ import { helloWorld } from "./helloWorld/helloWorld.ts";
 export type ActorRegistration = {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   handler: (input: unknown) => unknown;
 };
 
@@ -16,19 +16,19 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "sharedAsyncOperation",
     parentFsmVersion: "v01",
-    fsmType: "sharedAsyncOperation",
-    fsmName: "helloPgfsm",
-    fsmVersion: "v01",
-    fsmLanguage: "typescript",
+    asyncOperationType: "sharedAsyncOperation",
+    asyncOperationName: "helloPgfsm",
+    asyncOperationVersion: "v01",
+    asyncOperationLanguage: "typescript",
     handler: helloPgfsm,
   },
   {
     parentFsmName: "sharedAsyncOperation",
     parentFsmVersion: "v01",
-    fsmType: "sharedAsyncOperation",
-    fsmName: "helloWorld",
-    fsmVersion: "v01",
-    fsmLanguage: "typescript",
+    asyncOperationType: "sharedAsyncOperation",
+    asyncOperationName: "helloWorld",
+    asyncOperationVersion: "v01",
+    asyncOperationLanguage: "typescript",
     handler: helloWorld,
   },
 ];

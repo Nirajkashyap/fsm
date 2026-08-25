@@ -7,10 +7,10 @@ mod <%~ g.alias %>;
 pub struct ActorRegistration {
     pub parent_fsm_name: &'static str,
     pub parent_fsm_version: &'static str,
-    pub fsm_type: &'static str,
-    pub fsm_name: &'static str,
-    pub fsm_version: &'static str,
-    pub fsm_language: &'static str,
+    pub async_operation_type: &'static str,
+    pub async_operation_name: &'static str,
+    pub async_operation_version: &'static str,
+    pub async_operation_language: &'static str,
     pub handler: fn(serde_json::Value) -> serde_json::Value,
 }
 
@@ -20,10 +20,10 @@ pub fn actor_registrations() -> Vec<ActorRegistration> {
         ActorRegistration {
             parent_fsm_name: <%~ JSON.stringify(a.parentFsmName) %>,
             parent_fsm_version: <%~ JSON.stringify(a.parentFsmVersion) %>,
-            fsm_type: <%~ JSON.stringify(a.fsmType) %>,
-            fsm_name: <%~ JSON.stringify(a.fsmName) %>,
-            fsm_version: <%~ JSON.stringify(a.fsmVersion) %>,
-            fsm_language: <%~ JSON.stringify(a.fsmLanguage) %>,
+            async_operation_type: <%~ JSON.stringify(a.asyncOperationType) %>,
+            async_operation_name: <%~ JSON.stringify(a.asyncOperationName) %>,
+            async_operation_version: <%~ JSON.stringify(a.asyncOperationVersion) %>,
+            async_operation_language: <%~ JSON.stringify(a.asyncOperationLanguage) %>,
             handler: <%~ a.alias %>::<%~ a.src %>,
         },
 <% } -%>

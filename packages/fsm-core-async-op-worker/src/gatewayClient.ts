@@ -39,10 +39,10 @@ interface RawActivityGatewayClient {
   invoke(request: {
     parentFsmName: string;
     parentFsmVersion: string;
-    fsmType: string;
-    fsmName: string;
-    fsmVersion: string;
-    fsmLanguage: string;
+    asyncOperationType: string;
+    asyncOperationName: string;
+    asyncOperationVersion: string;
+    asyncOperationLanguage: string;
     inputJson: string;
     instanceId: string;
     correlationId: string;
@@ -67,10 +67,10 @@ export interface ActivityGatewayClientOptions {
 export interface InvokeActorRequest {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   input: unknown;
   instanceId: string;
   correlationId: string;
@@ -139,10 +139,10 @@ export class ActivityGatewayClient {
     const response = await this.client.invoke({
       parentFsmName: request.parentFsmName,
       parentFsmVersion: request.parentFsmVersion,
-      fsmType: request.fsmType,
-      fsmName: request.fsmName,
-      fsmVersion: request.fsmVersion,
-      fsmLanguage: request.fsmLanguage,
+      asyncOperationType: request.asyncOperationType,
+      asyncOperationName: request.asyncOperationName,
+      asyncOperationVersion: request.asyncOperationVersion,
+      asyncOperationLanguage: request.asyncOperationLanguage,
       inputJson: JSON.stringify(request.input ?? null),
       instanceId: request.instanceId,
       correlationId: request.correlationId,

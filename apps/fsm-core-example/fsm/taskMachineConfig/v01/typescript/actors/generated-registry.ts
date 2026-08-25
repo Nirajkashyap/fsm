@@ -5,10 +5,10 @@ import { updateTask } from "./updateTask/updateTask.ts";
 export type ActorRegistration = {
   parentFsmName: string;
   parentFsmVersion: string;
-  fsmType: string;
-  fsmName: string;
-  fsmVersion: string;
-  fsmLanguage: string;
+  asyncOperationType: string;
+  asyncOperationName: string;
+  asyncOperationVersion: string;
+  asyncOperationLanguage: string;
   handler: (input: unknown) => unknown;
 };
 
@@ -16,19 +16,19 @@ export const ACTOR_REGISTRATIONS: ActorRegistration[] = [
   {
     parentFsmName: "taskMachineConfig",
     parentFsmVersion: "v01",
-    fsmType: "internalAsyncOperation",
-    fsmName: "fetchTasks",
-    fsmVersion: "v01",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "fetchTasks",
+    asyncOperationVersion: "v01",
+    asyncOperationLanguage: "typescript",
     handler: fetchTasks,
   },
   {
     parentFsmName: "taskMachineConfig",
     parentFsmVersion: "v01",
-    fsmType: "internalAsyncOperation",
-    fsmName: "updateTask",
-    fsmVersion: "v01",
-    fsmLanguage: "typescript",
+    asyncOperationType: "internalAsyncOperation",
+    asyncOperationName: "updateTask",
+    asyncOperationVersion: "v01",
+    asyncOperationLanguage: "typescript",
     handler: updateTask,
   },
 ];

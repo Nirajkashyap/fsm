@@ -16,11 +16,12 @@ function. This is part of §3 ("Validate operation logic") of the root
 
 **Async operation logic** is the set of actors named by each state's `invoke`
 objects (`invoke.src`). Each actor is authored in the language declared by its
-`fsmLanguage` and lives in `<lang>/actors/<src>/`; `sharedAsyncOperation`
-modules are the reusable dependency modules those actors build on.
+`asyncOperationLanguage` and lives in `<lang>/actors/<src>/`;
+`sharedAsyncOperation` modules are the reusable dependency modules those actors
+build on.
 
 This stage confirms each filled-in actor / async module exports the named
-function with the expected shape, per its `fsmLanguage`.
+function with the expected shape, per its `asyncOperationLanguage`.
 
 | Concern  | Function                              | Module                                     |
 | -------- | ------------------------------------- | ------------------------------------------ |
@@ -29,7 +30,7 @@ function with the expected shape, per its `fsmLanguage`.
 ## Goals
 
 - Validate that every async operation-logic module exports its named function,
-  routed by `fsmLanguage` (`typescript`/`python`/`rust`/`go`).
+  routed by `asyncOperationLanguage` (`typescript`/`python`/`rust`/`go`).
 - Fail loudly when any async module is missing or does not export its function.
 
 ## Non-goals
@@ -40,7 +41,7 @@ function with the expected shape, per its `fsmLanguage`.
 
 ## Requirements
 
-### R1 — Validate async modules per `fsmLanguage`
+### R1 — Validate async modules per `asyncOperationLanguage`
 
 ```bash
 deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
@@ -66,13 +67,13 @@ Each checker script exits 0 if the function is found, 1 if not, 2 on bad
 arguments or parse/import error. For Rust and Go, the binary is compiled on
 first use and reused for subsequent actors in the same process.
 
-Actors with an unsupported `fsmLanguage` are skipped with a warning.
+Actors with an unsupported `asyncOperationLanguage` are skipped with a warning.
 
 **Status:** ✅ Implemented — `validateAsyncOperationFromFoldersV2`
 (`src/validate-async-operation-logic-v2.ts`), wired to the
 `validate-async-operation` command. This validates each invoke's actor per its
-own `fsmLanguage` folder directly — it is not scoped to `sharedAsyncOperation`
-dependency modules only.
+own `asyncOperationLanguage` folder directly — it is not scoped to
+`sharedAsyncOperation` dependency modules only.
 
 ### R1a — Language filter (`--lang`)
 
@@ -94,8 +95,8 @@ deno run --allow-all packages/fsm-compiler-ts/src/cli/index.ts \
   --lang typescript,python
 ```
 
-The `--lang` flag (comma-separated) restricts which `fsmLanguage` actors are
-validated. Omit `--lang` to validate all languages present.
+The `--lang` flag (comma-separated) restricts which `asyncOperationLanguage`
+actors are validated. Omit `--lang` to validate all languages present.
 
 **Status:** ✅ Implemented — `runtimeLanguages: OperationLang[] = []` parameter
 on `validateAsyncOperationFromFoldersV2`; wired to the `--lang` CLI flag.
@@ -117,14 +118,14 @@ Tracked in [TODO.md](../todo/TODO.md):
 
 ## Acceptance criteria
 
-- `validate-async-operation` reports, per actor, whether its `fsmLanguage`
-  module exports the named function. ✅
+- `validate-async-operation` reports, per actor, whether its
+  `asyncOperationLanguage` module exports the named function. ✅
 - Each language's runtime is called to confirm function presence — not just file
   existence. ✅ (`deno run` / `python3` / `go build` → binary / `rustc` →
   binary)
 - `--lang` restricts which languages are validated; omitting it validates all.
   ✅
-- Each invoke's actor is validated per its own `fsmLanguage`, not just
-  `sharedAsyncOperation` dependency modules. ✅
+- Each invoke's actor is validated per its own `asyncOperationLanguage`, not
+  just `sharedAsyncOperation` dependency modules. ✅
 - Stubs whose signature does not match the worker's calling convention are
   reported as failures. ❌ pending gap 1.

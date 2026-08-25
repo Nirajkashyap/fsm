@@ -159,7 +159,8 @@ The function must return the delay in milliseconds.
 ## Invocations (actors)
 
 Invocations spawn actors when a state is entered. Each invocation has a `src`
-(the actor name), a `fsmType`, and optionally a `fsmVersion`.
+(the actor name), a `asyncOperationType`, and optionally a
+`asyncOperationVersion`.
 
 ```json
 {
@@ -168,14 +169,14 @@ Invocations spawn actors when a state is entered. Each invocation has a `src`
       "type": "xstate.invoke",
       "id": "myActor",
       "src": "myActorName",
-      "fsmType": "internalAsyncOperation",
-      "fsmVersion": "v01"
+      "asyncOperationType": "internalAsyncOperation",
+      "asyncOperationVersion": "v01"
     }
   ]
 }
 ```
 
-| `fsmType`                | Meaning                                         |
+| `asyncOperationType`     | Meaning                                         |
 | ------------------------ | ----------------------------------------------- |
 | `internalAsyncOperation` | A new async function — one queue per invocation |
 | `sharedAsyncOperation`   | An async function shared across FSM instances   |

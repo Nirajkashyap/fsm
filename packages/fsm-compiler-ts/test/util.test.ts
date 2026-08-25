@@ -16,12 +16,12 @@ const baseFsm = { id: "root", key: "root", type: "compound" as const };
 const baseInvoke = {
   type: "xstate.invoke",
   id: "0.idle",
-  fsmType: "internalAsyncOperation" as const,
-  fsmVersion: "v01",
+  asyncOperationType: "internalAsyncOperation" as const,
+  asyncOperationVersion: "v01",
 };
 const baseState = { id: "root.idle", key: "idle", type: "atomic" as const };
 
-Deno.test("extractFsmPluginRefs - defaults actor fsmLanguage to typescript", () => {
+Deno.test("extractFsmPluginRefs - defaults actor asyncOperationLanguage to typescript", () => {
   const fsmData: FsmMachineJson = {
     ...baseFsm,
     states: {
@@ -35,22 +35,26 @@ Deno.test("extractFsmPluginRefs - defaults actor fsmLanguage to typescript", () 
   const { actors } = extractFsmPluginRefs(fsmData);
   assertEquals(actors.length, 1);
   assertEquals(actors[0].src, "someActor");
-  assertEquals(actors[0].fsmLanguage, "typescript");
+  assertEquals(actors[0].asyncOperationLanguage, "typescript");
 });
 
-Deno.test("extractFsmPluginRefs - preserves explicit actor fsmLanguage", () => {
+Deno.test("extractFsmPluginRefs - preserves explicit actor asyncOperationLanguage", () => {
   const fsmData: FsmMachineJson = {
     ...baseFsm,
     states: {
       idle: {
         ...baseState,
-        invoke: [{ ...baseInvoke, src: "pyActor", fsmLanguage: "python" }],
+        invoke: [{
+          ...baseInvoke,
+          src: "pyActor",
+          asyncOperationLanguage: "python",
+        }],
         on: {},
       },
     },
   };
   const { actors } = extractFsmPluginRefs(fsmData);
-  assertEquals(actors[0].fsmLanguage, "python");
+  assertEquals(actors[0].asyncOperationLanguage, "python");
 });
 
 Deno.test("isVersionFolderName - valid", () => {

@@ -92,9 +92,9 @@
           "src": "fetchTasks",
           "type": "xstate.invoke",
           "id": "0.task.loading",
-          "fsmType": "internalAsyncOperation",
-          "fsmVersion": "v02",
-          "fsmLanguage": "typescript"
+          "asyncOperationType": "internalAsyncOperation",
+          "asyncOperationVersion": "v02",
+          "asyncOperationLanguage": "typescript"
         }
       ],
       "tags": []
@@ -213,9 +213,9 @@
           "src": "updateTask",
           "type": "xstate.invoke",
           "id": "0.task.updating",
-          "fsmType": "internalAsyncOperation",
-          "fsmVersion": "v02",
-          "fsmLanguage": "typescript"
+          "asyncOperationType": "internalAsyncOperation",
+          "asyncOperationVersion": "v02",
+          "asyncOperationLanguage": "typescript"
         }
       ],
       "tags": []

@@ -42,10 +42,10 @@ func registrationsFromGenerated() []ActorRegistration {
 			Meta: RegisteredActor{
 				ParentFsmName:    reg.ParentFsmName,
 				ParentFsmVersion: reg.ParentFsmVersion,
-				FsmType:          reg.FsmType,
-				FsmName:          reg.FsmName,
-				FsmVersion:       reg.FsmVersion,
-				FsmLanguage:      reg.FsmLanguage,
+				AsyncOperationType:          reg.AsyncOperationType,
+				AsyncOperationName:          reg.AsyncOperationName,
+				AsyncOperationVersion:       reg.AsyncOperationVersion,
+				AsyncOperationLanguage:      reg.AsyncOperationLanguage,
 			},
 			Handler: reg.Handler,
 		})
@@ -67,7 +67,7 @@ func main() {
 	registrations := registrationsFromGenerated()
 	fmt.Printf("%d actor(s) compiled into this registry\n", len(registrations))
 	for _, reg := range registrations {
-		fmt.Printf("  + %s@%s (parent %s@%s)\n", reg.Meta.FsmName, reg.Meta.FsmVersion, reg.Meta.ParentFsmName, reg.Meta.ParentFsmVersion)
+		fmt.Printf("  + %s@%s (parent %s@%s)\n", reg.Meta.AsyncOperationName, reg.Meta.AsyncOperationVersion, reg.Meta.ParentFsmName, reg.Meta.ParentFsmVersion)
 	}
 
 	if len(registrations) == 0 {
