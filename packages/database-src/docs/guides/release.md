@@ -48,15 +48,25 @@ npm run supabase:restart:with:diff:withUpgradeScript:temp
 ## Building the PGXN package
 
 ```bash
-npm run pgxnBuildAndPublish
+npm run pgxnBuildAndPublish -- --version 2.0.2
 ```
 
-This fills `pgxn-templates/` with values from `package.json`, stages migration
-files (timestamp prefix stripped) and `README.md` into `pgxn-dist/`, and
-produces `fsm_core-<version>.zip` ready for PGXN upload.
+`--version` (`-v`) is required and selects the release, independent of
+`package.json`'s own version. The script fills `pgxn-templates/` with values
+from `package.json`, stages the full migration chain up to and including that
+version (timestamp prefix stripped) into `pgxn-dist/`, and produces
+`fsm_core-<version>.zip` ready for PGXN upload. It errors if no migration file
+for that exact version exists in `supabase/migrations/`.
 
-The `package.json` version must match the highest version in
-`supabase/migrations/` — the script will error otherwise.
+If `full-ext/supabase/migrations/` has a migration file for that same version,
+it overrides (replaces) the `supabase/migrations/` copy of that one file — see
+[CLAUDE.md](../../CLAUDE.md) for why the two directories can diverge.
+
+Pass PGXN credentials to upload directly instead of just staging the zip:
+
+```bash
+npm run pgxnBuildAndPublish -- --version 2.0.2 -u USERNAME -p PASSWORD
+```
 
 ## Migration naming
 

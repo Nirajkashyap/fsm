@@ -11,17 +11,26 @@ import { getNextPkgVersionFilename } from "./get-next-pkg-version-util.ts";
 // `npm run supabase:restart:with:diff:withUpgradeScript:patch` (or :minor/:major).
 //
 // Invoke directly from a terminal, from any cwd:
-//   ./supabase-restart-with-diff.ts [incrementType]
+//   ./supabase-restart-with-diff.ts [incrementType] [target]
 // or:
-//   deno run --allow-all supabase-restart-with-diff.ts [incrementType]
+//   deno run --allow-all supabase-restart-with-diff.ts [incrementType] [target]
 // or:
-//   deno task restart-with-diff-temp -- [incrementType]
+//   deno task restart-with-diff-temp -- [incrementType] [target]
 //
 // incrementType is a semver release type (patch|minor|major|...), same as
 // `get-next-pkg-version.ts`'s CLI arg — defaults to "patch" if omitted.
+//
+// target selects which Supabase project config the CLI operates against —
+// "main" (default, packages/database-src/supabase/config.toml) or "full-ext"
+// (packages/database-src/full-ext/supabase/config.toml, the pgrx extension's
+// project). The Supabase CLI only ever reads `<workdir>/supabase/config.toml`
+// (the subfolder must be literally named "supabase"), so switching targets
+// means passing a different --workdir, not a different config file path.
+// Both configs share the same project_id/ports on purpose — they're
+// mutually exclusive alternates of the same local stack, not a pair meant to
+// run concurrently. `stop` one before `start`ing the other.
 
 const SCRIPT_DIR = import.meta.dirname!;
-const DOCKER_VOLUME_LABEL = "label=com.supabase.cli.project=database-src";
 // `npm run` prepends node_modules/.bin to PATH, so a bare `supabase` in an
 // npm script resolves to the project-pinned CLI version. Deno.Command has no
 // such PATH mangling, so a bare "supabase" here would instead pick up
@@ -29,6 +38,22 @@ const DOCKER_VOLUME_LABEL = "label=com.supabase.cli.project=database-src";
 // possibly incompatible CLI version. Resolve the pinned binary explicitly.
 // const SUPABASE_BIN = join(SCRIPT_DIR, "node_modules/.bin/supabase");
 const SUPABASE_BIN = "supabase";
+
+type Target = "main" | "full-ext";
+
+const DOCKER_VOLUME_LABEL = "label=com.supabase.cli.project=database-src";
+const TYPES_OUTPUT = "database.types.ts";
+
+const WORKDIRS: Record<Target, string> = {
+  "main": SCRIPT_DIR,
+  "full-ext": join(SCRIPT_DIR, "full-ext"),
+};
+
+function resolveTarget(value: string | undefined): Target {
+  if (value === undefined || value === "main") return "main";
+  if (value === "full-ext") return "full-ext";
+  throw new Error(`Unknown target "${value}" — expected "main" or "full-ext"`);
+}
 
 // Loaded up front (not just before `supabase start`) — every supabase CLI
 // subcommand parses config.toml, which interpolates env(...) references
@@ -70,8 +95,8 @@ async function runCapture(cmd: string, args: string[]): Promise<string> {
 }
 
 // npm run supabase:stop
-async function stopSupabase(): Promise<void> {
-  await run(SUPABASE_BIN, ["stop"]);
+async function stopSupabase(workdir: string): Promise<void> {
+  await run(SUPABASE_BIN, ["stop", "--workdir", workdir]);
 }
 
 // npm run supabase:docker:volume:clean
@@ -93,6 +118,7 @@ async function cleanDockerVolume(): Promise<void> {
 // npm run supabase:db:diff:schemafolder:sql:withUpgradeScript:<patch|minor|major>
 async function diffSchemaWithUpgradeScript(
   incrementType: ReleaseType,
+  workdir: string,
 ): Promise<void> {
   const pkg = JSON.parse(
     await Deno.readTextFile(join(SCRIPT_DIR, "package.json")),
@@ -109,35 +135,45 @@ async function diffSchemaWithUpgradeScript(
   // const nextVersion = getNextPkgVersionFilename(
   //   denoConfig.name,
   //   incrementType,
-  //   join(SCRIPT_DIR, "supabase/migrations"),
+  //   join(workdir, "supabase/migrations"),
   // );
 
   const nextVersion = getNextPkgVersionFilename(
     pkg.name,
     incrementType,
-    join(SCRIPT_DIR, "supabase/migrations"),
+    join(workdir, "supabase/migrations"),
   );
-  await run(SUPABASE_BIN, ["db", "diff", "-f", nextVersion, "--debug"]);
+  await run(SUPABASE_BIN, [
+    "db",
+    "diff",
+    "-f",
+    nextVersion,
+    "--workdir",
+    workdir,
+    "--debug",
+  ]);
 }
 
 // npm run supabase:start:env
-async function startSupabaseWithEnv(): Promise<void> {
-  await run(SUPABASE_BIN, ["start", "--debug"]);
+async function startSupabaseWithEnv(workdir: string): Promise<void> {
+  await run(SUPABASE_BIN, ["start", "--workdir", workdir, "--debug"]);
 }
 
 // npm run supabase:gen:types
-async function genTypes(): Promise<void> {
+async function genTypes(workdir: string): Promise<void> {
   const types = await runCapture(SUPABASE_BIN, [
     "gen",
     "types",
     "typescript",
     "--local",
+    "--workdir",
+    workdir,
     "--schema",
     "public,fsm_core,pgmq",
   ]);
   await Deno.mkdir(join(SCRIPT_DIR, "generated"), { recursive: true });
   await Deno.writeTextFile(
-    join(SCRIPT_DIR, "generated", "database.types.ts"),
+    join(SCRIPT_DIR, "generated", TYPES_OUTPUT),
     types + "\n",
   );
 }
@@ -145,15 +181,18 @@ async function genTypes(): Promise<void> {
 // npm run supabase:restart:with:diff:withUpgradeScript:<patch|minor|major>
 async function restartWithDiffWithUpgradeScript(
   incrementType: ReleaseType,
+  target: Target,
 ): Promise<void> {
-  await stopSupabase();
+  const workdir = WORKDIRS[target];
+  await stopSupabase(workdir);
   await cleanDockerVolume();
-  await diffSchemaWithUpgradeScript(incrementType);
-  await startSupabaseWithEnv();
-  await genTypes();
+  await diffSchemaWithUpgradeScript(incrementType, workdir);
+  await startSupabaseWithEnv(workdir);
+  await genTypes(workdir);
 }
 
 if (import.meta.main) {
   const incrementType = (Deno.args[0] ?? "patch") as ReleaseType;
-  await restartWithDiffWithUpgradeScript(incrementType);
+  const target = resolveTarget(Deno.args[1]);
+  await restartWithDiffWithUpgradeScript(incrementType, target);
 }

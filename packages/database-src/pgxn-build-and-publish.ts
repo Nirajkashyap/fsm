@@ -1,56 +1,143 @@
 import { execSync } from "node:child_process";
 import {
   copyFileSync,
+  existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
   rmSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { parseArgs } from "node:util";
-import { getExistingHighestPkgVersion } from "./get-existing-highest-pkg-version.js";
+import semver from "semver";
 
 const { values: args } = parseArgs({
   args: process.argv.slice(2),
   options: {
     username: { type: "string", short: "u" },
     password: { type: "string", short: "p" },
+    version: { type: "string", short: "v" },
+    clean: { type: "boolean", short: "c", default: false },
   },
   strict: false,
 });
 
 const pgxnUsername = args.username ?? process.env.PGXN_USERNAME;
 const pgxnPassword = args.password ?? process.env.PGXN_PASSWORD;
+const clean = args.clean === true;
+
+const version = args.version;
+if (!version) {
+  console.error(
+    "Error: --version (-v) is required, e.g. --version 2.0.1 (or -v 2.0.1)",
+  );
+  process.exit(1);
+}
+if (!semver.valid(version)) {
+  console.error(`Error: "${version}" is not a valid semver version.`);
+  process.exit(1);
+}
 
 const require = createRequire(import.meta.url);
 const pkg = require("./package.json");
 
 const pkgName: string = pkg.name;
-const version: string = pkg.version;
 const description: string = pkg.description;
 const author: string = pkg.author;
 const license: string = pkg.license;
 
 const MIGRATIONS_DIR = "supabase/migrations";
+const FULL_EXT_MIGRATIONS_DIR = "full-ext/supabase/migrations";
 const TEMPLATES_DIR = "pgxn-templates";
 const TEMP_BUILD_DIR = "pgxn-dist";
 
-// Guard: package.json version must be present as the highest migration version
-const existingHighest = getExistingHighestPkgVersion(pkgName, MIGRATIONS_DIR);
-if (existingHighest === null) {
+// A migration filename is either a base install (single version) or an
+// upgrade diff (old--new); both forms carry a timestamp prefix on disk that
+// gets stripped for the published package. `toVersion` is the version the
+// file brings you to — what matters for "is this file needed to reach
+// `version`" and for the exact-match presence checks below.
+type ParsedMigration =
+  | { kind: "base"; toVersion: string; strippedName: string }
+  | {
+    kind: "upgrade";
+    fromVersion: string;
+    toVersion: string;
+    strippedName: string;
+  };
+
+function parseMigrationFile(
+  name: string,
+  filename: string,
+): ParsedMigration | null {
+  const stripped = filename.replace(/^\d+_/, "");
+  const baseMatch = stripped.match(new RegExp(`^${name}--([\\d.]+)\\.sql$`));
+  if (baseMatch) {
+    return { kind: "base", toVersion: baseMatch[1], strippedName: stripped };
+  }
+  const upgradeMatch = stripped.match(
+    new RegExp(`^${name}--([\\d.]+)--([\\d.]+)\\.sql$`),
+  );
+  if (upgradeMatch) {
+    return {
+      kind: "upgrade",
+      fromVersion: upgradeMatch[1],
+      toVersion: upgradeMatch[2],
+      strippedName: stripped,
+    };
+  }
+  return null;
+}
+
+// 1. Gather every fsm_core migration in supabase/migrations and confirm the
+//    requested version's own migration file actually exists there — building
+//    a release for a version with no migration would silently ship stale SQL.
+const mainMigrations = readdirSync(MIGRATIONS_DIR)
+  .map((file) => ({ file, parsed: parseMigrationFile(pkgName, file) }))
+  .filter(
+    (m): m is { file: string; parsed: ParsedMigration } => m.parsed !== null,
+  );
+
+const hasTargetVersion = mainMigrations.some((m) =>
+  m.parsed.toVersion === version
+);
+if (!hasTargetVersion) {
   console.error(
-    `Error: no migration files found for ${pkgName} in ${MIGRATIONS_DIR}. Create a migration before building.`,
+    `Error: no migration file for version ${version} found in ${MIGRATIONS_DIR}. Create it (e.g. via npm run supabase:restart:with:diff:withUpgradeScript:*) before building.`,
   );
   process.exit(1);
 }
-if (existingHighest !== version) {
+
+// 2. The shipped set is every migration up to and including `version` — the
+// full base + upgrade-diff chain a fresh PGXN install/upgrade needs.
+const migrationsToShip = mainMigrations.filter((m) =>
+  semver.lte(m.parsed.toVersion, version)
+);
+
+const baseInstall = migrationsToShip.find((m) => m.parsed.kind === "base");
+if (!baseInstall) {
   console.error(
-    `Error: package.json version (${version}) does not match the highest migration version (${existingHighest}). Create a migration for ${version} before building.`,
+    `Error: no base install migration (${pkgName}--<version>.sql) found up to version ${version} in ${MIGRATIONS_DIR}.`,
   );
   process.exit(1);
+}
+const baseInstallFile = baseInstall.parsed.strippedName;
+
+// 3. full-ext/supabase/migrations holds the pgrx-validated build of each
+// version's SQL. If it has a file for `version`, it overrides (same stripped
+// filename as) whatever supabase/migrations produced for that version — it's
+// the authoritative install script for a release, not an additional file.
+let fullExtOverride: { file: string; parsed: ParsedMigration } | undefined;
+if (existsSync(FULL_EXT_MIGRATIONS_DIR)) {
+  fullExtOverride = readdirSync(FULL_EXT_MIGRATIONS_DIR)
+    .map((file) => ({ file, parsed: parseMigrationFile(pkgName, file) }))
+    .find(
+      (m): m is { file: string; parsed: ParsedMigration } =>
+        m.parsed !== null && m.parsed.toVersion === version,
+    );
 }
 
 const SPDX_TO_PGXN: Record<string, string> = {
@@ -62,20 +149,6 @@ const SPDX_TO_PGXN: Record<string, string> = {
   "gpl-2.0": "gpl_2",
   "gpl-3.0": "gpl_3",
 };
-
-// The base install SQL file is the migration with a single version segment
-// (e.g. fsm_core--1.0.0.sql), not an upgrade script (fsm_core--1.0.0--1.1.0.sql).
-const baseInstallPattern = new RegExp(`^\\d+_${pkgName}--[\\d.]+\\.sql$`);
-const baseInstallFile = readdirSync(MIGRATIONS_DIR)
-  .find((f) => baseInstallPattern.test(f))
-  ?.replace(/^\d+_/, "");
-
-if (!baseInstallFile) {
-  console.error(
-    `Error: no base install migration (${pkgName}--<version>.sql) found in ${MIGRATIONS_DIR}.`,
-  );
-  process.exit(1);
-}
 
 const placeholders: Record<string, string> = {
   "{{NAME}}": pkgName,
@@ -95,8 +168,15 @@ function fillTemplate(content: string): string {
   return result;
 }
 
-// 1. Ensure pgxn-dist exists
+// 1. Ensure pgxn-dist exists, and clear out migration files left over from a
+//    previous build — otherwise a smaller `version` target would still ship
+//    newer .sql files an earlier run copied in.
 mkdirSync(TEMP_BUILD_DIR, { recursive: true });
+for (const f of readdirSync(TEMP_BUILD_DIR)) {
+  if (parseMigrationFile(pkgName, f) !== null) {
+    unlinkSync(join(TEMP_BUILD_DIR, f));
+  }
+}
 
 // 2. Fill templates and write to pgxn-dist
 const controlContent = fillTemplate(
@@ -115,22 +195,28 @@ console.log(`Wrote META.json`);
 copyFileSync("README.md", join(TEMP_BUILD_DIR, "README.md"));
 console.log(`Wrote README.md`);
 
-// 5. Copy versioned migration files, stripping the timestamp prefix
-const migrationPattern = new RegExp(`^\\d+_${pkgName}--.*\\.sql$`);
-const migrationFiles = readdirSync(MIGRATIONS_DIR).filter((f) =>
-  migrationPattern.test(f)
-);
+// 4. Copy the migration chain up to `version`, stripping the timestamp prefix
+for (const m of migrationsToShip) {
+  copyFileSync(
+    join(MIGRATIONS_DIR, m.file),
+    join(TEMP_BUILD_DIR, m.parsed.strippedName),
+  );
+  console.log(`Copied: ${m.file} → ${m.parsed.strippedName}`);
+}
 
-if (migrationFiles.length === 0) {
-  console.warn(
-    `Warning: no migration files matching ${pkgName}--*.sql found in ${MIGRATIONS_DIR}`,
+// 5. Apply the full-ext override, if this version has one
+if (fullExtOverride) {
+  copyFileSync(
+    join(FULL_EXT_MIGRATIONS_DIR, fullExtOverride.file),
+    join(TEMP_BUILD_DIR, fullExtOverride.parsed.strippedName),
+  );
+  console.log(
+    `Copied (full-ext override): ${fullExtOverride.file} → ${fullExtOverride.parsed.strippedName}`,
   );
 } else {
-  for (const file of migrationFiles) {
-    const stripped = file.replace(/^\d+_/, "");
-    copyFileSync(join(MIGRATIONS_DIR, file), join(TEMP_BUILD_DIR, stripped));
-    console.log(`Copied: ${file} → ${stripped}`);
-  }
+  console.log(
+    `No full-ext override for version ${version} in ${FULL_EXT_MIGRATIONS_DIR} — using the supabase/migrations copy.`,
+  );
 }
 
 console.log(`\nStaging dir contents:`);
@@ -161,6 +247,19 @@ try {
   rmSync(tmpRepo, { recursive: true, force: true });
 }
 
+// pgxn-dist is just staging for the zip above — remove it now that the zip
+// exists, so it never lingers as a stale snapshot between builds. Skipped
+// with --clean=false (the default) so the staged files are left on disk to
+// inspect, e.g. while debugging what actually went into the zip.
+if (clean) {
+  rmSync(TEMP_BUILD_DIR, { recursive: true, force: true });
+  console.log(`\nRemoved ${TEMP_BUILD_DIR} (pass --clean=false to keep it).`);
+} else {
+  console.log(
+    `\nKept ${TEMP_BUILD_DIR} for inspection (pass --clean to remove it after building).`,
+  );
+}
+
 // 7. Upload to PGXN or show manual hint
 const zipPath = join(process.cwd(), zipName);
 
@@ -170,7 +269,9 @@ if (!pgxnUsername || !pgxnPassword) {
     `  curl -u "USERNAME:PASSWORD" -F "archive=@${zipPath}" https://manager.pgxn.org/upload`,
   );
   console.log(`\nOr re-run with credentials:`);
-  console.log(`  npx tsx pgxn-build-and-publish.ts -u USERNAME -p PASSWORD`);
+  console.log(
+    `  npx tsx pgxn-build-and-publish.ts --version ${version} -u USERNAME -p PASSWORD`,
+  );
   console.log(`  (or set PGXN_USERNAME and PGXN_PASSWORD env vars)`);
 } else {
   (async () => {
