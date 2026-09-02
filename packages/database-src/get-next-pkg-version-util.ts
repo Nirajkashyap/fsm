@@ -8,11 +8,20 @@ const DEFAULT_VERSION = "1.0.0";
  * next release: increments the highest version already recorded in
  * `migrationsDir` by `incrementType` (semver's `inc`), or starts at
  * `DEFAULT_VERSION` if no prior migration exists.
+ *
+ * `format` controls the naming convention:
+ * - "upgrade" (default): `{pkgName}--{old}--{new}.sql`, or just
+ *   `{pkgName}--{DEFAULT_VERSION}.sql` for the very first migration. This is
+ *   the PGXN upgrade-diff convention used by `supabase/migrations`.
+ * - "single": always `{pkgName}--{new}.sql`, no `old` segment — used for
+ *   `full-ext/supabase/migrations`, which holds one authoritative SQL file
+ *   per version rather than an upgrade chain.
  */
 export function getNextPkgVersionFilename(
   pkgName: string,
   incrementType: semver.ReleaseType,
   migrationsDir = "supabase/migrations",
+  format: "upgrade" | "single" = "upgrade",
 ): string {
   const existingHighest = getExistingHighestPkgVersion(pkgName, migrationsDir);
 
@@ -27,5 +36,7 @@ export function getNextPkgVersionFilename(
     );
   }
 
-  return `${pkgName}--${existingHighest}--${nextVersion}`;
+  return format === "single"
+    ? `${pkgName}--${nextVersion}`
+    : `${pkgName}--${existingHighest}--${nextVersion}`;
 }

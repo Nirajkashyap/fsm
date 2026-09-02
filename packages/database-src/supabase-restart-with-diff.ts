@@ -119,6 +119,7 @@ async function cleanDockerVolume(): Promise<void> {
 async function diffSchemaWithUpgradeScript(
   incrementType: ReleaseType,
   workdir: string,
+  target: Target,
 ): Promise<void> {
   const pkg = JSON.parse(
     await Deno.readTextFile(join(SCRIPT_DIR, "package.json")),
@@ -138,10 +139,15 @@ async function diffSchemaWithUpgradeScript(
   //   join(workdir, "supabase/migrations"),
   // );
 
+  // full-ext holds one authoritative SQL file per version (no upgrade-diff
+  // chain — see pgxn-build-and-publish.ts's full-ext override), so its
+  // filenames are always `{pkgName}--{version}.sql`, never
+  // `{pkgName}--{old}--{new}.sql`.
   const nextVersion = getNextPkgVersionFilename(
     pkg.name,
     incrementType,
     join(workdir, "supabase/migrations"),
+    target === "full-ext" ? "single" : "upgrade",
   );
   await run(SUPABASE_BIN, [
     "db",
@@ -186,7 +192,7 @@ async function restartWithDiffWithUpgradeScript(
   const workdir = WORKDIRS[target];
   await stopSupabase(workdir);
   await cleanDockerVolume();
-  await diffSchemaWithUpgradeScript(incrementType, workdir);
+  await diffSchemaWithUpgradeScript(incrementType, workdir, target);
   await startSupabaseWithEnv(workdir);
   await genTypes(workdir);
 }
