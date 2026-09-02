@@ -1,7 +1,0 @@
-comment = 'This package is used for the main PostgreSQL files for the FSM project.'
-default_version = '1.2.0'
-schema = 'fsm_core'
-relocatable = false
-superuser = true
-trusted = false
-requires = 'ltree, pgmq'

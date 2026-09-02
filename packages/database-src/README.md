@@ -55,13 +55,13 @@ CREATE EXTENSION fsm_core;
 
 ### Manual
 
-Download the PGXN zip (or build it locally with `npm run pgxnBuildAndPublish`)
-and apply the SQL files inside in version order using `psql` or your migration
-tool of choice.
+Download the PGXN zip (or build it locally with
+`npm run pgxnBuildAndPublish -- --version <x.y.z>`) and apply the SQL files
+inside in version order using `psql` or your migration tool of choice.
 
 ## Reference
 
-- [PG→TS function mapping](./docs/pg-ts-function-mapping.md)
-- [Release workflow & migration naming](./docs/release.md)
-- [Development setup](./docs/development.md)
-- [Extension creation ADR](./docs/extension-creation-approach-adr.md)
+- [PG→TS function mapping](./docs/reference/pg-ts-function-mapping.md)
+- [Release workflow & migration naming](./docs/guides/release.md)
+- [Development setup](./docs/guides/development.md)
+- [Extension creation ADR](../database-src-extension/docs/adr/extension-creation-approach-qa.md)
