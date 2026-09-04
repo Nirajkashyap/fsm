@@ -22,9 +22,10 @@ npm install -g @pgfsm/compiler   # for a global `fsm-compiler` command
 ## Usage
 
 Run `npx @pgfsm/compiler --help` for the full flag reference. Every command
-below that takes `-f`/`--folder` for a directory applies the same rule to that
-path: it must **not** start with `.` (use a bare relative path like `fsm`, or an
-absolute path — not `./fsm`) and must **not** end with `/`.
+below that takes `-f`/`--folder` for a directory — and `generate-sync-logic`'s
+`-o`/`--output` — applies the same rule to that path: it must **not** start with
+`.` (use a bare relative path like `fsm`, or an absolute path — not `./fsm`) and
+must **not** end with `/`.
 
 ### `generate` — compile `fsm.json` from a state machine definition
 
@@ -64,13 +65,22 @@ is documented in
 
 ### `generate-sync-logic` — scaffold action/guard/delay stubs
 
-Reads each version folder's `fsm.json`, so `generate` must have already run.
+Reads a version folder's `fsm.json`, so `generate` must have already run.
 
-**Input** — `-f`/`--folder`: plugin-root directory (directory mode only, no
-single-file mode). `-l`/`--lang`: comma-separated `typescript,python,rust,go`
-(default `typescript`). `-s`/`--skip-dirs`.
+**Input** — `-f`/`--folder` accepts either:
 
-**Output** — per version folder, per requested language:
+- A **plugin-root directory** — every version folder under it is scaffolded.
+- A **single `fsm.json` file path** — only that one version's stubs are
+  scaffolded. Requires `-o`/`--output`, the version folder to write stubs into:
+  a relative (resolved against the current working directory) or absolute path,
+  unrelated to `--folder`'s own location — it does not need to be, and is not
+  derived from, the fsm.json's containing directory.
+
+`-l`/`--lang`: comma-separated `typescript,python,rust,go` (default
+`typescript`). `-s`/`--skip-dirs`: directory mode only.
+
+**Output** — per version folder (or, in single-file mode, into `--output`), per
+requested language:
 
 - `<lang>/actions/index.{ts,py}` / `mod.rs` / `index.go` — one exported stub per
   action name in `fsm.json` (built-in `xstate.raise`/`xstate.cancel` excluded)
@@ -81,6 +91,7 @@ Every stub has a `// TODO: implement` body.
 
 ```bash
 npx @pgfsm/compiler -c generate-sync-logic -f fsm --lang typescript,python
+npx @pgfsm/compiler -c generate-sync-logic -f fsm/creditCheck/v01/fsm.json --output fsm/creditCheck/v01
 ```
 
 ### `generate-async-logic` — scaffold actor stubs
