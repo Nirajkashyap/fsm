@@ -101,10 +101,13 @@ routing, and where the resulting code runs.
 See the compiler [TODO](./packages/fsm-compiler-ts/docs/todo/TODO.md) for both
 planned-gap items.
 
-`generate-sync-logic`'s `-f`/`--folder` also accepts a single `fsm.json` file
-(instead of only a plugin-root directory), in which case `-o`/`--output` is
-required — a relative or absolute path naming the version folder to scaffold
-stubs into, resolved independently of where the `fsm.json` itself lives. See
+Both `generate-sync-logic` and `generate-async-logic`'s `-f`/`--folder` also
+accept a single `fsm.json` file (instead of only a plugin-root directory), in
+which case `-o`/`--output` is required — a relative or absolute path naming the
+version folder to scaffold stubs into, resolved independently of where the
+`fsm.json` itself lives. For `generate-async-logic`, single-file mode skips the
+once-per-app-root aggregate registry/worker SDK step (see the table above) — run
+directory mode afterward to refresh those. See
 [`cli-usage.md`](./packages/fsm-compiler-ts/docs/guides/cli-usage.md) for
 details and examples.
 
