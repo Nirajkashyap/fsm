@@ -154,6 +154,17 @@ if (command === "generate-sync-logic") {
     printHelp();
     Deno.exit(1);
   }
+  // generate-sync-logic templates are only maintained/tested for typescript
+  // right now, even though OperationLang has other members. Reject the rest
+  // explicitly rather than letting them scaffold un-vetted stubs.
+  const unsupportedLangs = langs.filter((l) => l !== "typescript");
+  if (unsupportedLangs.length > 0) {
+    logger.error(
+      "generate-sync-logic currently only supports --lang typescript. Unsupported: {unsupported}",
+      { unsupported: unsupportedLangs.join(", ") },
+    );
+    Deno.exit(1);
+  }
 }
 
 // Languages for validate-async-operation commands (comma-separated). Empty = all languages.

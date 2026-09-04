@@ -172,6 +172,18 @@ Deno.test("cli generate-sync-logic rejects an invalid --lang", async () => {
   assertEquals(code, 1);
 });
 
+Deno.test("cli generate-sync-logic rejects a valid OperationLang other than typescript", async () => {
+  const { code } = await runCli([
+    "-c",
+    "generate-sync-logic",
+    "-f",
+    FSM_FOLDER,
+    "--lang",
+    "python",
+  ]);
+  assertEquals(code, 1);
+});
+
 // --- create-async-logic ---
 
 Deno.test("cli create-async-logic without --version exits 1", async () => {
