@@ -6,6 +6,7 @@ import {
   createAsyncOperationLogic,
   deleteFsmJSONFromFolders,
   generateAsyncOperationLogicFromFolders,
+  generateAsyncOperationLogicFromFsmJson,
   generateFsmJSONFromFolders,
   generateFsmJSONFromMachineFile,
   generateSyncOperationLogicFromFolders,
@@ -70,7 +71,7 @@ USAGE
 
 COMMANDS
   generate                            Generate fsm.json from a folder or a .ts file
-  generate-async-logic                Scaffold actor stubs (per invoke object's asyncOperationLanguage)
+  generate-async-logic                Scaffold actor stubs (per invoke object's asyncOperationLanguage), for a plugin-root folder or a single fsm.json (--output required; no aggregate registry/worker SDK in that mode)
   generate-sync-logic                 Scaffold action/guard/delay stubs in --lang language(s), for a plugin-root folder or a single fsm.json (--output required)
   create-async-logic                  Scaffold a single actor stub in the shared-async-op pool
   delete                              Delete generated fsm.json / xstate-fsm.json files
@@ -82,11 +83,11 @@ WORKFLOW TYPES
 
 OPTIONS
   -c, --command <command>             Command to run (required)
-  -f, --folder <folder>               Path to FSM folder, .ts file, or fsm.json file (required; a .ts file is accepted for generate only; a fsm.json file is accepted for generate-sync-logic only, and requires --output; app root for create-async-logic)
+  -f, --folder <folder>               Path to FSM folder, .ts file, or fsm.json file (required; a .ts file is accepted for generate only; a fsm.json file is accepted for generate-sync-logic/generate-async-logic only, and requires --output; app root for create-async-logic)
   -w, --workflow-type <type>          Workflow type (required for validate-sync-operation, load)
   -l, --lang <langs>                  Comma-separated language(s): typescript, python, rust, go. For generate-sync-logic defaults to typescript; for validate-async-operation defaults to all languages; for create-async-logic a single language is required
   -v, --version <version>             FSM version folder name, e.g. v01 (create-async-logic only, required)
-  -o, --output <folder>                Version folder to write generate-sync-logic stubs into, when --folder is a single fsm.json file (required in that case, unused otherwise). Relative (resolved against cwd) or absolute; independent of --folder's location
+  -o, --output <folder>                Version folder to write stubs into, when --folder is a single fsm.json file (generate-sync-logic/generate-async-logic only; required in that case, unused otherwise). Relative (resolved against cwd) or absolute; independent of --folder's location
   -n, --name <name>                   Actor function name, used for <name>/<name>.ext (create-async-logic only, required)
   -r, --show-recommendation           Validate generated fsm.json against schema and show errors (generate only)
   -s, --skip-dirs <dirs>              Comma-separated list of subdirectory names to skip
@@ -104,6 +105,7 @@ EXAMPLES
   deno run --allow-all src/cli/index.ts -c generate -f apps/fsm-core-example/fsm/creditCheck/v01/machine.ts
   deno run --allow-all src/cli/index.ts -c generate-async-logic -f apps/fsm-core-example/fsm
   deno run --allow-all src/cli/index.ts -c generate-async-logic -f apps/fsm-core-example/fsm --worker-sdk-protocol legacy
+  deno run --allow-all src/cli/index.ts -c generate-async-logic -f apps/fsm-core-example/fsm/creditCheck/v01/fsm.json --output v01
   deno run --allow-all src/cli/index.ts -c generate-sync-logic -f apps/fsm-core-example/fsm --lang typescript,python
   deno run --allow-all src/cli/index.ts -c generate-sync-logic -f apps/fsm-core-example/fsm/creditCheck/v01/fsm.json --output v01
   deno run --allow-all src/cli/index.ts -c create-async-logic -f apps/fsm-core-example --lang typescript --version v01 --name checkCreditScore
@@ -251,17 +253,28 @@ if (missing.length > 0) {
   Deno.exit(1);
 }
 
+// Commands that accept --folder pointing at a single fsm.json file
+// (single-file mode) instead of only a plugin-root folder — both require
+// --output for the version folder to scaffold into.
+const SINGLE_FSM_JSON_FILE_COMMANDS = [
+  "generate-sync-logic",
+  "generate-async-logic",
+];
+
 // True when --folder points at a single fsm.json file rather than a
-// plugin-root folder — generate-sync-logic's single-file mode.
+// plugin-root folder.
 let folderIsFsmJsonFile = false;
 if (folder) {
   try {
     const stat = await Deno.stat(folder);
-    if (command === "generate-sync-logic" && stat.isFile) {
+    if (
+      command && SINGLE_FSM_JSON_FILE_COMMANDS.includes(command) &&
+      stat.isFile
+    ) {
       if (!folder.endsWith(".json")) {
         logger.error(
-          "--folder file must be an fsm.json file for generate-sync-logic: {folder}",
-          { folder },
+          "--folder file must be an fsm.json file for {command}: {folder}",
+          { command, folder },
         );
         Deno.exit(1);
       }
@@ -279,7 +292,8 @@ if (folder) {
 
 if (folderIsFsmJsonFile && !args["output"]) {
   logger.error(
-    "generate-sync-logic requires --output <version-folder> when --folder is a single fsm.json file",
+    "{command} requires --output <version-folder> when --folder is a single fsm.json file",
+    { command },
   );
   printHelp();
   Deno.exit(1);
@@ -349,11 +363,19 @@ try {
       break;
     }
     case "generate-async-logic":
-      await generateAsyncOperationLogicFromFolders(
-        folder!,
-        skipDirs,
-        workerSdkProtocol,
-      );
+      if (folderIsFsmJsonFile) {
+        const versionFolderPath = resolvePluginRootAbsPath(args["output"]!);
+        await generateAsyncOperationLogicFromFsmJson(
+          folder!,
+          versionFolderPath,
+        );
+      } else {
+        await generateAsyncOperationLogicFromFolders(
+          folder!,
+          skipDirs,
+          workerSdkProtocol,
+        );
+      }
       break;
     case "generate-sync-logic":
       if (folderIsFsmJsonFile) {

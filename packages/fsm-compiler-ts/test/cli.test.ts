@@ -269,6 +269,72 @@ Deno.test("cli generate-sync-logic --output writes to any target folder, unrelat
   assert(stat.isFile);
 });
 
+// --- generate-async-logic single-fsm.json (--output) mode ---
+
+Deno.test("cli generate-async-logic requires --output when --folder is a single fsm.json file", async () => {
+  const { code, stderr } = await runCli([
+    "-c",
+    "generate-async-logic",
+    "-f",
+    SINGLE_FSM_JSON,
+  ]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "requires --output");
+});
+
+Deno.test("cli generate-async-logic rejects a non-.json --folder file", async () => {
+  const { code, stderr } = await runCli([
+    "-c",
+    "generate-async-logic",
+    "-f",
+    `${FSM_FOLDER}/creditCheck/v01/machine.ts`,
+    "--output",
+    `${FIXTURE_ROOT}/async-single-file-non-json-output`,
+  ]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "must be an fsm.json file");
+});
+
+Deno.test("cli generate-async-logic --folder fsm.json + --output writes actor files/manifest/registry into --output, independent of --folder's location", async () => {
+  const outDir = `${FIXTURE_ROOT}/async-single-file-output`;
+  const { code } = await runCli([
+    "-c",
+    "generate-async-logic",
+    "-f",
+    SINGLE_FSM_JSON,
+    "--output",
+    outDir,
+  ]);
+  assertEquals(code, 0);
+  await Deno.stat(`${outDir}/actors-manifest.json`);
+  await Deno.stat(
+    `${outDir}/typescript/actors/verifyCredentials/verifyCredentials.ts`,
+  );
+  await Deno.stat(`${outDir}/typescript/actors/index.ts`);
+  const registryStat = await Deno.stat(
+    `${outDir}/typescript/actors/generated-registry.ts`,
+  );
+  assert(registryStat.isFile);
+});
+
+Deno.test("cli generate-async-logic single-fsm.json mode does not write the aggregate registry / worker SDK", async () => {
+  const outDir = `${FIXTURE_ROOT}/async-single-file-no-aggregate`;
+  const { code } = await runCli([
+    "-c",
+    "generate-async-logic",
+    "-f",
+    SINGLE_FSM_JSON,
+    "--output",
+    outDir,
+  ]);
+  assertEquals(code, 0);
+  const parentEntries = [];
+  for await (const entry of Deno.readDir(FIXTURE_ROOT)) {
+    parentEntries.push(entry.name);
+  }
+  assert(!parentEntries.includes("worker-sdk-generated"));
+});
+
 // --- create-async-logic ---
 
 Deno.test("cli create-async-logic without --version exits 1", async () => {

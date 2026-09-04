@@ -20,6 +20,7 @@ import {
 } from "./operation-logic-scaffold.ts";
 import type {
   ActorsBarrelLang,
+  FsmMachineJson,
   RegisteredActor,
   WorkerSdkProtocol,
   WorkflowType,
@@ -28,6 +29,102 @@ import type {
 const logger = getLogger(["@pgfsm/compiler", "async-logic"]);
 
 const BARREL_LANGS: ActorsBarrelLang[] = ["typescript", "python", "rust"];
+
+/**
+ * Writes actor files, the per-version `actors-manifest.json`, and each
+ * language's per-version barrel/registry for one already-parsed fsm.json,
+ * into `absVersionFolderPath`. Shared by
+ * {@linkcode generateAsyncOperationLogicFromFolders} (one call per versioned
+ * FSM folder it walks) and {@linkcode generateAsyncOperationLogicFromFsmJson}
+ * (a single call for one fsm.json). Mutates `tsFiles`/`rustFiles` in place so
+ * callers can batch-format everything written across a whole run.
+ */
+async function scaffoldAsyncLogicForVersion(
+  absVersionFolderPath: string,
+  fsmData: FsmMachineJson,
+  tsFiles: string[],
+  rustFiles: string[],
+): Promise<RegisteredActor[]> {
+  const { actors } = extractFsmPluginRefs(fsmData);
+
+  // Dedupe by language + `<asyncOperationType>_<asyncOperationVersion>_<src>`
+  // so identical invokes are written once, while actors that differ in
+  // type/version/src get their own files.
+  const seen = new Set<string>();
+  const writtenActors: RegisteredActor[] = [];
+  for (const actor of actors) {
+    const asyncOperationType = actor.asyncOperationType ??
+      "internalAsyncOperation";
+    if (asyncOperationType !== "internalAsyncOperation") {
+      logger.info(
+        "Skipping actor {src}: asyncOperationType is {asyncOperationType}, not internalAsyncOperation",
+        { src: actor.src, asyncOperationType },
+      );
+      continue;
+    }
+    const lang = actor.asyncOperationLanguage ?? "typescript";
+    if (!isOperationLang(lang)) {
+      logger.warning(
+        "Skipping actor {src}: unsupported asyncOperationLanguage {lang}",
+        {
+          src: actor.src,
+          lang,
+        },
+      );
+      continue;
+    }
+    const key = `${lang}/${actorFileBaseName(actor)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const file = await writeActorFile(absVersionFolderPath, lang, actor);
+    if (lang === "typescript") tsFiles.push(file);
+    writtenActors.push(toRegisteredActor(absVersionFolderPath, lang, actor));
+    logger.info("Wrote actor file {file}", { file });
+  }
+
+  logger.info("Wrote {count} actor file(s) in {path}", {
+    count: writtenActors.length,
+    path: absVersionFolderPath,
+  });
+
+  const manifestFile = await writeActorsManifest(
+    absVersionFolderPath,
+    writtenActors,
+  );
+  logger.info("Wrote actors manifest {file}", { file: manifestFile });
+
+  for (const lang of BARREL_LANGS) {
+    const barrelFile = await writeActorsBarrel(
+      absVersionFolderPath,
+      writtenActors,
+      lang,
+    );
+    if (barrelFile) {
+      if (lang === "typescript") tsFiles.push(barrelFile);
+      logger.info("Wrote {lang} actors barrel {file}", {
+        lang,
+        file: barrelFile,
+      });
+    }
+
+    const registryFile = await writeActorsRegistry(
+      absVersionFolderPath,
+      writtenActors,
+      lang,
+    );
+    if (registryFile) {
+      if (lang === "typescript") tsFiles.push(registryFile);
+      if (lang === "rust") rustFiles.push(registryFile);
+      logger.info("Wrote {lang} actors registry {file}", {
+        lang,
+        file: registryFile,
+      });
+    }
+  }
+
+  return writtenActors;
+}
 
 /**
  * Scaffolds async operation logic (actors / invoke objects) for every versioned
@@ -91,84 +188,12 @@ export async function generateAsyncOperationLogicFromFolders(
     folderPath,
     skipDirs,
     async (absFolderPath, fsmData) => {
-      const { actors } = extractFsmPluginRefs(fsmData);
-
-      // Dedupe by language + `<asyncOperationType>_<asyncOperationVersion>_<src>`
-      // so identical invokes are written once, while actors that differ in
-      // type/version/src get their own files.
-      const seen = new Set<string>();
-      const writtenActors: RegisteredActor[] = [];
-      for (const actor of actors) {
-        const asyncOperationType = actor.asyncOperationType ??
-          "internalAsyncOperation";
-        if (asyncOperationType !== "internalAsyncOperation") {
-          logger.info(
-            "Skipping actor {src}: asyncOperationType is {asyncOperationType}, not internalAsyncOperation",
-            { src: actor.src, asyncOperationType },
-          );
-          continue;
-        }
-        const lang = actor.asyncOperationLanguage ?? "typescript";
-        if (!isOperationLang(lang)) {
-          logger.warning(
-            "Skipping actor {src}: unsupported asyncOperationLanguage {lang}",
-            {
-              src: actor.src,
-              lang,
-            },
-          );
-          continue;
-        }
-        const key = `${lang}/${actorFileBaseName(actor)}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-
-        const file = await writeActorFile(absFolderPath, lang, actor);
-        if (lang === "typescript") tsFiles.push(file);
-        writtenActors.push(toRegisteredActor(absFolderPath, lang, actor));
-        logger.info("Wrote actor file {file}", { file });
-      }
-
-      logger.info("Wrote {count} actor file(s) in {path}", {
-        count: writtenActors.length,
-        path: absFolderPath,
-      });
-
-      const manifestFile = await writeActorsManifest(
+      const writtenActors = await scaffoldAsyncLogicForVersion(
         absFolderPath,
-        writtenActors,
+        fsmData,
+        tsFiles,
+        rustFiles,
       );
-      logger.info("Wrote actors manifest {file}", { file: manifestFile });
-
-      for (const lang of BARREL_LANGS) {
-        const barrelFile = await writeActorsBarrel(
-          absFolderPath,
-          writtenActors,
-          lang,
-        );
-        if (barrelFile) {
-          if (lang === "typescript") tsFiles.push(barrelFile);
-          logger.info("Wrote {lang} actors barrel {file}", {
-            lang,
-            file: barrelFile,
-          });
-        }
-
-        const registryFile = await writeActorsRegistry(
-          absFolderPath,
-          writtenActors,
-          lang,
-        );
-        if (registryFile) {
-          if (lang === "typescript") tsFiles.push(registryFile);
-          if (lang === "rust") rustFiles.push(registryFile);
-          logger.info("Wrote {lang} actors registry {file}", {
-            lang,
-            file: registryFile,
-          });
-        }
-      }
-
       allRegisteredActors.push(...writtenActors);
     },
   );
@@ -229,4 +254,49 @@ export async function generateAsyncOperationLogicFromFolders(
   await formatRustFilesBestEffort(rustFiles);
   await formatGoFilesBestEffort(goFiles);
   await goModTidyManyBestEffort(goModDirs);
+}
+
+/**
+ * Scaffolds async operation logic for a single fsm.json file, for the CLI's
+ * single-file `--folder` mode — used when the caller wants to target one
+ * fsm.json directly instead of walking a plugin-root folder for every
+ * versioned FSM under it. Writes actor files, the per-version
+ * `actors-manifest.json`, and each language's per-version barrel/registry
+ * into `absVersionFolderPath` (the CLI resolves it from `--output`,
+ * independently of `fsmJsonPath`'s own location; it does not have to be
+ * `fsmJsonPath`'s own containing directory).
+ *
+ * Unlike {@linkcode generateAsyncOperationLogicFromFolders}, this does
+ * **not** write the once-per-app-root aggregate registry or worker SDK (see
+ * {@linkcode writeAggregateActorsRegistry}, {@linkcode writeAggregateGoRegistry},
+ * {@linkcode writeWorkerSdk}): those combine every FSM version's actors for a
+ * language into one file, which isn't well-defined for a single arbitrary
+ * fsm.json — running it here would silently overwrite that aggregate with
+ * only this one file's actors, discarding every other FSM's entries. Run
+ * `generate-async-logic` in folder mode over the whole plugin-root afterward
+ * to refresh the aggregate registry / worker SDK.
+ */
+export async function generateAsyncOperationLogicFromFsmJson(
+  fsmJsonPath: string,
+  absVersionFolderPath: string,
+): Promise<void> {
+  logger.info(
+    "Scaffolding async operation logic from {path} into {versionFolder}",
+    { path: fsmJsonPath, versionFolder: absVersionFolderPath },
+  );
+
+  const fsmData: FsmMachineJson = JSON.parse(
+    await Deno.readTextFile(fsmJsonPath),
+  );
+  const tsFiles: string[] = [];
+  const rustFiles: string[] = [];
+  await scaffoldAsyncLogicForVersion(
+    absVersionFolderPath,
+    fsmData,
+    tsFiles,
+    rustFiles,
+  );
+
+  await formatTsFilesBestEffort(tsFiles);
+  await formatRustFilesBestEffort(rustFiles);
 }
