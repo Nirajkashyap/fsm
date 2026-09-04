@@ -8,9 +8,13 @@ export {
 } from "./generate-fsm-json.ts";
 export { generateAsyncOperationLogicFromFolders } from "./generate-async-operation-logic.ts";
 export { createAsyncOperationLogic } from "./create-async-logic.ts";
-export { generateSyncOperationLogicFromFolders } from "./generate-sync-operation-logic.ts";
+export {
+  generateSyncOperationLogicFromFolders,
+  generateSyncOperationLogicFromFsmJson,
+} from "./generate-sync-operation-logic.ts";
 export {
   isOperationLang,
+  resolvePluginRootAbsPath,
   SUPPORTED_OPERATION_LANGS,
 } from "./operation-logic-scaffold.ts";
 export { loadFsmJSONFromFolders } from "./load-fsm-json.ts";

@@ -4,9 +4,45 @@ import {
   eachVersionedFsmFolder,
   writeOperationModule,
 } from "./operation-logic-scaffold.ts";
-import type { OperationLang, WorkflowType } from "./types/index.ts";
+import type {
+  FsmMachineJson,
+  OperationLang,
+  WorkflowType,
+} from "./types/index.ts";
 
 const logger = getLogger(["@pgfsm/compiler", "sync-logic"]);
+
+/**
+ * Writes action/guard/delay stubs for one already-parsed fsm.json into
+ * `absVersionFolderPath`, in each of `langs`. Shared by
+ * {@linkcode generateSyncOperationLogicFromFolders} (one call per versioned
+ * FSM folder it walks) and {@linkcode generateSyncOperationLogicFromFsmJson}
+ * (a single call for one fsm.json).
+ */
+async function scaffoldSyncLogicForVersion(
+  absVersionFolderPath: string,
+  fsmData: FsmMachineJson,
+  langs: OperationLang[],
+): Promise<void> {
+  const { actions, guards, delays } = extractFsmPluginRefs(fsmData);
+  // xstate.raise / xstate.cancel are built-ins, not user code.
+  const filteredActions = actions.filter((a) => !RAISE_CANCEL.has(a));
+
+  for (const lang of langs) {
+    await writeOperationModule(
+      absVersionFolderPath,
+      lang,
+      "actions",
+      filteredActions,
+    );
+    await writeOperationModule(absVersionFolderPath, lang, "guards", guards);
+    await writeOperationModule(absVersionFolderPath, lang, "delays", delays);
+    logger.info("Wrote {lang} action/guard/delay stubs in {path}", {
+      lang,
+      path: absVersionFolderPath,
+    });
+  }
+}
 
 /**
  * Scaffolds sync operation logic (actions / guards / delays) for every versioned
@@ -31,24 +67,36 @@ export async function generateSyncOperationLogicFromFolders(
     folderPath,
     skipDirs,
     async (absFolderPath, fsmData) => {
-      const { actions, guards, delays } = extractFsmPluginRefs(fsmData);
-      // xstate.raise / xstate.cancel are built-ins, not user code.
-      const filteredActions = actions.filter((a) => !RAISE_CANCEL.has(a));
-
-      for (const lang of langs) {
-        await writeOperationModule(
-          absFolderPath,
-          lang,
-          "actions",
-          filteredActions,
-        );
-        await writeOperationModule(absFolderPath, lang, "guards", guards);
-        await writeOperationModule(absFolderPath, lang, "delays", delays);
-        logger.info("Wrote {lang} action/guard/delay stubs in {path}", {
-          lang,
-          path: absFolderPath,
-        });
-      }
+      await scaffoldSyncLogicForVersion(absFolderPath, fsmData, langs);
     },
   );
+}
+
+/**
+ * Scaffolds sync operation logic for a single fsm.json file, for the CLI's
+ * single-file `--folder` mode — used when the caller wants to target one
+ * fsm.json directly instead of walking a plugin-root folder for every
+ * versioned FSM under it. `absVersionFolderPath` is the folder stubs are
+ * written into (the CLI resolves it from `--output`, independently of
+ * `fsmJsonPath`'s own location); it does not have to be `fsmJsonPath`'s own
+ * containing directory.
+ */
+export async function generateSyncOperationLogicFromFsmJson(
+  fsmJsonPath: string,
+  absVersionFolderPath: string,
+  langs: OperationLang[],
+): Promise<void> {
+  logger.info(
+    "Scaffolding sync operation logic ({langs}) from {path} into {versionFolder}",
+    {
+      langs: langs.join(", "),
+      path: fsmJsonPath,
+      versionFolder: absVersionFolderPath,
+    },
+  );
+
+  const fsmData: FsmMachineJson = JSON.parse(
+    await Deno.readTextFile(fsmJsonPath),
+  );
+  await scaffoldSyncLogicForVersion(absVersionFolderPath, fsmData, langs);
 }

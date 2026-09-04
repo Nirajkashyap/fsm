@@ -1,7 +1,10 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs/copy";
 
-const CLI = "packages/fsm-compiler-ts/src/cli/index.ts";
+// Absolute, not relative to "packages/fsm-compiler-ts/..." — some tests below
+// run the CLI with a different subprocess `cwd` (to exercise --output's
+// relative-path resolution), which would otherwise break this path.
+const CLI = `${Deno.cwd()}/packages/fsm-compiler-ts/src/cli/index.ts`;
 // generate/delete/create-async-logic below invoke the real CLI as a
 // subprocess against these paths, so they must never point at the tracked
 // apps/fsm-core-example — that would delete/regenerate real committed files
@@ -11,16 +14,19 @@ const FIXTURE_ROOT = await Deno.makeTempDir({ prefix: "fsm-compiler-cli-" });
 const APP_ROOT = `${FIXTURE_ROOT}/fsm-core-example`;
 await copy("apps/fsm-core-example", APP_ROOT);
 const FSM_FOLDER = `${APP_ROOT}/fsm`;
+const SINGLE_FSM_JSON = `${FSM_FOLDER}/creditCheck/v01/fsm.json`;
 
 async function runCli(
   args: string[],
   env?: Record<string, string>,
+  cwd?: string,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const cmd = new Deno.Command(Deno.execPath(), {
     args: ["run", "--allow-all", CLI, ...args],
     stdout: "piped",
     stderr: "piped",
     ...(env !== undefined && { env }),
+    ...(cwd !== undefined && { cwd }),
   });
   const { code, stdout, stderr } = await cmd.output();
   return {
@@ -170,6 +176,97 @@ Deno.test("cli generate-sync-logic rejects an invalid --lang", async () => {
     "cobol",
   ]);
   assertEquals(code, 1);
+});
+
+Deno.test("cli generate-sync-logic rejects a valid OperationLang other than typescript", async () => {
+  const { code } = await runCli([
+    "-c",
+    "generate-sync-logic",
+    "-f",
+    FSM_FOLDER,
+    "--lang",
+    "python",
+  ]);
+  assertEquals(code, 1);
+});
+
+// --- generate-sync-logic single-fsm.json (--output) mode ---
+
+Deno.test("cli generate-sync-logic requires --output when --folder is a single fsm.json file", async () => {
+  const { code, stderr } = await runCli([
+    "-c",
+    "generate-sync-logic",
+    "-f",
+    SINGLE_FSM_JSON,
+  ]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "requires --output");
+});
+
+Deno.test("cli generate-sync-logic rejects a non-.json --folder file", async () => {
+  const { code, stderr } = await runCli([
+    "-c",
+    "generate-sync-logic",
+    "-f",
+    `${FSM_FOLDER}/creditCheck/v01/machine.ts`,
+    "--output",
+    `${FIXTURE_ROOT}/single-file-non-json-output`,
+  ]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "must be an fsm.json file");
+});
+
+Deno.test("cli generate-sync-logic --folder fsm.json + --output (absolute) writes stubs into --output, independent of --folder's location", async () => {
+  const outDir = `${FIXTURE_ROOT}/single-file-abs-output`;
+  const { code } = await runCli([
+    "-c",
+    "generate-sync-logic",
+    "-f",
+    SINGLE_FSM_JSON,
+    "--output",
+    outDir,
+  ]);
+  assertEquals(code, 0);
+  for (const kind of ["actions", "guards", "delays"]) {
+    const stat = await Deno.stat(`${outDir}/typescript/${kind}/index.ts`);
+    assert(stat.isFile);
+  }
+});
+
+Deno.test("cli generate-sync-logic --output accepts a relative path, resolved against the CLI's cwd", async () => {
+  const cwd = `${FIXTURE_ROOT}/single-file-relative-cwd`;
+  await Deno.mkdir(cwd, { recursive: true });
+  const { code } = await runCli(
+    ["-c", "generate-sync-logic", "-f", SINGLE_FSM_JSON, "--output", "rel-out"],
+    undefined,
+    cwd,
+  );
+  assertEquals(code, 0);
+  const stat = await Deno.stat(`${cwd}/rel-out/typescript/actions/index.ts`);
+  assert(stat.isFile);
+});
+
+Deno.test("cli generate-sync-logic --output writes to any target folder, unrelated to --folder's own directory name", async () => {
+  // Copy fsm.json out to a location that looks nothing like a
+  // <fsmName>/<version> folder, to prove --output is the only thing that
+  // determines where stubs land.
+  const draftDir = `${FIXTURE_ROOT}/scratch-draft`;
+  await Deno.mkdir(draftDir, { recursive: true });
+  const draftJson = `${draftDir}/fsm.json`;
+  await Deno.copyFile(SINGLE_FSM_JSON, draftJson);
+
+  const outDir = `${FIXTURE_ROOT}/single-file-unrelated-output`;
+  const { code } = await runCli([
+    "-c",
+    "generate-sync-logic",
+    "-f",
+    draftJson,
+    "--output",
+    outDir,
+  ]);
+  assertEquals(code, 0);
+  const stat = await Deno.stat(`${outDir}/typescript/actions/index.ts`);
+  assert(stat.isFile);
 });
 
 // --- create-async-logic ---
